@@ -1,5 +1,7 @@
 // Timeslot service - handles all timeslot-related API calls
 
+import { API_BASE } from "../config.js";
+
 /**
  * Fetch all timeslots with optional filtering
  * @param {Object} params - Query parameters
@@ -12,24 +14,24 @@ export async function fetchTimeslots(params = {}) {
    const queryParams = new URLSearchParams();
 
    if (params.type) {
-      queryParams.append('type', params.type);
+      queryParams.append("type", params.type);
    }
 
    if (params.primaryDate) {
-      queryParams.append('primaryDate', params.primaryDate);
+      queryParams.append("primaryDate", params.primaryDate);
    }
 
    if (params.limit) {
-      queryParams.append('limit', params.limit);
+      queryParams.append("limit", params.limit);
    }
 
-   const url = `/api/timeslots${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+   const url = `${API_BASE}/timeslots${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
 
    const response = await fetch(url);
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Laden der Termine');
+      throw new Error(error.error || "Fehler beim Laden der Termine");
    }
 
    return await response.json();
@@ -40,7 +42,7 @@ export async function fetchTimeslots(params = {}) {
  * @returns {Promise<Array>} Array of primary timeslot objects
  */
 export async function fetchPrimaryTimeslots() {
-   return fetchTimeslots({ type: 'primary' });
+   return fetchTimeslots({ type: "primary" });
 }
 
 /**
@@ -50,10 +52,10 @@ export async function fetchPrimaryTimeslots() {
  */
 export async function fetchFollowupTimeslots(primaryDate) {
    if (!primaryDate) {
-      throw new Error('Primary date is required for followup timeslots');
+      throw new Error("Primary date is required for followup timeslots");
    }
 
-   return fetchTimeslots({ type: 'followup', primaryDate });
+   return fetchTimeslots({ type: "followup", primaryDate });
 }
 
 /**
@@ -67,18 +69,18 @@ export async function fetchFollowupTimeslots(primaryDate) {
  * @returns {Promise<Object>} Created timeslot object
  */
 export async function createTimeslot(timeslotData, token) {
-   const response = await fetch('/api/admin/timeslots', {
-      method: 'POST',
+   const response = await fetch(`${API_BASE}/admin/timeslots`, {
+      method: "POST",
       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(timeslotData)
+      body: JSON.stringify(timeslotData),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Erstellen des Termins');
+      throw new Error(error.error || "Fehler beim Erstellen des Termins");
    }
 
    return await response.json();
@@ -92,18 +94,18 @@ export async function createTimeslot(timeslotData, token) {
  * @returns {Promise<Object>} Updated timeslot object
  */
 export async function updateTimeslot(timeslotId, timeslotData, token) {
-   const response = await fetch(`/api/admin/timeslots/${timeslotId}`, {
-      method: 'PUT',
+   const response = await fetch(`${API_BASE}/admin/timeslots/${timeslotId}`, {
+      method: "PUT",
       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(timeslotData)
+      body: JSON.stringify(timeslotData),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Aktualisieren des Termins');
+      throw new Error(error.error || "Fehler beim Aktualisieren des Termins");
    }
 
    return await response.json();
@@ -116,16 +118,16 @@ export async function updateTimeslot(timeslotId, timeslotData, token) {
  * @returns {Promise<Object>} Deletion confirmation
  */
 export async function deleteTimeslot(timeslotId, token) {
-   const response = await fetch(`/api/admin/timeslots/${timeslotId}`, {
-      method: 'DELETE',
+   const response = await fetch(`${API_BASE}/admin/timeslots/${timeslotId}`, {
+      method: "DELETE",
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Löschen des Termins');
+      throw new Error(error.error || "Fehler beim Löschen des Termins");
    }
 
    return await response.json();
@@ -137,15 +139,15 @@ export async function deleteTimeslot(timeslotId, token) {
  * @returns {Promise<Array>} Array of all timeslot objects
  */
 export async function fetchAllTimeslotsForAdmin(token) {
-   const response = await fetch('/api/admin/timeslots', {
+   const response = await fetch(`${API_BASE}/admin/timeslots`, {
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Laden der Termine');
+      throw new Error(error.error || "Fehler beim Laden der Termine");
    }
 
    return await response.json();

@@ -1,5 +1,7 @@
 // Admin service - handles admin authentication and operations
 
+import { API_BASE } from "../config.js";
+
 /**
  * Login as admin
  * @param {string} username - Admin username
@@ -7,17 +9,17 @@
  * @returns {Promise<Object>} Login response with token
  */
 export async function login(username, password) {
-   const response = await fetch('/api/admin/login', {
-      method: 'POST',
+   const response = await fetch(`${API_BASE}/admin/login`, {
+      method: "POST",
       headers: {
-         'Content-Type': 'application/json',
+         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Login fehlgeschlagen');
+      throw new Error(error.error || "Login fehlgeschlagen");
    }
 
    return await response.json();
@@ -30,15 +32,15 @@ export async function login(username, password) {
  */
 export async function verifyToken(token) {
    try {
-      const response = await fetch('/api/admin/verify', {
+      const response = await fetch(`${API_BASE}/admin/verify`, {
          headers: {
-            'Authorization': `Bearer ${token}`
-         }
+            Authorization: `Bearer ${token}`,
+         },
       });
 
       return response.ok;
    } catch (error) {
-      console.error('Token verification error:', error);
+      console.error("Token verification error:", error);
       return false;
    }
 }
@@ -49,15 +51,15 @@ export async function verifyToken(token) {
  * @returns {Promise<Object>} Dashboard statistics
  */
 export async function fetchDashboardStats(token) {
-   const response = await fetch('/api/admin/stats', {
+   const response = await fetch(`${API_BASE}/admin/stats`, {
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Laden der Statistiken');
+      throw new Error(error.error || "Fehler beim Laden der Statistiken");
    }
 
    return await response.json();
@@ -69,15 +71,15 @@ export async function fetchDashboardStats(token) {
  * @returns {Promise<Array>} Array of participants
  */
 export async function fetchAllParticipants(token) {
-   const response = await fetch('/api/admin/participants', {
+   const response = await fetch(`${API_BASE}/admin/participants`, {
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Laden der Teilnehmer');
+      throw new Error(error.error || "Fehler beim Laden der Teilnehmer");
    }
 
    return await response.json();
@@ -89,15 +91,15 @@ export async function fetchAllParticipants(token) {
  * @returns {Promise<Blob>} CSV file blob
  */
 export async function exportParticipantsCSV(token) {
-   const response = await fetch('/api/admin/participants/export', {
+   const response = await fetch(`${API_BASE}/admin/participants/export`, {
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Exportieren der Daten');
+      throw new Error(error.error || "Fehler beim Exportieren der Daten");
    }
 
    return await response.blob();
@@ -110,18 +112,18 @@ export async function exportParticipantsCSV(token) {
  * @returns {Promise<Object>} Result of reminder sending
  */
 export async function sendReminders(bookingIds, token) {
-   const response = await fetch('/api/admin/send-reminders', {
-      method: 'POST',
+   const response = await fetch(`${API_BASE}/admin/send-reminders`, {
+      method: "POST",
       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ bookingIds })
+      body: JSON.stringify({ bookingIds }),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Senden der Erinnerungen');
+      throw new Error(error.error || "Fehler beim Senden der Erinnerungen");
    }
 
    return await response.json();
@@ -133,15 +135,15 @@ export async function sendReminders(bookingIds, token) {
  * @returns {Promise<Object>} System configuration
  */
 export async function getSystemConfig(token) {
-   const response = await fetch('/api/admin/config', {
+   const response = await fetch(`${API_BASE}/admin/config`, {
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Laden der Konfiguration');
+      throw new Error(error.error || "Fehler beim Laden der Konfiguration");
    }
 
    return await response.json();
@@ -154,18 +156,20 @@ export async function getSystemConfig(token) {
  * @returns {Promise<Object>} Updated configuration
  */
 export async function updateSystemConfig(config, token) {
-   const response = await fetch('/api/admin/config', {
-      method: 'PUT',
+   const response = await fetch(`${API_BASE}/admin/config`, {
+      method: "PUT",
       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(config)
+      body: JSON.stringify(config),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Aktualisieren der Konfiguration');
+      throw new Error(
+         error.error || "Fehler beim Aktualisieren der Konfiguration",
+      );
    }
 
    return await response.json();
@@ -176,7 +180,7 @@ export async function updateSystemConfig(config, token) {
  * @param {string} token - Admin authentication token
  */
 export function storeToken(token) {
-   localStorage.setItem('adminToken', token);
+   localStorage.setItem("adminToken", token);
 }
 
 /**
@@ -184,14 +188,14 @@ export function storeToken(token) {
  * @returns {string|null} Admin authentication token or null
  */
 export function getStoredToken() {
-   return localStorage.getItem('adminToken');
+   return localStorage.getItem("adminToken");
 }
 
 /**
  * Remove token from localStorage (logout)
  */
 export function removeToken() {
-   localStorage.removeItem('adminToken');
+   localStorage.removeItem("adminToken");
 }
 
 /**

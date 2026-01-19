@@ -1,5 +1,7 @@
 // Booking service - handles all booking-related API calls
 
+import { API_BASE } from "../config.js";
+
 /**
  * Register a new participant with primary and followup appointments
  * @param {Object} registrationData - Registration data
@@ -10,17 +12,17 @@
  * @returns {Promise<Object>} Registration confirmation with token
  */
 export async function registerParticipant(registrationData) {
-   const response = await fetch('/api/register', {
-      method: 'POST',
+   const response = await fetch(`${API_BASE}/register`, {
+      method: "POST",
       headers: {
-         'Content-Type': 'application/json',
+         "Content-Type": "application/json",
       },
-      body: JSON.stringify(registrationData)
+      body: JSON.stringify(registrationData),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Anmeldung fehlgeschlagen');
+      throw new Error(error.error || "Anmeldung fehlgeschlagen");
    }
 
    return await response.json();
@@ -33,14 +35,14 @@ export async function registerParticipant(registrationData) {
  */
 export async function fetchBookingByToken(token) {
    if (!token) {
-      throw new Error('Token ist erforderlich');
+      throw new Error("Token ist erforderlich");
    }
 
-   const response = await fetch(`/api/booking/${token}`);
+   const response = await fetch(`${API_BASE}/booking/${token}`);
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Ungültiger Bestätigungscode');
+      throw new Error(error.error || "Ungültiger Bestätigungscode");
    }
 
    return await response.json();
@@ -56,19 +58,19 @@ export async function fetchBookingByToken(token) {
  * @returns {Promise<Object>} Reschedule confirmation
  */
 export async function rescheduleBooking(rescheduleData) {
-   const response = await fetch('/api/reschedule', {
-      method: 'POST',
+   const response = await fetch(`${API_BASE}/reschedule`, {
+      method: "POST",
       headers: {
-         'Content-Type': 'application/json',
+         "Content-Type": "application/json",
       },
-      body: JSON.stringify(rescheduleData)
+      body: JSON.stringify(rescheduleData),
    });
 
    const data = await response.json();
 
    if (!response.ok) {
       // Pass through the full error data (may include requiresFollowupReschedule)
-      const error = new Error(data.error || 'Fehler beim Ändern des Termins');
+      const error = new Error(data.error || "Fehler beim Ändern des Termins");
       error.data = data;
       throw error;
    }
@@ -83,20 +85,20 @@ export async function rescheduleBooking(rescheduleData) {
  */
 export async function cancelBooking(token) {
    if (!token) {
-      throw new Error('Token ist erforderlich');
+      throw new Error("Token ist erforderlich");
    }
 
-   const response = await fetch('/api/cancel', {
-      method: 'POST',
+   const response = await fetch(`${API_BASE}/cancel`, {
+      method: "POST",
       headers: {
-         'Content-Type': 'application/json',
+         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token }),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Stornieren');
+      throw new Error(error.error || "Fehler beim Stornieren");
    }
 
    return await response.json();
@@ -108,15 +110,15 @@ export async function cancelBooking(token) {
  * @returns {Promise<Array>} Array of all bookings
  */
 export async function fetchAllBookings(token) {
-   const response = await fetch('/api/admin/bookings', {
+   const response = await fetch(`${API_BASE}/admin/bookings`, {
       headers: {
-         'Authorization': `Bearer ${token}`
-      }
+         Authorization: `Bearer ${token}`,
+      },
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Laden der Buchungen');
+      throw new Error(error.error || "Fehler beim Laden der Buchungen");
    }
 
    return await response.json();
@@ -129,16 +131,19 @@ export async function fetchAllBookings(token) {
  * @returns {Promise<Object>} Update confirmation
  */
 export async function markAsNoShow(bookingId, token) {
-   const response = await fetch(`/api/admin/bookings/${bookingId}/no-show`, {
-      method: 'PUT',
-      headers: {
-         'Authorization': `Bearer ${token}`
-      }
-   });
+   const response = await fetch(
+      `${API_BASE}/admin/bookings/${bookingId}/no-show`,
+      {
+         method: "PUT",
+         headers: {
+            Authorization: `Bearer ${token}`,
+         },
+      },
+   );
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Aktualisieren des Status');
+      throw new Error(error.error || "Fehler beim Aktualisieren des Status");
    }
 
    return await response.json();
@@ -152,18 +157,18 @@ export async function markAsNoShow(bookingId, token) {
  * @returns {Promise<Object>} Update confirmation
  */
 export async function updateBookingStatus(bookingId, status, token) {
-   const response = await fetch(`/api/admin/bookings/${bookingId}`, {
-      method: 'PUT',
+   const response = await fetch(`${API_BASE}/admin/bookings/${bookingId}`, {
+      method: "PUT",
       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status }),
    });
 
    if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Fehler beim Aktualisieren des Status');
+      throw new Error(error.error || "Fehler beim Aktualisieren des Status");
    }
 
    return await response.json();
