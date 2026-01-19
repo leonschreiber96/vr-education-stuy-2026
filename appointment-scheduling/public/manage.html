@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="de">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Termin verwalten - Terminfindung</title>
+      <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+      <link rel="stylesheet" href="css/manage.css" />
+   </head>
+   <body>
+      <div class="container">
+         <div class="header">
+            <h1>📅 Termine verwalten</h1>
+            <p>Ändern oder stornieren Sie Ihre Termine</p>
+         </div>
+
+         <div class="content" id="mainContent">
+            <div id="alertContainer"></div>
+
+            <!-- Token Input Section -->
+            <div id="tokenInputSection">
+               <div class="token-input-container">
+                  <h2 style="color: #667eea; margin-bottom: 20px">
+                     Bitte geben Sie Ihren Bestätigungscode ein
+                  </h2>
+                  <p style="color: #666; margin-bottom: 20px">
+                     Dieser Code wurde Ihnen per E-Mail zugeschickt.
+                  </p>
+                  <input
+                     type="text"
+                     id="tokenInput"
+                     placeholder="Bestätigungscode eingeben"
+                  />
+                  <button class="btn btn-primary" onclick="loadBookings()">
+                     Termine laden
+                  </button>
+               </div>
+            </div>
+
+            <!-- Loading Section -->
+            <div id="loadingSection" class="loading" style="display: none">
+               <div class="loading-spinner"></div>
+               <p>Termine werden geladen...</p>
+            </div>
+
+            <!-- Bookings Details Section -->
+            <div id="bookingsSection" style="display: none">
+               <!-- Participant Info -->
+               <div class="section">
+                  <h2>Ihre Daten</h2>
+                  <div class="info-card">
+                     <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value" id="participantName"></span>
+                     </div>
+                     <div class="info-row">
+                        <span class="info-label">E-Mail:</span>
+                        <span class="info-value" id="participantEmail"></span>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Primary Appointment -->
+               <div class="section">
+                  <h2>Haupttermin</h2>
+                  <div class="appointment-card">
+                     <h3>
+                        <span class="appointment-badge badge-primary-type"
+                           >Haupttermin</span
+                        >
+                     </h3>
+                     <div class="info-row">
+                        <span class="info-label">📅 Datum:</span>
+                        <span class="info-value" id="primaryDate"></span>
+                     </div>
+                     <div class="info-row">
+                        <span class="info-label">🕐 Uhrzeit:</span>
+                        <span class="info-value" id="primaryTime"></span>
+                     </div>
+                     <div
+                        class="info-row"
+                        id="primaryLocationRow"
+                        style="display: none"
+                     >
+                        <span class="info-label">📍 Ort:</span>
+                        <span class="info-value" id="primaryLocation"></span>
+                     </div>
+                  </div>
+                  <div class="btn-group" style="margin-top: 15px">
+                     <button
+                        class="btn btn-primary"
+                        onclick="showRescheduleModal('primary')"
+                     >
+                        Haupttermin ändern
+                     </button>
+                  </div>
+               </div>
+
+               <!-- Follow-up Appointment -->
+               <div class="section">
+                  <h2>Folgetermin</h2>
+                  <div class="appointment-card followup-card">
+                     <h3>
+                        <span class="appointment-badge badge-followup-type"
+                           >Folgetermin</span
+                        >
+                     </h3>
+                     <div class="info-row">
+                        <span class="info-label">📅 Datum:</span>
+                        <span class="info-value" id="followupDate"></span>
+                     </div>
+                     <div class="info-row">
+                        <span class="info-label">🕐 Uhrzeit:</span>
+                        <span class="info-value" id="followupTime"></span>
+                     </div>
+                     <div
+                        class="info-row"
+                        id="followupLocationRow"
+                        style="display: none"
+                     >
+                        <span class="info-label">📍 Ort:</span>
+                        <span class="info-value" id="followupLocation"></span>
+                     </div>
+                     <div class="info-row">
+                        <span class="info-label">⏱️ Abstand:</span>
+                        <span class="info-value" id="followupDaysAfter"></span>
+                     </div>
+                  </div>
+                  <div class="btn-group" style="margin-top: 15px">
+                     <button
+                        class="btn btn-primary"
+                        onclick="showRescheduleModal('followup')"
+                     >
+                        Folgetermin ändern
+                     </button>
+                  </div>
+               </div>
+
+               <!-- Actions -->
+               <div class="section">
+                  <h2>Aktionen</h2>
+                  <div class="alert alert-warning">
+                     <strong>Achtung:</strong> Wenn Sie Ihre Teilnahme absagen,
+                     werden <strong>beide Termine</strong> storniert. Dies kann
+                     nicht rückgängig gemacht werden!
+                  </div>
+                  <div class="btn-group">
+                     <button class="btn btn-danger" onclick="showCancelModal()">
+                        Beide Termine absagen
+                     </button>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div class="footer">
+            <p>
+               <a href="/">Zur Startseite</a> |
+               <a href="/admin.html">Admin Login</a>
+            </p>
+         </div>
+      </div>
+
+      <!-- Reschedule Modal -->
+      <div
+         id="rescheduleModal"
+         class="modal"
+         onclick="handleModalBackdropClick(event, 'rescheduleModal')"
+      >
+         <div class="modal-content" onclick="event.stopPropagation()">
+            <button
+               class="modal-close"
+               onclick="closeRescheduleModal()"
+               aria-label="Close"
+            >
+               &times;
+            </button>
+            <div class="modal-header">
+               <h3 id="rescheduleModalTitle">Termin ändern</h3>
+            </div>
+            <div class="modal-body">
+               <div class="info-box" id="rescheduleInfoBox">
+                  <h4>Aktueller Termin</h4>
+                  <p id="currentAppointmentInfo"></p>
+               </div>
+               <div id="rescheduleConstraintInfo"></div>
+               <div id="rescheduleTimeslotsLoading" class="loading">
+                  <div class="loading-spinner"></div>
+                  <p>Verfügbare Termine werden geladen...</p>
+               </div>
+               <div
+                  id="rescheduleTimeslotsContainer"
+                  class="timeslots-container"
+                  style="display: none"
+               ></div>
+            </div>
+            <div class="modal-footer">
+               <button
+                  class="btn btn-secondary"
+                  onclick="closeRescheduleModal()"
+               >
+                  Abbrechen
+               </button>
+               <button
+                  class="btn btn-primary"
+                  id="confirmRescheduleBtn"
+                  onclick="confirmReschedule()"
+                  disabled
+               >
+                  Änderung bestätigen
+               </button>
+            </div>
+         </div>
+      </div>
+
+      <!-- Cancel Modal -->
+      <div
+         id="cancelModal"
+         class="modal"
+         onclick="handleModalBackdropClick(event, 'cancelModal')"
+      >
+         <div class="modal-content" onclick="event.stopPropagation()">
+            <button
+               class="modal-close"
+               onclick="closeCancelModal()"
+               aria-label="Close"
+            >
+               &times;
+            </button>
+            <div class="modal-header">
+               <h3>Termine absagen</h3>
+            </div>
+            <div class="modal-body">
+               <div class="alert alert-warning">
+                  <strong>Achtung:</strong> Sie sind dabei, Ihre Teilnahme
+                  vollständig abzusagen.
+               </div>
+               <p>Folgende Termine werden storniert:</p>
+               <div class="appointment-card" style="margin-top: 15px">
+                  <h4 style="color: #667eea; margin-bottom: 10px">
+                     Haupttermin
+                  </h4>
+                  <p id="cancelPrimaryInfo"></p>
+               </div>
+               <div
+                  class="appointment-card followup-card"
+                  style="margin-top: 15px"
+               >
+                  <h4 style="color: #28a745; margin-bottom: 10px">
+                     Folgetermin
+                  </h4>
+                  <p id="cancelFollowupInfo"></p>
+               </div>
+               <p style="margin-top: 20px; font-weight: 600">
+                  Sind Sie sicher, dass Sie beide Termine absagen möchten?
+               </p>
+            </div>
+            <div class="modal-footer">
+               <button class="btn btn-secondary" onclick="closeCancelModal()">
+                  Abbrechen
+               </button>
+               <button
+                  class="btn btn-danger"
+                  id="confirmCancelBtn"
+                  onclick="confirmCancel()"
+               >
+                  Termine absagen
+               </button>
+            </div>
+         </div>
+      </div>
+
+      <script>
+         // Application state
+         let currentToken = null;
+         let bookings = [];
+         let primaryBooking = null;
+         let followupBooking = null;
+         let availableTimeslots = [];
+         let selectedNewTimeslotId = null;
+         let selectedNewFollowupTimeslotId = null;
+         let currentRescheduleType = null; // 'primary' or 'followup'
+         let needsFollowupReschedule = false; // If primary reschedule requires followup change
+         let rescheduleStep = 1; // 1 = select primary, 2 = select followup
+
+         // Get token from URL or user input
+         const urlParams = new URLSearchParams(window.location.search);
+         const urlToken = urlParams.get("token");
+
+         if (urlToken) {
+            document.getElementById("tokenInput").value = urlToken;
+            loadBookings();
+         }
+
+         // Handle clicking outside modal to close
+         function handleModalBackdropClick(event, modalId) {
+            if (event.target.id === modalId) {
+               if (modalId === "rescheduleModal") {
+                  closeRescheduleModal();
+               } else if (modalId === "cancelModal") {
+                  closeCancelModal();
+               }
+            }
+         }
+
+         // Load bookings by token
+         async function loadBookings() {
+            const token = document.getElementById("tokenInput").value.trim();
+
+            if (!token) {
+               showAlert(
+                  "Bitte geben Sie einen Bestätigungscode ein.",
+                  "warning",
+               );
+               return;
+            }
+
+            currentToken = token;
+
+            // Show loading
+            document.getElementById("tokenInputSection").style.display = "none";
+            document.getElementById("loadingSection").style.display = "block";
+
+            try {
+               const response = await fetch(`/api/booking/${token}`);
+
+               if (!response.ok) {
+                  throw new Error("Ungültiger Bestätigungscode");
+               }
+
+               bookings = await response.json();
+
+               if (!bookings || bookings.length === 0) {
+                  throw new Error("Keine Termine gefunden");
+               }
+
+               // Separate primary and follow-up bookings
+               primaryBooking = bookings.find((b) => !b.is_followup);
+               followupBooking = bookings.find((b) => b.is_followup);
+
+               if (!primaryBooking || !followupBooking) {
+                  throw new Error("Unvollständige Buchungsdaten");
+               }
+
+               displayBookings();
+
+               // Hide loading, show bookings
+               document.getElementById("loadingSection").style.display = "none";
+               document.getElementById("bookingsSection").style.display =
+                  "block";
+            } catch (error) {
+               console.error("Error loading bookings:", error);
+               showAlert(error.message, "error");
+               document.getElementById("loadingSection").style.display = "none";
+               document.getElementById("tokenInputSection").style.display =
+                  "block";
+            }
+         }
+
+         // Display bookings
+         function displayBookings() {
+            // Display participant info
+            document.getElementById("participantName").textContent =
+               primaryBooking.participant_name;
+            document.getElementById("participantEmail").textContent =
+               primaryBooking.participant_email;
+
+            // Display primary appointment
+            displayAppointment(primaryBooking, "primary");
+
+            // Display follow-up appointment
+            displayAppointment(followupBooking, "followup");
+
+            // Calculate and display days between appointments
+            const primaryDate = new Date(primaryBooking.timeslot_start);
+            const followupDate = new Date(followupBooking.timeslot_start);
+            const daysAfter = Math.round(
+               (followupDate - primaryDate) / (1000 * 60 * 60 * 24),
+            );
+            document.getElementById("followupDaysAfter").textContent =
+               `${daysAfter} Tage nach Haupttermin`;
+         }
+
+         // Display a single appointment
+         function displayAppointment(booking, type) {
+            const startDate = new Date(booking.timeslot_start);
+            const endDate = new Date(booking.timeslot_end);
+
+            const dateStr = startDate.toLocaleDateString("de-DE", {
+               weekday: "long",
+               year: "numeric",
+               month: "long",
+               day: "numeric",
+            });
+
+            const timeStr = `${startDate.toLocaleTimeString("de-DE", {
+               hour: "2-digit",
+               minute: "2-digit",
+            })} - ${endDate.toLocaleTimeString("de-DE", {
+               hour: "2-digit",
+               minute: "2-digit",
+            })}`;
+
+            const prefix = type === "primary" ? "primary" : "followup";
+
+            document.getElementById(`${prefix}Date`).textContent = dateStr;
+            document.getElementById(`${prefix}Time`).textContent = timeStr;
+
+            if (booking.timeslot_location) {
+               document.getElementById(`${prefix}Location`).textContent =
+                  booking.timeslot_location;
+               document.getElementById(`${prefix}LocationRow`).style.display =
+                  "flex";
+            }
+         }
+
+         // Show reschedule modal
+         async function showRescheduleModal(type) {
+            currentRescheduleType = type;
+            selectedNewTimeslotId = null;
+            selectedNewFollowupTimeslotId = null;
+            needsFollowupReschedule = false;
+            rescheduleStep = 1;
+
+            const modal = document.getElementById("rescheduleModal");
+            const booking =
+               type === "primary" ? primaryBooking : followupBooking;
+
+            // Update modal title
+            const title =
+               type === "primary" ? "Haupttermin ändern" : "Folgetermin ändern";
+            document.getElementById("rescheduleModalTitle").textContent = title;
+
+            // Update info box style
+            const infoBox = document.getElementById("rescheduleInfoBox");
+            if (type === "followup") {
+               infoBox.classList.add("followup-info");
+            } else {
+               infoBox.classList.remove("followup-info");
+            }
+
+            // Display current appointment info
+            const startDate = new Date(booking.timeslot_start);
+            const endDate = new Date(booking.timeslot_end);
+            const dateStr = startDate.toLocaleDateString("de-DE", {
+               weekday: "long",
+               year: "numeric",
+               month: "long",
+               day: "numeric",
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            document.getElementById("currentAppointmentInfo").textContent =
+               dateStr;
+
+            // Show constraint info for follow-up
+            const constraintDiv = document.getElementById(
+               "rescheduleConstraintInfo",
+            );
+            if (type === "followup") {
+               constraintDiv.innerHTML = `
+                    <div class="info-box followup-info">
+                        <h4>✅ Wichtiger Hinweis</h4>
+                        <p>Der neue Folgetermin muss <strong>29-31 Tage</strong> nach dem Haupttermin liegen.</p>
+                        <p>Es werden nur passende Termine angezeigt.</p>
+                    </div>
+                `;
+            } else {
+               constraintDiv.innerHTML = "";
+            }
+
+            modal.classList.add("active");
+
+            // Load available timeslots
+            await loadAvailableTimeslotsForReschedule(type);
+         }
+
+         // Close reschedule modal
+         function closeRescheduleModal() {
+            document
+               .getElementById("rescheduleModal")
+               .classList.remove("active");
+            selectedNewTimeslotId = null;
+            selectedNewFollowupTimeslotId = null;
+            currentRescheduleType = null;
+            needsFollowupReschedule = false;
+            rescheduleStep = 1;
+         }
+
+         // Load available timeslots for reschedule
+         async function loadAvailableTimeslotsForReschedule(type) {
+            const loading = document.getElementById(
+               "rescheduleTimeslotsLoading",
+            );
+            const container = document.getElementById(
+               "rescheduleTimeslotsContainer",
+            );
+
+            loading.style.display = "block";
+            container.style.display = "none";
+
+            try {
+               let url = "/api/timeslots";
+
+               if (type === "primary") {
+                  url += "?type=primary";
+               } else {
+                  // For follow-up, we need to pass the primary date to get valid range
+                  const primaryDate = new Date(primaryBooking.timeslot_start);
+                  const primaryDateStr = primaryDate
+                     .toISOString()
+                     .split("T")[0];
+                  url += `?type=followup&primaryDate=${primaryDateStr}`;
+               }
+
+               const response = await fetch(url);
+
+               if (!response.ok) {
+                  throw new Error("Fehler beim Laden der Termine");
+               }
+
+               availableTimeslots = await response.json();
+               displayAvailableTimeslots(type);
+            } catch (error) {
+               console.error("Error loading timeslots:", error);
+               showAlert("Fehler beim Laden der verfügbaren Termine.", "error");
+               loading.innerHTML =
+                  '<p style="color: #dc3545;">Termine konnten nicht geladen werden.</p>';
+            }
+         }
+
+         // Display available timeslots
+         function displayAvailableTimeslots(type) {
+            const container = document.getElementById(
+               "rescheduleTimeslotsContainer",
+            );
+            const loading = document.getElementById(
+               "rescheduleTimeslotsLoading",
+            );
+
+            loading.style.display = "none";
+            container.style.display = "grid";
+
+            if (availableTimeslots.length === 0) {
+               container.innerHTML =
+                  '<p style="text-align: center; color: #6c757d; padding: 20px;">Derzeit sind keine alternativen Termine verfügbar.</p>';
+               return;
+            }
+
+            const isFollowup = type === "followup";
+            const primaryDate =
+               type === "followup"
+                  ? new Date(primaryBooking.timeslot_start)
+                  : null;
+
+            container.innerHTML = availableTimeslots
+               .map((slot) => {
+                  const startDate = new Date(slot.start_time);
+                  const endDate = new Date(slot.end_time);
+
+                  const dateStr = startDate.toLocaleDateString("de-DE", {
+                     weekday: "long",
+                     year: "numeric",
+                     month: "long",
+                     day: "numeric",
+                  });
+
+                  const timeStr = `${startDate.toLocaleTimeString("de-DE", {
+                     hour: "2-digit",
+                     minute: "2-digit",
+                  })} - ${endDate.toLocaleTimeString("de-DE", {
+                     hour: "2-digit",
+                     minute: "2-digit",
+                  })}`;
+
+                  const slotClass = isFollowup
+                     ? "timeslot followup-slot"
+                     : "timeslot";
+                  const badgeClass = isFollowup
+                     ? "badge-followup-slot"
+                     : "badge-primary-slot";
+                  const badgeText = isFollowup ? "Folgetermin" : "Haupttermin";
+
+                  return `
+                    <div class="${slotClass}" onclick="selectNewTimeslot(${slot.id})">
+                        <input type="radio" name="new-timeslot" value="${slot.id}" id="new-slot-${slot.id}">
+                        <div class="timeslot-header">
+                            <div class="timeslot-date">${dateStr}</div>
+                            <div class="timeslot-type-badge ${badgeClass}">${badgeText}</div>
+                        </div>
+                        <div class="timeslot-time">🕐 ${timeStr}</div>
+                        ${slot.location ? `<div class="timeslot-location">📍 ${slot.location}</div>` : ""}
+                    </div>
+                `;
+               })
+               .join("");
+         }
+
+         // Select new timeslot
+         function selectNewTimeslot(id) {
+            if (rescheduleStep === 1) {
+               selectedNewTimeslotId = id;
+            } else {
+               selectedNewFollowupTimeslotId = id;
+            }
+
+            // Update UI
+            document
+               .querySelectorAll("#rescheduleTimeslotsContainer .timeslot")
+               .forEach((slot) => {
+                  slot.classList.remove("selected");
+               });
+            event.currentTarget.classList.add("selected");
+
+            // Check the radio button
+            document.getElementById(`new-slot-${id}`).checked = true;
+
+            // Enable confirm button
+            document.getElementById("confirmRescheduleBtn").disabled = false;
+         }
+
+         // Confirm reschedule
+         async function confirmReschedule() {
+            if (!selectedNewTimeslotId || !currentRescheduleType) {
+               showAlert("Bitte wählen Sie einen neuen Termin aus.", "warning");
+               return;
+            }
+
+            // If rescheduling primary and in step 1, we need to check if followup needs rescheduling
+            if (
+               currentRescheduleType === "primary" &&
+               rescheduleStep === 1 &&
+               !needsFollowupReschedule
+            ) {
+               const btn = document.getElementById("confirmRescheduleBtn");
+               const originalText = btn.textContent;
+
+               btn.disabled = true;
+               btn.textContent = "Prüfe...";
+
+               try {
+                  const bookingId = primaryBooking.booking_id;
+
+                  const response = await fetch("/api/reschedule", {
+                     method: "POST",
+                     headers: {
+                        "Content-Type": "application/json",
+                     },
+                     body: JSON.stringify({
+                        token: currentToken,
+                        bookingId: bookingId,
+                        newTimeslotId: selectedNewTimeslotId,
+                     }),
+                  });
+
+                  const data = await response.json();
+
+                  if (!response.ok) {
+                     // Check if we need to also reschedule followup
+                     if (data.requiresFollowupReschedule) {
+                        needsFollowupReschedule = true;
+                        rescheduleStep = 2;
+                        btn.disabled = true;
+                        btn.textContent = originalText;
+
+                        // Show message and load followup slots
+                        document.getElementById(
+                           "rescheduleModalTitle",
+                        ).textContent = "Schritt 2: Neuen Folgetermin wählen";
+
+                        document.getElementById(
+                           "rescheduleConstraintInfo",
+                        ).innerHTML = `
+                           <div class="alert alert-info" style="margin-bottom: 15px;">
+                              <strong>⚠️ Folgetermin muss angepasst werden</strong>
+                              <p>Der gewählte neue Haupttermin ist ${data.daysDiff} Tage vom aktuellen Folgetermin entfernt.</p>
+                              <p>Bitte wählen Sie jetzt auch einen neuen Folgetermin (29-31 Tage nach dem neuen Haupttermin).</p>
+                           </div>
+                        `;
+
+                        // Load followup slots based on new primary date
+                        const newPrimarySlot = availableTimeslots.find(
+                           (s) => s.id === selectedNewTimeslotId,
+                        );
+                        if (newPrimarySlot) {
+                           const newPrimaryDate = new Date(
+                              newPrimarySlot.start_time,
+                           );
+                           const primaryDateStr = newPrimaryDate
+                              .toISOString()
+                              .split("T")[0];
+
+                           const loadingDiv = document.getElementById(
+                              "rescheduleTimeslotsLoading",
+                           );
+                           const container = document.getElementById(
+                              "rescheduleTimeslotsContainer",
+                           );
+
+                           loadingDiv.style.display = "block";
+                           container.style.display = "none";
+
+                           const followupResponse = await fetch(
+                              `/api/timeslots?type=followup&primaryDate=${primaryDateStr}`,
+                           );
+
+                           if (followupResponse.ok) {
+                              availableTimeslots =
+                                 await followupResponse.json();
+                              displayAvailableTimeslots("followup");
+                           }
+                        }
+                        return;
+                     }
+
+                     throw new Error(
+                        data.error || "Fehler beim Ändern des Termins",
+                     );
+                  }
+
+                  showAlert("Termin erfolgreich geändert!", "success");
+                  closeRescheduleModal();
+                  await loadBookings();
+               } catch (error) {
+                  console.error("Error rescheduling:", error);
+                  showAlert(error.message, "error");
+                  btn.disabled = false;
+                  btn.textContent = originalText;
+               }
+               return;
+            }
+
+            // Final confirmation - either followup only, or primary + followup together
+            const btn = document.getElementById("confirmRescheduleBtn");
+            const originalText = btn.textContent;
+
+            btn.disabled = true;
+            btn.textContent = "Wird geändert...";
+
+            try {
+               const bookingId =
+                  currentRescheduleType === "primary"
+                     ? primaryBooking.booking_id
+                     : followupBooking.booking_id;
+
+               const requestBody = {
+                  token: currentToken,
+                  bookingId: bookingId,
+                  newTimeslotId: selectedNewTimeslotId,
+               };
+
+               // If we're rescheduling both, include the followup
+               if (needsFollowupReschedule && selectedNewFollowupTimeslotId) {
+                  requestBody.newFollowupTimeslotId =
+                     selectedNewFollowupTimeslotId;
+               }
+
+               const response = await fetch("/api/reschedule", {
+                  method: "POST",
+                  headers: {
+                     "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(requestBody),
+               });
+
+               const data = await response.json();
+
+               if (!response.ok) {
+                  throw new Error(
+                     data.error || "Fehler beim Ändern des Termins",
+                  );
+               }
+
+               if (data.rescheduledBoth) {
+                  showAlert("Beide Termine erfolgreich geändert!", "success");
+               } else {
+                  showAlert("Termin erfolgreich geändert!", "success");
+               }
+
+               closeRescheduleModal();
+               await loadBookings();
+            } catch (error) {
+               console.error("Error rescheduling:", error);
+               showAlert(error.message, "error");
+               btn.disabled = false;
+               btn.textContent = originalText;
+            }
+         }
+
+         // Show cancel modal
+         function showCancelModal() {
+            const modal = document.getElementById("cancelModal");
+
+            // Format primary appointment info
+            const primaryStart = new Date(primaryBooking.timeslot_start);
+            const primaryDateStr = primaryStart.toLocaleDateString("de-DE", {
+               weekday: "long",
+               year: "numeric",
+               month: "long",
+               day: "numeric",
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            document.getElementById("cancelPrimaryInfo").textContent =
+               primaryDateStr;
+
+            // Format follow-up appointment info
+            const followupStart = new Date(followupBooking.timeslot_start);
+            const followupDateStr = followupStart.toLocaleDateString("de-DE", {
+               weekday: "long",
+               year: "numeric",
+               month: "long",
+               day: "numeric",
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            document.getElementById("cancelFollowupInfo").textContent =
+               followupDateStr;
+
+            modal.classList.add("active");
+         }
+
+         // Close cancel modal
+         function closeCancelModal() {
+            document.getElementById("cancelModal").classList.remove("active");
+         }
+
+         // Confirm cancel (both appointments)
+         async function confirmCancel() {
+            const btn = document.getElementById("confirmCancelBtn");
+            const originalText = btn.textContent;
+
+            btn.disabled = true;
+            btn.textContent = "Wird storniert...";
+
+            try {
+               const response = await fetch("/api/cancel", {
+                  method: "POST",
+                  headers: {
+                     "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                     token: currentToken,
+                  }),
+               });
+
+               const data = await response.json();
+
+               if (!response.ok) {
+                  throw new Error(data.error || "Fehler beim Stornieren");
+               }
+
+               // Show success message
+               closeCancelModal();
+               document.getElementById("bookingsSection").style.display =
+                  "none";
+
+               showAlert(
+                  "Ihre Termine wurden erfolgreich storniert.",
+                  "success",
+               );
+
+               // Show success message in main content
+               document.getElementById("mainContent").innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <h2 style="color: #28a745; margin-bottom: 20px;">✅ Termine erfolgreich storniert</h2>
+                        <p style="font-size: 1.1em; margin-bottom: 30px;">
+                            Ihre Teilnahme wurde abgesagt. Sie erhalten eine Bestätigung per E-Mail.
+                        </p>
+                        <a href="/" class="btn btn-primary" style="color: white;">Zur Startseite</a>
+                    </div>
+                `;
+            } catch (error) {
+               console.error("Error cancelling:", error);
+               showAlert(error.message, "error");
+               btn.disabled = false;
+               btn.textContent = originalText;
+            }
+         }
+
+         // Show alert message
+         function showAlert(message, type = "info") {
+            const container = document.getElementById("alertContainer");
+            const alertClass =
+               type === "error"
+                  ? "alert-error"
+                  : type === "success"
+                    ? "alert-success"
+                    : type === "warning"
+                      ? "alert-warning"
+                      : "alert-info";
+
+            container.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${message}
+                </div>
+            `;
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: "smooth" });
+
+            // Auto-hide success/info messages after 5 seconds
+            if (type === "success" || type === "info") {
+               setTimeout(() => {
+                  container.innerHTML = "";
+               }, 5000);
+            }
+         }
+      </script>
+   </body>
+</html>
