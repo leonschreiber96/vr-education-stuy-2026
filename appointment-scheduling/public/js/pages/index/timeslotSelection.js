@@ -1,0 +1,181 @@
+// Timeslot selection and display logic for registration page
+
+import { formatDate, formatTimeRange, daysBetween, parseISODate } from '../../utils/dateFormatter.js';
+import { state, selectPrimaryTimeslot as selectPrimaryInState, selectFollowupTimeslot as selectFollowupInState } from './state.js';
+import { disable, enable, querySelectorAll, getElementById } from '../../utils/dom.js';
+
+/**
+ * Display primary timeslots in the UI
+ */
+export function displayPrimaryTimeslots() {
+   const container = getElementById('primaryTimeslotsContainer');
+   const loading = getElementById('primaryTimeslotsLoading');
+
+   if (!container || !loading) return;
+
+   loading.classList.add('hidden');
+   container.classList.remove('hidden');
+
+   if (state.primaryTimeslots.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">Derzeit sind keine Haupttermine verfügbar. Bitte schauen Sie später noch einmal vorbei.</p>';
+      return;
+   }
+
+   // Show scroll hint if there are many timeslots
+   const scrollHint = getElementById('primaryScrollHint');
+   if (scrollHint && state.primaryTimeslots.length > 6) {
+      scrollHint.classList.remove('hidden');
+   }
+
+   container.innerHTML = state.primaryTimeslots
+      .map((slot) => {
+         const startDate = parseISODate(slot.start_time);
+         const endDate = parseISODate(slot.end_time);
+
+         const dateStr = formatDate(startDate);
+         const timeStr = formatTimeRange(startDate, endDate);
+
+         return `
+            <div class="timeslot" onclick="window.handlePrimaryTimeslotClick(${slot.id})">
+                <input type="radio" name="primary-timeslot" value="${slot.id}" id="primary-slot-${slot.id}">
+                <div class="timeslot-header">
+                    <div class="timeslot-date">${dateStr}</div>
+                    <div class="timeslot-type-badge badge-primary-type">Haupttermin</div>
+                </div>
+                <div class="timeslot-time">🕐 ${timeStr}</div>
+                ${slot.location ? `<div class="timeslot-location">📍 ${slot.location}</div>` : ""}
+            </div>
+         `;
+      })
+      .join('');
+}
+
+/**
+ * Display followup timeslots in the UI
+ */
+export function displayFollowupTimeslots() {
+   const container = getElementById('followupTimeslotsContainer');
+   const loading = getElementById('followupTimeslotsLoading');
+
+   if (!container || !loading) return;
+
+   loading.classList.add('hidden');
+   container.classList.remove('hidden');
+
+   if (state.followupTimeslots.length === 0) {
+      container.innerHTML = '<div class="alert alert-warning">Leider sind keine passenden Folgetermine (29-31 Tage nach dem Haupttermin) verfügbar. Bitte wählen Sie einen anderen Haupttermin.</div>';
+      return;
+   }
+
+   const primaryDate = parseISODate(state.selectedPrimaryTimeslot.start_time);
+
+   // Show scroll hint if there are many timeslots
+   const scrollHint = getElementById('followupScrollHint');
+   if (scrollHint && state.followupTimeslots.length > 6) {
+      scrollHint.classList.remove('hidden');
+   }
+
+   container.innerHTML = state.followupTimeslots
+      .map((slot) => {
+         const startDate = parseISODate(slot.start_time);
+         const endDate = parseISODate(slot.end_time);
+
+         const dateStr = formatDate(startDate);
+         const timeStr = formatTimeRange(startDate, endDate);
+
+         // Calculate days after primary
+         const daysAfter = daysBetween(primaryDate, startDate);
+
+         return `
+            <div class="timeslot followup-slot" onclick="window.handleFollowupTimeslotClick(${slot.id})">
+                <input type="radio" name="followup-timeslot" value="${slot.id}" id="followup-slot-${slot.id}">
+                <div class="timeslot-header">
+                    <div class="timeslot-date">${dateStr}</div>
+                    <div class="timeslot-type-badge badge-followup-type">Folgetermin</div>
+                </div>
+                <div class="timeslot-time">🕐 ${timeStr}</div>
+                ${slot.location ? `<div class="timeslot-location">📍 ${slot.location}</div>` : ""}
+                <div class="timeslot-days-after">✓ ${daysAfter} Tage nach dem Haupttermin</div>
+            </div>
+         `;
+      })
+      .join('');
+}
+
+/**
+ * Handle primary timeslot selection
+ * @param {number} timeslotId - The selected timeslot ID
+ */
+export function handlePrimaryTimeslotSelection(timeslotId) {
+   selectPrimaryInState(timeslotId);
+
+   // Update UI - remove selection from all timeslots
+   querySelectorAll('#primaryTimeslotsContainer .timeslot').forEach((slot) => {
+      slot.classList.remove('selected');
+   });
+
+   // Add selection to clicked timeslot
+   const clickedSlot = event?.currentTarget;
+   if (clickedSlot) {
+      clickedSlot.classList.add('selected');
+   }
+
+   // Check the radio button
+   const radioButton = getElementById(`primary-slot-${timeslotId}`);
+   if (radioButton) {
+      radioButton.checked = true;
+   }
+
+   // Enable continue button
+   enable('continueToStep3Btn');
+}
+
+/**
+ * Handle followup timeslot selection
+ * @param {number} timeslotId - The selected timeslot ID
+ */
+export function handleFollowupTimeslotSelection(timeslotId) {
+   selectFollowupInState(timeslotId);
+
+   // Update UI - remove selection from all timeslots
+   querySelectorAll('#followupTimeslotsContainer .timeslot').forEach((slot) => {
+      slot.classList.remove('selected');
+   });
+
+   // Add selection to clicked timeslot
+   const clickedSlot = event?.currentTarget;
+   if (clickedSlot) {
+      clickedSlot.classList.add('selected');
+   }
+
+   // Check the radio button
+   const radioButton = getElementById(`followup-slot-${timeslotId}`);
+   if (radioButton) {
+      radioButton.checked = true;
+   }
+
+   // Enable submit button
+   enable('submitRegistrationBtn');
+}
+
+/**
+ * Display selected primary appointment info
+ */
+export function displaySelectedPrimaryInfo() {
+   if (!state.selectedPrimaryTimeslot) return;
+
+   const startDate = parseISODate(state.selectedPrimaryTimeslot.start_time);
+   const endDate = parseISODate(state.selectedPrimaryTimeslot.end_time);
+
+   const dateStr = formatDate(startDate);
+   const timeStr = formatTimeRange(startDate, endDate);
+
+   const infoElement = getElementById('selectedPrimaryInfo');
+   if (infoElement) {
+      infoElement.innerHTML = `
+         <strong>${dateStr}</strong><br>
+         ${timeStr}
+         ${state.selectedPrimaryTimeslot.location ? `<br>📍 ${state.selectedPrimaryTimeslot.location}` : ""}
+      `;
+   }
+}

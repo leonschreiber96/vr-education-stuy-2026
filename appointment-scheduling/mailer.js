@@ -688,6 +688,18 @@ async function sendCustomEmail(email, name, subject, message) {
    return sendEmail(email, subject, html);
 }
 
+/**
+ * Generic function to send an email (used by notification service)
+ * @param {string} to - Recipient email address
+ * @param {string} subject - Email subject
+ * @param {string} text - Plain text content
+ * @param {string} html - HTML content
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendMail(to, subject, text, html) {
+   return await sendEmail(to, subject, html);
+}
+
 module.exports = {
    sendRegistrationEmail,
    sendDualRegistrationEmail,
@@ -697,4 +709,5 @@ module.exports = {
    sendTimeslotUpdateEmail,
    sendTimeslotDeletionEmail,
    sendCustomEmail,
+   sendMail,
 };
