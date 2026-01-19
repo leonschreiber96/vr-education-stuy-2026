@@ -101,11 +101,11 @@
                      >
                         <span
                            style="
+                              font-size: 13px;
                               font-weight: 600;
-                              font-size: 14px;
                               color: #555;
                            "
-                           >Abschlussrate</span
+                           >Beide Termine absolviert</span
                         >
                         <span
                            id="progressPercentage"
@@ -145,79 +145,130 @@
                      </div>
                   </div>
 
-                  <!-- Compact Stats Grid -->
+                  <!-- Timeslot Overview -->
+                  <div
+                     style="
+                        display: flex;
+                        gap: 12px;
+                        margin-bottom: 16px;
+                        padding: 12px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                     "
+                  >
+                     <div style="flex: 1">
+                        <div
+                           style="
+                              display: flex;
+                              align-items: center;
+                              gap: 8px;
+                              margin-bottom: 4px;
+                           "
+                        >
+                           <span style="font-size: 18px">👥</span>
+                           <span
+                              style="
+                                 font-size: 13px;
+                                 font-weight: 600;
+                                 color: #555;
+                              "
+                              >Teilnehmer</span
+                           >
+                        </div>
+                        <div
+                           style="
+                              font-size: 20px;
+                              font-weight: 600;
+                              color: #333;
+                           "
+                        >
+                           <span id="participantCount">0</span>/<span
+                              id="participantGoal"
+                              >80</span
+                           >
+                        </div>
+                     </div>
+                     <div style="flex: 1">
+                        <div
+                           style="
+                              display: flex;
+                              align-items: center;
+                              gap: 8px;
+                              margin-bottom: 4px;
+                           "
+                        >
+                           <span style="font-size: 18px">📅</span>
+                           <span
+                              style="
+                                 font-size: 13px;
+                                 font-weight: 600;
+                                 color: #555;
+                              "
+                              >Zeitslots</span
+                           >
+                        </div>
+                        <div
+                           style="
+                              font-size: 20px;
+                              font-weight: 600;
+                              color: #333;
+                           "
+                        >
+                           <span id="slotsInfo">0 / 0</span>
+                        </div>
+                     </div>
+                     <div style="flex: 1">
+                        <div
+                           style="
+                              display: flex;
+                              align-items: center;
+                              gap: 8px;
+                              margin-bottom: 4px;
+                           "
+                        >
+                           <span style="font-size: 18px">✓</span>
+                           <span
+                              style="
+                                 font-size: 13px;
+                                 font-weight: 600;
+                                 color: #16a34a;
+                              "
+                              >Verfügbar</span
+                           >
+                        </div>
+                        <div
+                           style="
+                              font-size: 20px;
+                              font-weight: 600;
+                              color: #16a34a;
+                           "
+                           id="availableInfo"
+                        >
+                           0
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Participant Progress Stats -->
+                  <div style="margin-bottom: 8px; padding-left: 2px">
+                     <span
+                        style="font-size: 13px; font-weight: 600; color: #666"
+                        >Teilnehmerstatus</span
+                     >
+                  </div>
                   <div
                      style="
                         display: grid;
                         grid-template-columns: repeat(
                            auto-fit,
-                           minmax(140px, 1fr)
+                           minmax(160px, 1fr)
                         );
-                        gap: 12px;
+                        gap: 10px;
                      "
                   >
-                     <!-- Participants -->
+                     <!-- Both Finished -->
                      <div
-                        style="
-                           display: flex;
-                           align-items: center;
-                           gap: 10px;
-                           padding: 10px;
-                           background: #f8f9fa;
-                           border-radius: 8px;
-                        "
-                     >
-                        <div style="font-size: 20px">👥</div>
-                        <div>
-                           <div
-                              style="
-                                 font-size: 18px;
-                                 font-weight: 600;
-                                 color: #333;
-                              "
-                           >
-                              <span id="participantCount">0</span>/<span
-                                 id="participantGoal"
-                                 >80</span
-                              >
-                           </div>
-                           <div style="font-size: 11px; color: #666">
-                              Teilnehmer
-                           </div>
-                        </div>
-                     </div>
-
-                     <!-- Booked Slots -->
-                     <div
-                        style="
-                           display: flex;
-                           align-items: center;
-                           gap: 10px;
-                           padding: 10px;
-                           background: #f8f9fa;
-                           border-radius: 8px;
-                        "
-                     >
-                        <div style="font-size: 20px">📅</div>
-                        <div>
-                           <div
-                              style="
-                                 font-size: 18px;
-                                 font-weight: 600;
-                                 color: #333;
-                              "
-                              id="slotsInfo"
-                           >
-                              0 / 0
-                           </div>
-                           <div style="font-size: 11px; color: #666">
-                              Gebucht
-                           </div>
-                        </div>
-                     </div>
-
-                     <!-- Available -->
-                     <div
+                        id="bothFinishedCard"
                         style="
                            display: flex;
                            align-items: center;
@@ -225,6 +276,8 @@
                            padding: 10px;
                            background: #f0fdf4;
                            border-radius: 8px;
+                           position: relative;
+                           cursor: pointer;
                         "
                      >
                         <div style="font-size: 20px">✓</div>
@@ -235,76 +288,19 @@
                                  font-weight: 600;
                                  color: #16a34a;
                               "
-                              id="availableInfo"
+                              id="bothFinished"
                            >
                               0
                            </div>
                            <div style="font-size: 11px; color: #166534">
-                              Verfügbar
+                              Beide absolviert
                            </div>
                         </div>
                      </div>
 
-                     <!-- Completed Success -->
+                     <!-- Waiting for Second -->
                      <div
-                        style="
-                           display: flex;
-                           align-items: center;
-                           gap: 10px;
-                           padding: 10px;
-                           background: #f0fdf4;
-                           border-radius: 8px;
-                        "
-                     >
-                        <div style="font-size: 20px">✓</div>
-                        <div>
-                           <div
-                              style="
-                                 font-size: 18px;
-                                 font-weight: 600;
-                                 color: #16a34a;
-                              "
-                              id="completedSuccessful"
-                           >
-                              0
-                           </div>
-                           <div style="font-size: 11px; color: #166534">
-                              Erfolgreich
-                           </div>
-                        </div>
-                     </div>
-
-                     <!-- Issues -->
-                     <div
-                        style="
-                           display: flex;
-                           align-items: center;
-                           gap: 10px;
-                           padding: 10px;
-                           background: #fef3c7;
-                           border-radius: 8px;
-                        "
-                     >
-                        <div style="font-size: 20px">⚠</div>
-                        <div>
-                           <div
-                              style="
-                                 font-size: 18px;
-                                 font-weight: 600;
-                                 color: #d97706;
-                              "
-                              id="completedIssues"
-                           >
-                              0
-                           </div>
-                           <div style="font-size: 11px; color: #92400e">
-                              Mit Problemen
-                           </div>
-                        </div>
-                     </div>
-
-                     <!-- Awaiting -->
-                     <div
+                        id="waitingForSecondCard"
                         style="
                            display: flex;
                            align-items: center;
@@ -312,6 +308,8 @@
                            padding: 10px;
                            background: #dbeafe;
                            border-radius: 8px;
+                           position: relative;
+                           cursor: pointer;
                         "
                      >
                         <div style="font-size: 20px">⏳</div>
@@ -322,41 +320,76 @@
                                  font-weight: 600;
                                  color: #2563eb;
                               "
-                              id="awaitingFollowup"
+                              id="waitingForSecond"
                            >
                               0
                            </div>
                            <div style="font-size: 11px; color: #1e40af">
-                              Folge ausstehend
+                              Warten auf 2. Termin
                            </div>
                         </div>
                      </div>
 
-                     <!-- Not Scheduled -->
+                     <!-- No-show on Second -->
                      <div
+                        id="noShowSecondCard"
                         style="
                            display: flex;
                            align-items: center;
                            gap: 10px;
                            padding: 10px;
-                           background: #f3f4f6;
+                           background: #fee2e2;
                            border-radius: 8px;
+                           position: relative;
+                           cursor: pointer;
                         "
                      >
-                        <div style="font-size: 20px">○</div>
+                        <div style="font-size: 20px">✗</div>
                         <div>
                            <div
                               style="
                                  font-size: 18px;
                                  font-weight: 600;
-                                 color: #6b7280;
+                                 color: #dc2626;
                               "
-                              id="notScheduled"
+                              id="noShowSecond"
                            >
                               0
                            </div>
-                           <div style="font-size: 11px; color: #4b5563">
-                              Nicht geplant
+                           <div style="font-size: 11px; color: #991b1b">
+                              No-Show beim 2.
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Data Issues -->
+                     <div
+                        id="dataIssuesCard"
+                        style="
+                           display: flex;
+                           align-items: center;
+                           gap: 10px;
+                           padding: 10px;
+                           background: #fef3c7;
+                           border-radius: 8px;
+                           position: relative;
+                           cursor: pointer;
+                        "
+                     >
+                        <div style="font-size: 20px">⚠</div>
+                        <div>
+                           <div
+                              style="
+                                 font-size: 18px;
+                                 font-weight: 600;
+                                 color: #d97706;
+                              "
+                              id="dataIssues"
+                           >
+                              0
+                           </div>
+                           <div style="font-size: 11px; color: #92400e">
+                              Datenprobleme
                            </div>
                         </div>
                      </div>
@@ -1156,6 +1189,7 @@
          let allData = {
             participants: [],
             timeslots: [],
+            timeslotsForStats: [], // All timeslots for accurate statistics
             bookings: [],
             logs: [],
             unreviewedAppointments: [],
@@ -1584,6 +1618,7 @@
             // Load data in sequence to avoid race conditions with display
             await loadParticipants();
             await loadBookings();
+            await loadAllTimeslotsForStats(); // Load all timeslots for statistics
             await loadTimeslots(); // This calls displayTimeslots which needs bookings
             updateStatistics();
             displayUpcomingAppointments();
@@ -1683,6 +1718,31 @@
                     </table>
                 </div>
             `;
+         }
+
+         // Load all timeslots for statistics (no pagination)
+         async function loadAllTimeslotsForStats() {
+            try {
+               const response = await fetch(BASE_PATH + "/api/admin/timeslots");
+               if (!response.ok)
+                  throw new Error("Failed to load timeslots for stats");
+
+               const data = await response.json();
+               // Handle both old format (array) and new format (paginated object)
+               if (Array.isArray(data)) {
+                  allData.timeslotsForStats = data;
+               } else {
+                  allData.timeslotsForStats = data.timeslots || data;
+               }
+
+               console.log(
+                  "Loaded timeslots for stats:",
+                  allData.timeslotsForStats.length,
+               );
+            } catch (error) {
+               console.error("Error loading timeslots for statistics:", error);
+               allData.timeslotsForStats = []; // Ensure it's an empty array on error
+            }
          }
 
          // Load timeslots
@@ -2236,20 +2296,41 @@
             document.getElementById("participantGoal").textContent =
                participantGoal;
 
-            // Update participant count
+            // Update participant count (count unique participants)
+            const uniqueParticipants = new Set(
+               allData.participants.map((p) => p.id),
+            );
             document.getElementById("participantCount").textContent =
-               allData.participants.length;
+               uniqueParticipants.size;
 
-            // Calculate timeslot statistics
-            const totalSlots = allData.timeslots.length;
-            const bookedSlots = allData.timeslots.filter(
-               (t) => t.booking_id,
-            ).length;
+            // Calculate timeslot statistics using all timeslots (not paginated)
+            // Safeguard: ensure timeslotsForStats exists and is an array
+            const timeslotsForStats = Array.isArray(allData.timeslotsForStats)
+               ? allData.timeslotsForStats
+               : [];
+
+            // Count unique timeslots (may have duplicates if multiple bookings per slot)
+            const uniqueTimeslotIds = new Set(
+               timeslotsForStats.map((t) => t.id),
+            );
+            const totalSlots = uniqueTimeslotIds.size;
+
+            // Count unique timeslots that have bookings
+            const timeslotsWithBookings = new Set(
+               timeslotsForStats.filter((t) => t.booking_id).map((t) => t.id),
+            );
+            const bookedSlots = timeslotsWithBookings.size;
             const availableSlots = totalSlots - bookedSlots;
+
+            console.log("Timeslot stats:", {
+               totalSlots,
+               bookedSlots,
+               availableSlots,
+               timeslotsCount: timeslotsForStats.length,
+            });
 
             document.getElementById("slotsInfo").textContent =
                `${bookedSlots} / ${totalSlots}`;
-            document.getElementById("bookedInfo").textContent = bookedSlots;
             document.getElementById("availableInfo").textContent =
                availableSlots;
 
@@ -2285,11 +2366,17 @@
                }
             });
 
-            // Count participants by status
-            let completedSuccessful = 0;
-            let completedIssues = 0;
-            let awaitingFollowup = 0;
-            let notScheduled = 0;
+            // Count participants by new status categories
+            let bothFinished = 0; // Both appointments finished (excluding no-shows)
+            let waitingForSecond = 0; // First finished, waiting for second
+            let noShowSecond = 0; // First finished, no-show on second
+            let dataIssues = 0; // Any appointment had data issues
+
+            // Track participants in each category for tooltips
+            const bothFinishedList = [];
+            const waitingForSecondList = [];
+            const noShowSecondList = [];
+            const dataIssuesList = [];
 
             allData.participants.forEach((participant) => {
                const bookings = participantBookings[participant.id];
@@ -2298,88 +2385,312 @@
                   const hasFollowup = bookings.followup !== null;
 
                   if (hasPrimary && hasFollowup) {
-                     // Check if both are in the past and have result status
-                     const bothPast =
-                        bookings.primary.isPast && bookings.followup.isPast;
-                     const bothReviewed =
-                        bookings.primary.resultStatus &&
-                        bookings.followup.resultStatus;
+                     const primaryPast = bookings.primary.isPast;
+                     const followupPast = bookings.followup.isPast;
+                     const primaryResult = bookings.primary.resultStatus;
+                     const followupResult = bookings.followup.resultStatus;
 
-                     if (bothPast && bothReviewed) {
-                        const primaryResult = bookings.primary.resultStatus;
-                        const followupResult = bookings.followup.resultStatus;
-
-                        // Don't count if either is unusable or no-show
+                     // Both appointments finished
+                     if (
+                        primaryPast &&
+                        followupPast &&
+                        primaryResult &&
+                        followupResult
+                     ) {
+                        // Check for no-shows
                         if (
-                           primaryResult === "unusable_data" ||
                            primaryResult === "no_show" ||
-                           followupResult === "unusable_data" ||
                            followupResult === "no_show"
                         ) {
-                           // Don't count toward progress
-                        } else if (
-                           primaryResult === "successful" &&
-                           followupResult === "successful"
-                        ) {
-                           completedSuccessful++;
-                        } else if (
+                           // Exclude no-shows from "both finished"
+                        } else {
+                           // Both finished (not no-shows)
+                           bothFinished++;
+                           bothFinishedList.push({
+                              name: participant.name,
+                              email: participant.email,
+                           });
+                        }
+
+                        // Check for data issues in either appointment
+                        if (
+                           primaryResult === "unusable_data" ||
+                           followupResult === "unusable_data" ||
                            primaryResult === "issues_arised" ||
                            followupResult === "issues_arised"
                         ) {
-                           completedIssues++;
+                           dataIssues++;
+                           dataIssuesList.push({
+                              name: participant.name,
+                              primaryStatus: primaryResult,
+                              followupStatus: followupResult,
+                              primaryPast: primaryPast,
+                              followupPast: followupPast,
+                           });
+                        }
+                     } else if (primaryPast && primaryResult) {
+                        // Primary finished, followup either not past or not reviewed yet
+                        if (!followupPast) {
+                           // Followup in future - waiting for second
+                           waitingForSecond++;
+                           waitingForSecondList.push({
+                              name: participant.name,
+                              nextAppointment: bookings.followup.startTime,
+                           });
+                        }
+                        // If followup is past but not reviewed, we don't count it yet
+
+                        // Check if followup was a no-show
+                        if (followupResult === "no_show") {
+                           noShowSecond++;
+                           noShowSecondList.push({
+                              name: participant.name,
+                           });
+                        }
+
+                        // Check for data issues in primary
+                        if (
+                           primaryResult === "unusable_data" ||
+                           primaryResult === "issues_arised"
+                        ) {
+                           dataIssues++;
+                           dataIssuesList.push({
+                              name: participant.name,
+                              primaryStatus: primaryResult,
+                              followupStatus: followupResult,
+                              primaryPast: primaryPast,
+                              followupPast: followupPast,
+                           });
                         }
                      }
                   } else if (hasPrimary && !hasFollowup) {
-                     awaitingFollowup++;
+                     // Only primary appointment, no followup scheduled
+                     const primaryPast = bookings.primary.isPast;
+                     const primaryResult = bookings.primary.resultStatus;
+
+                     if (
+                        primaryPast &&
+                        primaryResult &&
+                        primaryResult !== "no_show"
+                     ) {
+                        // Primary finished, waiting for second to be scheduled
+                        waitingForSecond++;
+                        waitingForSecondList.push({
+                           name: participant.name,
+                           nextAppointment: null,
+                        });
+
+                        // Check for data issues
+                        if (
+                           primaryResult === "unusable_data" ||
+                           primaryResult === "issues_arised"
+                        ) {
+                           dataIssues++;
+                           dataIssuesList.push({
+                              name: participant.name,
+                              primaryStatus: primaryResult,
+                              followupStatus: null,
+                              primaryPast: primaryPast,
+                              followupPast: false,
+                           });
+                        }
+                     }
                   }
-               } else {
-                  notScheduled++;
                }
             });
 
-            const totalCompleted = completedSuccessful + completedIssues;
+            // Calculate total completed for progress bar (both finished)
+            const totalCompleted = bothFinished;
 
             // Update UI
-            document.getElementById("completedSuccessful").textContent =
-               completedSuccessful;
-            document.getElementById("completedIssues").textContent =
-               completedIssues;
-            document.getElementById("awaitingFollowup").textContent =
-               awaitingFollowup;
-            document.getElementById("notScheduled").textContent = notScheduled;
+            document.getElementById("bothFinished").textContent = bothFinished;
+            document.getElementById("waitingForSecond").textContent =
+               waitingForSecond;
+            document.getElementById("noShowSecond").textContent = noShowSecond;
+            document.getElementById("dataIssues").textContent = dataIssues;
 
-            // Update progress bar - two-tone green and yellow
-            const successPercentage = Math.min(
-               100,
-               (completedSuccessful / participantGoal) * 100,
+            // Setup tooltips for status cards
+            setupStatusTooltips(
+               bothFinishedList,
+               waitingForSecondList,
+               noShowSecondList,
+               dataIssuesList,
             );
-            const issuesPercentage = Math.min(
-               100 - successPercentage,
-               (completedIssues / participantGoal) * 100,
-            );
+
+            // Update progress bar - just show completed participants
             const totalPercentage = Math.min(
                100,
                Math.round((totalCompleted / participantGoal) * 100),
             );
 
-            const successBar = document.getElementById(
+            const progressBar = document.getElementById(
                "progressBarFillSuccess",
             );
-            const issuesBar = document.getElementById("progressBarFillIssues");
             const progressText = document.getElementById("progressPercentage");
 
-            successBar.style.width = successPercentage + "%";
-            issuesBar.style.width = issuesPercentage + "%";
+            progressBar.style.width = totalPercentage + "%";
+            progressBar.style.borderRadius = "12px";
             progressText.textContent = totalPercentage + "%";
 
-            // Adjust border radius if both are present
-            if (successPercentage > 0 && issuesPercentage > 0) {
-               successBar.style.borderRadius = "12px 0 0 12px";
-               issuesBar.style.borderRadius = "0 12px 12px 0";
-            } else if (successPercentage > 0) {
-               successBar.style.borderRadius = "12px";
-            } else if (issuesPercentage > 0) {
-               issuesBar.style.borderRadius = "12px";
+            // Hide the issues bar since we're only showing completed count
+            const issuesBar = document.getElementById("progressBarFillIssues");
+            issuesBar.style.width = "0%";
+         }
+
+         // Function to setup tooltips for status cards
+         function setupStatusTooltips(
+            bothFinishedList,
+            waitingForSecondList,
+            noShowSecondList,
+            dataIssuesList,
+         ) {
+            // Helper to create uniform tooltip
+            function createTooltip(cardId, content) {
+               const card = document.getElementById(cardId);
+               if (!card) {
+                  console.log("Card not found:", cardId);
+                  return;
+               }
+
+               // Remove existing tooltip
+               const existingTooltip = card.querySelector(".status-tooltip");
+               if (existingTooltip) existingTooltip.remove();
+
+               if (!content || content.trim() === "") {
+                  console.log("No content for:", cardId);
+                  return;
+               }
+
+               // Clone the card to remove all event listeners
+               const newCard = card.cloneNode(true);
+               card.parentNode.replaceChild(newCard, card);
+               const freshCard = document.getElementById(cardId);
+
+               const tooltip = document.createElement("div");
+               tooltip.className = "status-tooltip";
+               tooltip.style.cssText = `
+                    position: absolute;
+                    bottom: 110%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: white;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    padding: 8px 10px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    z-index: 1000;
+                    min-width: 200px;
+                    max-width: 350px;
+                    display: none;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    font-size: 11px;
+                    line-height: 1.4;
+                    white-space: pre-line;
+                `;
+               tooltip.innerHTML = content;
+               freshCard.appendChild(tooltip);
+
+               freshCard.addEventListener("mouseenter", () => {
+                  tooltip.style.display = "block";
+               });
+               freshCard.addEventListener("mouseleave", () => {
+                  tooltip.style.display = "none";
+               });
+
+               console.log(
+                  "Created tooltip for:",
+                  cardId,
+                  "with content length:",
+                  content.length,
+               );
+            }
+
+            // Helper to get compact status badge
+            function getCompactBadge(status, isPast) {
+               if (!isPast)
+                  return '<span style="padding:2px 6px;background:#e5e7eb;color:#374151;border-radius:3px;font-size:9px;font-weight:600;">waiting</span>';
+               switch (status) {
+                  case "successful":
+                     return '<span style="padding:2px 6px;background:#d1fae5;color:#065f46;border-radius:3px;font-size:9px;font-weight:600;">success</span>';
+                  case "unusable_data":
+                  case "issues_arised":
+                     return '<span style="padding:2px 6px;background:#fef3c7;color:#92400e;border-radius:3px;font-size:9px;font-weight:600;">issues</span>';
+                  case "no_show":
+                     return '<span style="padding:2px 6px;background:#fee2e2;color:#991b1b;border-radius:3px;font-size:9px;font-weight:600;">no-show</span>';
+                  default:
+                     return '<span style="padding:2px 6px;background:#e5e7eb;color:#374151;border-radius:3px;font-size:9px;font-weight:600;">unknown</span>';
+               }
+            }
+
+            // Both Finished tooltip - deduplicate by name
+            if (bothFinishedList.length) {
+               const uniqueNames = [
+                  ...new Set(bothFinishedList.map((p) => p.name)),
+               ];
+               const content = uniqueNames.join("\n");
+               createTooltip("bothFinishedCard", content);
+            }
+
+            // Waiting for Second tooltip - deduplicate by name
+            if (waitingForSecondList.length) {
+               const seen = new Set();
+               const uniqueList = waitingForSecondList.filter((p) => {
+                  if (seen.has(p.name)) return false;
+                  seen.add(p.name);
+                  return true;
+               });
+
+               const content = uniqueList
+                  .map((p) => {
+                     if (p.nextAppointment) {
+                        const date = new Date(p.nextAppointment);
+                        const dateStr = date.toLocaleString("de-DE", {
+                           day: "2-digit",
+                           month: "2-digit",
+                           hour: "2-digit",
+                           minute: "2-digit",
+                        });
+                        return `${p.name} → ${dateStr}`;
+                     } else {
+                        return `${p.name} → nicht geplant`;
+                     }
+                  })
+                  .join("\n");
+               createTooltip("waitingForSecondCard", content);
+            }
+
+            // No-show tooltip - deduplicate by name
+            if (noShowSecondList.length) {
+               const uniqueNames = [
+                  ...new Set(noShowSecondList.map((p) => p.name)),
+               ];
+               const content = uniqueNames.join("\n");
+               createTooltip("noShowSecondCard", content);
+            }
+
+            // Data Issues tooltip - deduplicate by name
+            if (dataIssuesList.length) {
+               const seen = new Set();
+               const uniqueList = dataIssuesList.filter((p) => {
+                  if (seen.has(p.name)) return false;
+                  seen.add(p.name);
+                  return true;
+               });
+
+               let content = '<div style="font-size:11px;">';
+               uniqueList.forEach((p, idx) => {
+                  if (idx > 0)
+                     content +=
+                        '<hr style="margin:4px 0;border:none;border-top:1px solid #e5e7eb;">';
+                  content += `<div style="margin-bottom:2px;display:flex;gap:6px;align-items:center;">
+                        <span style="font-weight:600;color:#111827;">${p.name}</span>
+                        ${getCompactBadge(p.primaryStatus, p.primaryPast)}
+                        ${getCompactBadge(p.followupStatus, p.followupPast)}
+                    </div>`;
+               });
+               content += "</div>";
+               createTooltip("dataIssuesCard", content);
             }
          }
 
