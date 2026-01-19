@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const path = require("path");
 
 const DB_PATH =
-   process.env.DB_PATH || path.join(__dirname, "data", "appointments.db");
+   process.env.DATABASE_PATH || path.join(__dirname, "data", "appointments.db");
 let db;
 
 // Initialize database and create tables
