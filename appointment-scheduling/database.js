@@ -84,6 +84,16 @@ function initialize() {
          definition: "TEXT",
       },
       {
+         table: "timeslots",
+         column: "primary_capacity",
+         definition: "INTEGER",
+      },
+      {
+         table: "timeslots",
+         column: "followup_capacity",
+         definition: "INTEGER",
+      },
+      {
          table: "bookings",
          column: "is_followup",
          definition: "INTEGER DEFAULT 0",
@@ -237,18 +247,22 @@ function createTimeslot(
    appointmentType = "dual",
    capacity = null,
    parentAppointmentId = null,
+   primaryCapacity = null,
+   followupCapacity = null,
 ) {
    const stmt = db.prepare(
-      "INSERT INTO timeslots (start_time, end_time, location, appointment_type, original_type, capacity, parent_appointment_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO timeslots (start_time, end_time, location, appointment_type, original_type, capacity, parent_appointment_id, primary_capacity, followup_capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
    );
    const result = stmt.run(
       startTime,
       endTime,
       location,
       appointmentType,
-      appointmentType, // original_type is same as appointment_type at creation
+      appointmentType, // original_type = appointment_type initially
       capacity,
       parentAppointmentId,
+      primaryCapacity,
+      followupCapacity,
    );
    return {
       id: result.lastInsertRowid,
@@ -347,6 +361,14 @@ function updateTimeslot(id, updates) {
    if (updates.capacity !== undefined) {
       fields.push("capacity = ?");
       values.push(updates.capacity);
+   }
+   if (updates.primaryCapacity !== undefined) {
+      fields.push("primary_capacity = ?");
+      values.push(updates.primaryCapacity);
+   }
+   if (updates.followupCapacity !== undefined) {
+      fields.push("followup_capacity = ?");
+      values.push(updates.followupCapacity);
    }
 
    if (fields.length === 0) return;
@@ -687,6 +709,8 @@ function bulkCreateTimeslots(
    capacity = null,
    weekdays = [1, 2, 3, 4, 5], // Default to Monday-Friday
    workingHours = [{ start: "09:00", end: "17:00" }], // Default 9-5
+   primaryCapacity = null,
+   followupCapacity = null,
 ) {
    const slots = [];
    const start = new Date(startDate + "T00:00:00");
@@ -726,6 +750,9 @@ function bulkCreateTimeslots(
                      location,
                      appointmentType,
                      capacity,
+                     null, // parentAppointmentId
+                     primaryCapacity,
+                     followupCapacity,
                   );
                   slots.push(slot);
                }
@@ -805,10 +832,33 @@ function createBooking(
 
 // Update timeslot type when booked (e.g., dual -> primary/followup)
 function setTimeslotType(timeslotId, newType) {
-   const stmt = db.prepare(
-      "UPDATE timeslots SET appointment_type = ? WHERE id = ?",
-   );
-   stmt.run(newType, timeslotId);
+   // Get the timeslot to check if it has dual capacity settings
+   const timeslot = getTimeslotById(timeslotId);
+
+   if (timeslot && timeslot.original_type === "dual") {
+      // If this is a dual timeslot, set the appropriate capacity based on the new type
+      let newCapacity = timeslot.capacity; // Default to existing capacity
+
+      if (newType === "primary" && timeslot.primary_capacity !== null) {
+         newCapacity = timeslot.primary_capacity;
+      } else if (
+         newType === "followup" &&
+         timeslot.followup_capacity !== null
+      ) {
+         newCapacity = timeslot.followup_capacity;
+      }
+
+      const stmt = db.prepare(
+         "UPDATE timeslots SET appointment_type = ?, capacity = ? WHERE id = ?",
+      );
+      stmt.run(newType, newCapacity, timeslotId);
+   } else {
+      // Non-dual timeslot, just update the type
+      const stmt = db.prepare(
+         "UPDATE timeslots SET appointment_type = ? WHERE id = ?",
+      );
+      stmt.run(newType, timeslotId);
+   }
 }
 
 // Revert timeslot to its original type

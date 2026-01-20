@@ -92,6 +92,26 @@ window.addEventListener("DOMContentLoaded", async () => {
       });
    }
 
+   // Add event listeners for appointment type changes
+   const appointmentTypeSelect = document.getElementById("appointmentType");
+   const bulkAppointmentTypeSelect = document.getElementById(
+      "bulkAppointmentType",
+   );
+
+   if (appointmentTypeSelect) {
+      appointmentTypeSelect.addEventListener(
+         "change",
+         toggleDualCapacityFields,
+      );
+   }
+
+   if (bulkAppointmentTypeSelect) {
+      bulkAppointmentTypeSelect.addEventListener(
+         "change",
+         toggleDualCapacityFields,
+      );
+   }
+
    // Handle bulk create form submission
    document
       .getElementById("bulkCreateForm")
@@ -109,6 +129,18 @@ window.addEventListener("DOMContentLoaded", async () => {
          ).value;
          const capacityInput = document.getElementById("bulkCapacity").value;
          const capacity = capacityInput ? parseInt(capacityInput) : null;
+         const primaryCapacityInput = document.getElementById(
+            "bulkPrimaryCapacity",
+         ).value;
+         const primaryCapacity = primaryCapacityInput
+            ? parseInt(primaryCapacityInput)
+            : null;
+         const followupCapacityInput = document.getElementById(
+            "bulkFollowupCapacity",
+         ).value;
+         const followupCapacity = followupCapacityInput
+            ? parseInt(followupCapacityInput)
+            : null;
          const location = document.getElementById("bulkLocation").value;
          const weekdays = getSelectedWeekdays();
          const workingHours = getWorkingHours();
@@ -153,10 +185,12 @@ window.addEventListener("DOMContentLoaded", async () => {
                   body: JSON.stringify({
                      startDate,
                      endDate,
-                     duration,
-                     breakTime,
+                     duration: parseInt(duration),
+                     breakTime: parseInt(breakTime),
                      appointmentType,
                      capacity,
+                     primaryCapacity,
+                     followupCapacity,
                      location,
                      weekdays,
                      workingHours,
@@ -1507,13 +1541,43 @@ function editTimeslot(id) {
    document.getElementById("appointmentType").value =
       slot.appointment_type || "dual";
    document.getElementById("capacity").value = slot.capacity || "";
+   document.getElementById("primaryCapacity").value =
+      slot.primary_capacity || "";
+   document.getElementById("followupCapacity").value =
+      slot.followup_capacity || "";
+
+   // Show/hide dual capacity fields based on appointment type
+   toggleDualCapacityFields();
 
    document.getElementById("timeslotModal").classList.add("active");
+}
+
+// Toggle dual capacity fields visibility based on appointment type
+function toggleDualCapacityFields() {
+   const appointmentType = document.getElementById("appointmentType").value;
+   const dualFields = document.getElementById("dualCapacityFields");
+   const bulkAppointmentType = document.getElementById(
+      "bulkAppointmentType",
+   )?.value;
+   const bulkDualFields = document.getElementById("bulkDualCapacityFields");
+
+   if (dualFields) {
+      dualFields.style.display = appointmentType === "dual" ? "block" : "none";
+   }
+
+   if (bulkDualFields && bulkAppointmentType) {
+      bulkDualFields.style.display =
+         bulkAppointmentType === "dual" ? "block" : "none";
+   }
 }
 
 // Close timeslot modal
 function closeTimeslotModal() {
    document.getElementById("timeslotModal").classList.remove("active");
+   // Reset form
+   document.getElementById("timeslotForm").reset();
+   document.getElementById("timeslotId").value = "";
+   document.getElementById("timeslotModalTitle").textContent = "Neuer Zeitslot";
 }
 
 // Show bulk create modal
@@ -1541,6 +1605,16 @@ async function saveTimeslot() {
    const appointmentType = document.getElementById("appointmentType").value;
    const capacityInput = document.getElementById("capacity").value;
    const capacity = capacityInput ? parseInt(capacityInput) : null;
+   const primaryCapacityInput =
+      document.getElementById("primaryCapacity").value;
+   const primaryCapacity = primaryCapacityInput
+      ? parseInt(primaryCapacityInput)
+      : null;
+   const followupCapacityInput =
+      document.getElementById("followupCapacity").value;
+   const followupCapacity = followupCapacityInput
+      ? parseInt(followupCapacityInput)
+      : null;
 
    if (!startTime || !endTime) {
       showDashboardAlert("Bitte füllen Sie alle Pflichtfelder aus.", "error");
@@ -1568,6 +1642,8 @@ async function saveTimeslot() {
             location,
             appointmentType,
             capacity,
+            primaryCapacity,
+            followupCapacity,
          }),
       });
 

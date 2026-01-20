@@ -823,9 +823,55 @@
                         placeholder="Leer lassen für unbegrenzt"
                      />
                      <small style="display: block; margin-top: 5px; color: #666"
-                        >Standard: 1 für Haupttermine, unbegrenzt für
-                        Folgetermine</small
+                        >Nur für Primary/Followup Termine. Bei Dual siehe
+                        unten.</small
                      >
+                  </div>
+                  <div
+                     class="form-group"
+                     id="dualCapacityFields"
+                     style="
+                        display: none;
+                        border: 2px solid #667eea;
+                        padding: 15px;
+                        border-radius: 6px;
+                        background: #f8f9ff;
+                     "
+                  >
+                     <h4 style="margin-bottom: 10px; color: #667eea">
+                        Dual-Termin Kapazitäten
+                     </h4>
+                     <small
+                        style="display: block; margin-bottom: 10px; color: #666"
+                     >
+                        Für Dual-Termine: Geben Sie unterschiedliche Kapazitäten
+                        an, je nachdem ob der Termin als Haupttermin oder
+                        Folgetermin gebucht wird.
+                     </small>
+                     <div class="form-group">
+                        <label for="primaryCapacity"
+                           >Kapazität als Haupttermin</label
+                        >
+                        <input
+                           type="number"
+                           id="primaryCapacity"
+                           name="primaryCapacity"
+                           min="1"
+                           placeholder="z.B. 1"
+                        />
+                     </div>
+                     <div class="form-group">
+                        <label for="followupCapacity"
+                           >Kapazität als Folgetermin</label
+                        >
+                        <input
+                           type="number"
+                           id="followupCapacity"
+                           name="followupCapacity"
+                           min="1"
+                           placeholder="z.B. 10"
+                        />
+                     </div>
                   </div>
                </form>
             </div>
@@ -922,8 +968,54 @@
                         id="bulkCapacity"
                         name="bulkCapacity"
                         min="1"
-                        placeholder="Leer lassen für unbegrenzt"
+                        placeholder="Nur für Primary/Followup. Bei Dual siehe unten."
                      />
+                  </div>
+                  <div
+                     class="form-group"
+                     id="bulkDualCapacityFields"
+                     style="
+                        display: none;
+                        border: 2px solid #667eea;
+                        padding: 15px;
+                        border-radius: 6px;
+                        background: #f8f9ff;
+                     "
+                  >
+                     <h4 style="margin-bottom: 10px; color: #667eea">
+                        Dual-Termin Kapazitäten
+                     </h4>
+                     <small
+                        style="display: block; margin-bottom: 10px; color: #666"
+                     >
+                        Für Dual-Termine: Geben Sie unterschiedliche Kapazitäten
+                        an, je nachdem ob der Termin als Haupttermin oder
+                        Folgetermin gebucht wird.
+                     </small>
+                     <div class="form-group">
+                        <label for="bulkPrimaryCapacity"
+                           >Kapazität als Haupttermin</label
+                        >
+                        <input
+                           type="number"
+                           id="bulkPrimaryCapacity"
+                           name="bulkPrimaryCapacity"
+                           min="1"
+                           placeholder="z.B. 1"
+                        />
+                     </div>
+                     <div class="form-group">
+                        <label for="bulkFollowupCapacity"
+                           >Kapazität als Folgetermin</label
+                        >
+                        <input
+                           type="number"
+                           id="bulkFollowupCapacity"
+                           name="bulkFollowupCapacity"
+                           min="1"
+                           placeholder="z.B. 10"
+                        />
+                     </div>
                   </div>
                   <div class="form-group">
                      <label for="bulkLocation">Ort</label>

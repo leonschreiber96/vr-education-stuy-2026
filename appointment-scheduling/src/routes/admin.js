@@ -1,18 +1,23 @@
 // Admin routes module
 // Handles all admin-facing API endpoints (requires authentication)
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
-const db = require('../../database');
-const mailer = require('../../mailer');
-const BookingService = require('../services/bookingService');
-const NotificationService = require('../services/notificationService');
-const { requireAdmin } = require('../middleware/auth');
-const { asyncHandler, validateRequired, ValidationError, NotFoundError } = require('../middleware/errorHandler');
-const { Logger } = require('../middleware/logging');
-const env = require('../config/env');
+const db = require("../../database");
+const mailer = require("../../mailer");
+const BookingService = require("../services/bookingService");
+const NotificationService = require("../services/notificationService");
+const { requireAdmin } = require("../middleware/auth");
+const {
+   asyncHandler,
+   validateRequired,
+   ValidationError,
+   NotFoundError,
+} = require("../middleware/errorHandler");
+const { Logger } = require("../middleware/logging");
+const env = require("../config/env");
 
 const FOLLOWUP_MIN_DAYS = env.FOLLOWUP_MIN_DAYS;
 const FOLLOWUP_MAX_DAYS = env.FOLLOWUP_MAX_DAYS;
@@ -25,71 +30,78 @@ const FOLLOWUP_MAX_DAYS = env.FOLLOWUP_MAX_DAYS;
  * POST /login
  * Admin login
  */
-router.post('/login', asyncHandler(async (req, res) => {
-    const { username, password } = req.body;
+router.post(
+   "/login",
+   asyncHandler(async (req, res) => {
+      const { username, password } = req.body;
 
-    validateRequired(req.body, ['username', 'password']);
+      validateRequired(req.body, ["username", "password"]);
 
-    const admin = db.getAdminByUsername(username);
-    if (!admin) {
-        throw new ValidationError('Invalid credentials');
-    }
+      const admin = db.getAdminByUsername(username);
+      if (!admin) {
+         throw new ValidationError("Invalid credentials");
+      }
 
-    const validPassword = await bcrypt.compare(password, admin.password_hash);
-    if (!validPassword) {
-        throw new ValidationError('Invalid credentials');
-    }
+      const validPassword = await bcrypt.compare(password, admin.password_hash);
+      if (!validPassword) {
+         throw new ValidationError("Invalid credentials");
+      }
 
-    req.session.adminId = admin.id;
+      req.session.adminId = admin.id;
 
-    // Explicitly save session before sending response
-    await new Promise((resolve, reject) => {
-        req.session.save((err) => {
+      // Explicitly save session before sending response
+      await new Promise((resolve, reject) => {
+         req.session.save((err) => {
             if (err) {
-                Logger.error('Session save error', err);
-                reject(err);
+               Logger.error("Session save error", err);
+               reject(err);
             } else {
-                Logger.info('Admin logged in', {
-                    sessionId: req.sessionID,
-                    adminId: admin.id,
-                    username: admin.username,
-                });
-                resolve();
+               Logger.info("Admin logged in", {
+                  sessionId: req.sessionID,
+                  adminId: admin.id,
+                  username: admin.username,
+               });
+               resolve();
             }
-        });
-    });
+         });
+      });
 
-    res.json({ success: true, message: 'Login successful' });
-}));
+      res.json({ success: true, message: "Login successful" });
+   }),
+);
 
 /**
  * POST /logout
  * Admin logout
  */
-router.post('/logout', requireAdmin, asyncHandler(async (req, res) => {
-    const adminId = req.session.adminId;
+router.post(
+   "/logout",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const adminId = req.session.adminId;
 
-    await new Promise((resolve, reject) => {
-        req.session.destroy((err) => {
+      await new Promise((resolve, reject) => {
+         req.session.destroy((err) => {
             if (err) {
-                Logger.error('Error destroying session', err);
-                reject(err);
+               Logger.error("Error destroying session", err);
+               reject(err);
             } else {
-                Logger.info('Admin logged out', { adminId });
-                resolve();
+               Logger.info("Admin logged out", { adminId });
+               resolve();
             }
-        });
-    });
+         });
+      });
 
-    res.json({ success: true, message: 'Logged out successfully' });
-}));
+      res.json({ success: true, message: "Logged out successfully" });
+   }),
+);
 
 /**
  * GET /check
  * Check admin session status
  */
-router.get('/check', (req, res) => {
-    res.json({ authenticated: !!req.session.adminId });
+router.get("/check", (req, res) => {
+   res.json({ authenticated: !!req.session.adminId });
 });
 
 // ============================================================================
@@ -100,42 +112,50 @@ router.get('/check', (req, res) => {
  * GET /participants
  * Get all participants
  */
-router.get('/participants', requireAdmin, asyncHandler(async (req, res) => {
-    const participants = db.getAllParticipants();
-    res.json(participants);
-}));
+router.get(
+   "/participants",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const participants = db.getAllParticipants();
+      res.json(participants);
+   }),
+);
 
 /**
  * DELETE /participants/:id
  * Delete a participant and all their bookings
  */
-router.delete('/participants/:id', requireAdmin, asyncHandler(async (req, res) => {
-    const { id } = req.params;
+router.delete(
+   "/participants/:id",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { id } = req.params;
 
-    // Get participant data before deleting
-    const participant = db.getParticipantById(id);
-    if (!participant) {
-        throw new NotFoundError('Participant not found');
-    }
+      // Get participant data before deleting
+      const participant = db.getParticipantById(id);
+      if (!participant) {
+         throw new NotFoundError("Participant not found");
+      }
 
-    // Delete participant (and all their bookings via cascade)
-    const result = db.deleteParticipant(id);
+      // Delete participant (and all their bookings via cascade)
+      const result = db.deleteParticipant(id);
 
-    if (result.changes === 0) {
-        throw new NotFoundError('Participant not found');
-    }
+      if (result.changes === 0) {
+         throw new NotFoundError("Participant not found");
+      }
 
-    Logger.info('Participant deleted', {
-        participantId: id,
-        name: participant.name,
-        email: participant.email,
-    });
+      Logger.info("Participant deleted", {
+         participantId: id,
+         name: participant.name,
+         email: participant.email,
+      });
 
-    res.json({
-        success: true,
-        message: 'Participant and all their bookings deleted successfully',
-    });
-}));
+      res.json({
+         success: true,
+         message: "Participant and all their bookings deleted successfully",
+      });
+   }),
+);
 
 // ============================================================================
 // Timeslot Routes
@@ -145,487 +165,560 @@ router.delete('/participants/:id', requireAdmin, asyncHandler(async (req, res) =
  * GET /timeslots
  * Get all timeslots with optional pagination
  */
-router.get('/timeslots', requireAdmin, asyncHandler(async (req, res) => {
-    const limit = req.query.limit ? parseInt(req.query.limit) : null;
-    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+router.get(
+   "/timeslots",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const limit = req.query.limit ? parseInt(req.query.limit) : null;
+      const offset = req.query.offset ? parseInt(req.query.offset) : 0;
 
-    const timeslots = db.getAllTimeslots(limit, offset);
+      const timeslots = db.getAllTimeslots(limit, offset);
 
-    // Return paginated format only if limit is specified
-    if (limit !== null) {
-        const total = db.getTimeslotsCount();
-        res.json({
+      // Return paginated format only if limit is specified
+      if (limit !== null) {
+         const total = db.getTimeslotsCount();
+         res.json({
             timeslots,
             total,
             limit,
             offset,
-        });
-    } else {
-        // Backward compatibility: return array directly
-        res.json(timeslots);
-    }
-}));
+         });
+      } else {
+         // Backward compatibility: return array directly
+         res.json(timeslots);
+      }
+   }),
+);
 
 /**
  * POST /timeslots
  * Create a new timeslot
  */
-router.post('/timeslots', requireAdmin, asyncHandler(async (req, res) => {
-    const { startTime, endTime, location, appointmentType, capacity } = req.body;
+router.post(
+   "/timeslots",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const {
+         startTime,
+         endTime,
+         location,
+         appointmentType,
+         capacity,
+         primaryCapacity,
+         followupCapacity,
+      } = req.body;
 
-    validateRequired(req.body, ['startTime', 'endTime']);
+      validateRequired(req.body, ["startTime", "endTime"]);
 
-    const timeslot = db.createTimeslot(
-        startTime,
-        endTime,
-        location || '',
-        appointmentType || 'primary',
-        capacity || null,
-    );
+      const timeslot = db.createTimeslot(
+         startTime,
+         endTime,
+         location || "",
+         appointmentType || "primary",
+         capacity || null,
+         null, // parentAppointmentId
+         primaryCapacity || null,
+         followupCapacity || null,
+      );
 
-    Logger.info('Timeslot created', {
-        timeslotId: timeslot.id,
-        startTime,
-        endTime,
-        appointmentType,
-    });
+      Logger.info("Timeslot created", {
+         timeslotId: timeslot.id,
+         startTime,
+         endTime,
+         appointmentType,
+      });
 
-    res.json(timeslot);
-}));
+      res.json(timeslot);
+   }),
+);
 
 /**
  * POST /bulk-timeslots
  * Bulk create timeslots with weekday and working hours filters
  */
-router.post('/bulk-timeslots', requireAdmin, asyncHandler(async (req, res) => {
-    const {
-        startDate,
-        endDate,
-        duration,
-        breakTime,
-        location,
-        appointmentType,
-        capacity,
-        weekdays,
-        workingHours,
-    } = req.body;
+router.post(
+   "/bulk-timeslots",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const {
+         startDate,
+         endDate,
+         duration,
+         breakTime,
+         location,
+         appointmentType,
+         capacity,
+         primaryCapacity,
+         followupCapacity,
+         weekdays,
+         workingHours,
+      } = req.body;
 
-    validateRequired(req.body, ['startDate', 'endDate', 'duration', 'breakTime', 'weekdays', 'workingHours']);
+      validateRequired(req.body, [
+         "startDate",
+         "endDate",
+         "duration",
+         "breakTime",
+         "weekdays",
+         "workingHours",
+      ]);
 
-    // Validate inputs
-    if (duration <= 0) {
-        throw new ValidationError('Duration must be positive');
-    }
+      // Validate inputs
+      if (duration <= 0) {
+         throw new ValidationError("Duration must be positive");
+      }
 
-    if (breakTime < 0) {
-        throw new ValidationError('Break time cannot be negative');
-    }
+      if (breakTime < 0) {
+         throw new ValidationError("Break time cannot be negative");
+      }
 
-    if (!Array.isArray(weekdays) || weekdays.length === 0) {
-        throw new ValidationError('At least one weekday must be selected');
-    }
+      if (!Array.isArray(weekdays) || weekdays.length === 0) {
+         throw new ValidationError("At least one weekday must be selected");
+      }
 
-    if (!Array.isArray(workingHours) || workingHours.length === 0) {
-        throw new ValidationError('At least one working hours range must be specified');
-    }
+      if (!Array.isArray(workingHours) || workingHours.length === 0) {
+         throw new ValidationError(
+            "At least one working hours range must be specified",
+         );
+      }
 
-    // Validate working hours
-    for (const hours of workingHours) {
-        if (!hours.start || !hours.end) {
-            throw new ValidationError('Invalid working hours format');
-        }
-        if (hours.start >= hours.end) {
-            throw new ValidationError('End time must be after start time in working hours');
-        }
-    }
+      // Validate working hours
+      for (const hours of workingHours) {
+         if (!hours.start || !hours.end) {
+            throw new ValidationError("Invalid working hours format");
+         }
+         if (hours.start >= hours.end) {
+            throw new ValidationError(
+               "End time must be after start time in working hours",
+            );
+         }
+      }
 
-    const timeslots = db.bulkCreateTimeslots(
-        startDate,
-        endDate,
-        parseInt(duration),
-        parseInt(breakTime),
-        location || '',
-        appointmentType || 'primary',
-        capacity ? parseInt(capacity) : null,
-        weekdays,
-        workingHours,
-    );
+      const timeslots = db.bulkCreateTimeslots(
+         startDate,
+         endDate,
+         parseInt(duration),
+         parseInt(breakTime),
+         location || "",
+         appointmentType || "primary",
+         capacity ? parseInt(capacity) : null,
+         weekdays,
+         workingHours,
+         primaryCapacity ? parseInt(primaryCapacity) : null,
+         followupCapacity ? parseInt(followupCapacity) : null,
+      );
 
-    Logger.info('Bulk timeslots created', {
-        count: timeslots.length,
-        startDate,
-        endDate,
-        weekdays,
-        workingHours,
-    });
+      Logger.info("Bulk timeslots created", {
+         count: timeslots.length,
+         startDate,
+         endDate,
+         weekdays,
+         workingHours,
+      });
 
-    res.json({
-        success: true,
-        count: timeslots.length,
-        timeslots: timeslots,
-    });
-}));
+      res.json({
+         success: true,
+         count: timeslots.length,
+         timeslots: timeslots,
+      });
+   }),
+);
 
 /**
  * PUT /timeslots/:id
  * Update a timeslot
  */
-router.put('/timeslots/:id', requireAdmin, asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { startTime, endTime, location, appointmentType, capacity } = req.body;
+router.put(
+   "/timeslots/:id",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { id } = req.params;
+      const {
+         startTime,
+         endTime,
+         location,
+         appointmentType,
+         capacity,
+         primaryCapacity,
+         followupCapacity,
+      } = req.body;
 
-    // Get old timeslot data before updating
-    const oldTimeslot = db.getTimeslotById(id);
-    if (!oldTimeslot) {
-        throw new NotFoundError('Timeslot not found');
-    }
+      // Get old timeslot data before updating
+      const oldTimeslot = db.getTimeslotById(id);
+      if (!oldTimeslot) {
+         throw new NotFoundError("Timeslot not found");
+      }
 
-    // Check if time changed
-    const timeChanged =
-        startTime !== oldTimeslot.start_time ||
-        endTime !== oldTimeslot.end_time;
+      // Check if time changed
+      const timeChanged =
+         startTime !== oldTimeslot.start_time ||
+         endTime !== oldTimeslot.end_time;
 
-    // If time is changing, validate 29-31 day rule for linked bookings
-    if (timeChanged) {
-        const affectedBookings = db.getAffectedParticipantsByTimeslot(id);
+      // If time is changing, validate 29-31 day rule for linked bookings
+      if (timeChanged) {
+         const affectedBookings = db.getAffectedParticipantsByTimeslot(id);
 
-        for (const booking of affectedBookings) {
+         for (const booking of affectedBookings) {
             // If this is a primary timeslot, check all linked followups
             if (
-                oldTimeslot.appointment_type === 'primary' &&
-                !booking.is_followup
+               oldTimeslot.appointment_type === "primary" &&
+               !booking.is_followup
             ) {
-                // Find this participant's followup booking
-                const allParticipantBookings = db.getAllBookingsByToken(
-                    booking.confirmation_token,
-                );
-                const followupBooking = allParticipantBookings.find(
-                    (b) => b.parent_booking_id === booking.booking_id,
-                );
+               // Find this participant's followup booking
+               const allParticipantBookings = db.getAllBookingsByToken(
+                  booking.confirmation_token,
+               );
+               const followupBooking = allParticipantBookings.find(
+                  (b) => b.parent_booking_id === booking.booking_id,
+               );
 
-                if (followupBooking) {
-                    const newPrimaryDate = new Date(startTime);
-                    const followupDate = new Date(
-                        followupBooking.timeslot_start,
-                    );
-                    const daysDiff = Math.floor(
-                        (followupDate - newPrimaryDate) / (1000 * 60 * 60 * 24),
-                    );
+               if (followupBooking) {
+                  const newPrimaryDate = new Date(startTime);
+                  const followupDate = new Date(followupBooking.timeslot_start);
+                  const daysDiff = Math.floor(
+                     (followupDate - newPrimaryDate) / (1000 * 60 * 60 * 24),
+                  );
 
-                    if (
-                        daysDiff < FOLLOWUP_MIN_DAYS ||
-                        daysDiff > FOLLOWUP_MAX_DAYS
-                    ) {
-                        throw new ValidationError(
-                            `Zeitänderung nicht möglich: Würde die ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage Regel verletzen. Folgetermin ist ${daysDiff} Tage nach dem neuen Haupttermin. Bitte stornieren Sie zuerst die Buchungen.`
-                        );
-                    }
-                }
+                  if (
+                     daysDiff < FOLLOWUP_MIN_DAYS ||
+                     daysDiff > FOLLOWUP_MAX_DAYS
+                  ) {
+                     throw new ValidationError(
+                        `Zeitänderung nicht möglich: Würde die ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage Regel verletzen. Folgetermin ist ${daysDiff} Tage nach dem neuen Haupttermin. Bitte stornieren Sie zuerst die Buchungen.`,
+                     );
+                  }
+               }
             }
 
             // If this is a followup timeslot, check against linked primary
             if (
-                oldTimeslot.appointment_type === 'followup' &&
-                booking.is_followup
+               oldTimeslot.appointment_type === "followup" &&
+               booking.is_followup
             ) {
-                const allParticipantBookings = db.getAllBookingsByToken(
-                    booking.confirmation_token,
-                );
-                const primaryBooking = allParticipantBookings.find(
-                    (b) => b.booking_id === booking.parent_booking_id,
-                );
+               const allParticipantBookings = db.getAllBookingsByToken(
+                  booking.confirmation_token,
+               );
+               const primaryBooking = allParticipantBookings.find(
+                  (b) => b.booking_id === booking.parent_booking_id,
+               );
 
-                if (primaryBooking) {
-                    const primaryDate = new Date(
-                        primaryBooking.timeslot_start,
-                    );
-                    const newFollowupDate = new Date(startTime);
-                    const daysDiff = Math.floor(
-                        (newFollowupDate - primaryDate) / (1000 * 60 * 60 * 24),
-                    );
+               if (primaryBooking) {
+                  const primaryDate = new Date(primaryBooking.timeslot_start);
+                  const newFollowupDate = new Date(startTime);
+                  const daysDiff = Math.floor(
+                     (newFollowupDate - primaryDate) / (1000 * 60 * 60 * 24),
+                  );
 
-                    if (
-                        daysDiff < FOLLOWUP_MIN_DAYS ||
-                        daysDiff > FOLLOWUP_MAX_DAYS
-                    ) {
-                        throw new ValidationError(
-                            `Zeitänderung nicht möglich: Würde die ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage Regel verletzen. Neuer Folgetermin wäre ${daysDiff} Tage nach dem Haupttermin. Bitte stornieren Sie zuerst die Buchungen.`
-                        );
-                    }
-                }
+                  if (
+                     daysDiff < FOLLOWUP_MIN_DAYS ||
+                     daysDiff > FOLLOWUP_MAX_DAYS
+                  ) {
+                     throw new ValidationError(
+                        `Zeitänderung nicht möglich: Würde die ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage Regel verletzen. Neuer Folgetermin wäre ${daysDiff} Tage nach dem Haupttermin. Bitte stornieren Sie zuerst die Buchungen.`,
+                     );
+                  }
+               }
             }
-        }
-    }
+         }
+      }
 
-    // Check if time or location changed (for notifications)
-    const timeOrLocationChanged =
-        startTime !== oldTimeslot.start_time ||
-        endTime !== oldTimeslot.end_time ||
-        location !== oldTimeslot.location;
+      // Check if time or location changed (for notifications)
+      const timeOrLocationChanged =
+         startTime !== oldTimeslot.start_time ||
+         endTime !== oldTimeslot.end_time ||
+         location !== oldTimeslot.location;
 
-    // Get affected participants before updating (if changes warrant notification)
-    let affectedParticipants = [];
-    if (timeOrLocationChanged) {
-        affectedParticipants = db.getAffectedParticipantsByTimeslot(id);
-    }
+      // Get affected participants before updating (if changes warrant notification)
+      let affectedParticipants = [];
+      if (timeOrLocationChanged) {
+         affectedParticipants = db.getAffectedParticipantsByTimeslot(id);
+      }
 
-    // Update the timeslot
-    db.updateTimeslot(id, {
-        startTime,
-        endTime,
-        location,
-        appointmentType,
-        capacity:
-            capacity === '' || capacity === undefined
-                ? null
-                : parseInt(capacity),
-    });
+      // Update the timeslot
+      db.updateTimeslot(id, {
+         startTime,
+         endTime,
+         location,
+         appointmentType,
+         capacity:
+            capacity === "" || capacity === undefined
+               ? null
+               : parseInt(capacity),
+         primaryCapacity:
+            primaryCapacity === "" || primaryCapacity === undefined
+               ? null
+               : parseInt(primaryCapacity),
+         followupCapacity:
+            followupCapacity === "" || followupCapacity === undefined
+               ? null
+               : parseInt(followupCapacity),
+      });
 
-    // Get updated timeslot data
-    const newTimeslot = db.getTimeslotById(id);
+      // Get updated timeslot data
+      const newTimeslot = db.getTimeslotById(id);
 
-    // Send notifications to affected participants
-    if (timeOrLocationChanged && affectedParticipants.length > 0) {
-        for (const participant of affectedParticipants) {
-            mailer.sendTimeslotUpdateEmail(
-                participant,
-                oldTimeslot,
-                newTimeslot,
-                participant.is_followup === 1,
-            ).catch(err => {
-                Logger.error('Failed to send timeslot update email', err, {
-                    participantId: participant.id,
-                });
-            });
-        }
-        Logger.info('Timeslot update notifications sent', {
+      // Send notifications to affected participants
+      if (timeOrLocationChanged && affectedParticipants.length > 0) {
+         for (const participant of affectedParticipants) {
+            mailer
+               .sendTimeslotUpdateEmail(
+                  participant,
+                  oldTimeslot,
+                  newTimeslot,
+                  participant.is_followup === 1,
+               )
+               .catch((err) => {
+                  Logger.error("Failed to send timeslot update email", err, {
+                     participantId: participant.id,
+                  });
+               });
+         }
+         Logger.info("Timeslot update notifications sent", {
             timeslotId: id,
             notifiedCount: affectedParticipants.length,
-        });
-    }
+         });
+      }
 
-    res.json({
-        success: true,
-        message: 'Timeslot updated successfully',
-        notifiedParticipants: affectedParticipants.length,
-    });
-}));
+      res.json({
+         success: true,
+         message: "Timeslot updated successfully",
+         notifiedParticipants: affectedParticipants.length,
+      });
+   }),
+);
 
 /**
  * POST /timeslots/bulk
  * Bulk delete timeslots
  */
-router.post('/timeslots/bulk', requireAdmin, asyncHandler(async (req, res) => {
-    const { ids } = req.body;
+router.post(
+   "/timeslots/bulk",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { ids } = req.body;
 
-    if (!Array.isArray(ids) || ids.length === 0) {
-        throw new ValidationError('Invalid or empty timeslot IDs array');
-    }
+      if (!Array.isArray(ids) || ids.length === 0) {
+         throw new ValidationError("Invalid or empty timeslot IDs array");
+      }
 
-    // Get affected participants for all timeslots before deleting
-    const allAffectedParticipants = [];
-    for (const id of ids) {
-        const participants =
-            db.getAffectedParticipantsWithLinkedBookings(id);
-        allAffectedParticipants.push(...participants);
-    }
+      // Get affected participants for all timeslots before deleting
+      const allAffectedParticipants = [];
+      for (const id of ids) {
+         const participants = db.getAffectedParticipantsWithLinkedBookings(id);
+         allAffectedParticipants.push(...participants);
+      }
 
-    // Bulk delete (this will delete bookings and timeslots in a transaction)
-    const result = db.bulkDeleteTimeslots(ids);
+      // Bulk delete (this will delete bookings and timeslots in a transaction)
+      const result = db.bulkDeleteTimeslots(ids);
 
-    // Send notifications to affected participants
-    if (allAffectedParticipants.length > 0) {
-        for (const participant of allAffectedParticipants) {
+      // Send notifications to affected participants
+      if (allAffectedParticipants.length > 0) {
+         for (const participant of allAffectedParticipants) {
             // Prepare timeslot objects for email
             const primaryTimeslot = participant.primary
-                ? {
-                      start_time: participant.primary.start_time,
-                      end_time: participant.primary.end_time,
-                      location: participant.primary.location,
-                  }
-                : null;
+               ? {
+                    start_time: participant.primary.start_time,
+                    end_time: participant.primary.end_time,
+                    location: participant.primary.location,
+                 }
+               : null;
 
             const followupTimeslot = participant.followup
-                ? {
-                      start_time: participant.followup.start_time,
-                      end_time: participant.followup.end_time,
-                      location: participant.followup.location,
-                  }
-                : null;
+               ? {
+                    start_time: participant.followup.start_time,
+                    end_time: participant.followup.end_time,
+                    location: participant.followup.location,
+                 }
+               : null;
 
-            mailer.sendCancellationEmail(
-                participant.email,
-                participant.name,
-                { primary: primaryTimeslot, followup: followupTimeslot },
-                'admin',
-            ).catch(err => {
-                Logger.error('Failed to send cancellation email', err, {
-                    email: participant.email,
-                });
-            });
-        }
-    }
+            mailer
+               .sendCancellationEmail(
+                  participant.email,
+                  participant.name,
+                  { primary: primaryTimeslot, followup: followupTimeslot },
+                  "admin",
+               )
+               .catch((err) => {
+                  Logger.error("Failed to send cancellation email", err, {
+                     email: participant.email,
+                  });
+               });
+         }
+      }
 
-    Logger.info('Bulk timeslots deleted', {
-        deleted: result.deleted,
-        failed: result.failed,
-        notifiedCount: allAffectedParticipants.length,
-    });
+      Logger.info("Bulk timeslots deleted", {
+         deleted: result.deleted,
+         failed: result.failed,
+         notifiedCount: allAffectedParticipants.length,
+      });
 
-    res.json({
-        success: true,
-        deleted: result.deleted,
-        failed: result.failed,
-        errors: result.errors,
-    });
-}));
+      res.json({
+         success: true,
+         deleted: result.deleted,
+         failed: result.failed,
+         errors: result.errors,
+      });
+   }),
+);
 
 /**
  * POST /timeslots/:id/cancel-bookings
  * Cancel all bookings for a timeslot
  */
-router.post('/timeslots/:id/cancel-bookings', requireAdmin, asyncHandler(async (req, res) => {
-    const { id } = req.params;
+router.post(
+   "/timeslots/:id/cancel-bookings",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { id } = req.params;
 
-    // Get timeslot data
-    const timeslot = db.getTimeslotById(id);
-    if (!timeslot) {
-        throw new NotFoundError('Timeslot not found');
-    }
+      // Get timeslot data
+      const timeslot = db.getTimeslotById(id);
+      if (!timeslot) {
+         throw new NotFoundError("Timeslot not found");
+      }
 
-    // Get affected participants WITH their linked bookings (primary + followup)
-    const affectedParticipants =
-        db.getAffectedParticipantsWithLinkedBookings(id);
+      // Get affected participants WITH their linked bookings (primary + followup)
+      const affectedParticipants =
+         db.getAffectedParticipantsWithLinkedBookings(id);
 
-    if (affectedParticipants.length === 0) {
-        return res.json({
+      if (affectedParticipants.length === 0) {
+         return res.json({
             success: true,
-            message: 'No active bookings to cancel',
+            message: "No active bookings to cancel",
             notifiedParticipants: 0,
-        });
-    }
+         });
+      }
 
-    // Cancel all bookings for this timeslot AND their linked appointments
-    const result = db.cancelBookingsForTimeslotWithLinked(id);
+      // Cancel all bookings for this timeslot AND their linked appointments
+      const result = db.cancelBookingsForTimeslotWithLinked(id);
 
-    // Send notifications to affected participants
-    for (const participant of affectedParticipants) {
-        // Prepare timeslot objects for email
-        const primaryTimeslot = participant.primary
+      // Send notifications to affected participants
+      for (const participant of affectedParticipants) {
+         // Prepare timeslot objects for email
+         const primaryTimeslot = participant.primary
             ? {
-                  start_time: participant.primary.start_time,
-                  end_time: participant.primary.end_time,
-                  location: participant.primary.location,
+                 start_time: participant.primary.start_time,
+                 end_time: participant.primary.end_time,
+                 location: participant.primary.location,
               }
             : null;
 
-        const followupTimeslot = participant.followup
+         const followupTimeslot = participant.followup
             ? {
-                  start_time: participant.followup.start_time,
-                  end_time: participant.followup.end_time,
-                  location: participant.followup.location,
+                 start_time: participant.followup.start_time,
+                 end_time: participant.followup.end_time,
+                 location: participant.followup.location,
               }
             : null;
 
-        // Send cancellation email (both appointments)
-        mailer.sendCancellationEmail(
-            {
-                name: participant.name,
-                email: participant.email,
-            },
-            primaryTimeslot,
-            followupTimeslot,
-        ).catch(err => {
-            Logger.error('Failed to send cancellation email', err, {
-                email: participant.email,
+         // Send cancellation email (both appointments)
+         mailer
+            .sendCancellationEmail(
+               {
+                  name: participant.name,
+                  email: participant.email,
+               },
+               primaryTimeslot,
+               followupTimeslot,
+            )
+            .catch((err) => {
+               Logger.error("Failed to send cancellation email", err, {
+                  email: participant.email,
+               });
             });
-        });
-    }
+      }
 
-    Logger.info('Timeslot bookings cancelled', {
-        timeslotId: id,
-        cancelledCount: result.cancelledCount,
-        notifiedCount: affectedParticipants.length,
-    });
+      Logger.info("Timeslot bookings cancelled", {
+         timeslotId: id,
+         cancelledCount: result.cancelledCount,
+         notifiedCount: affectedParticipants.length,
+      });
 
-    res.json({
-        success: true,
-        message: 'All bookings and linked appointments cancelled successfully',
-        notifiedParticipants: affectedParticipants.length,
-        cancelledBookings: result.cancelledCount,
-    });
-}));
+      res.json({
+         success: true,
+         message: "All bookings and linked appointments cancelled successfully",
+         notifiedParticipants: affectedParticipants.length,
+         cancelledBookings: result.cancelledCount,
+      });
+   }),
+);
 
 /**
  * DELETE /timeslots/:id
  * Delete a timeslot
  */
-router.delete('/timeslots/:id', requireAdmin, asyncHandler(async (req, res) => {
-    const { id } = req.params;
+router.delete(
+   "/timeslots/:id",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { id } = req.params;
 
-    // Get timeslot data before deleting
-    const timeslot = db.getTimeslotById(id);
-    if (!timeslot) {
-        throw new NotFoundError('Timeslot not found');
-    }
+      // Get timeslot data before deleting
+      const timeslot = db.getTimeslotById(id);
+      if (!timeslot) {
+         throw new NotFoundError("Timeslot not found");
+      }
 
-    // Get affected participants WITH their linked bookings before deleting
-    const affectedParticipants =
-        db.getAffectedParticipantsWithLinkedBookings(id);
+      // Get affected participants WITH their linked bookings before deleting
+      const affectedParticipants =
+         db.getAffectedParticipantsWithLinkedBookings(id);
 
-    // Delete all bookings for this timeslot AND their linked bookings
-    db.deleteBookingsForTimeslotWithLinked(id);
+      // Delete all bookings for this timeslot AND their linked bookings
+      db.deleteBookingsForTimeslotWithLinked(id);
 
-    // Delete the timeslot
-    db.deleteTimeslot(id);
+      // Delete the timeslot
+      db.deleteTimeslot(id);
 
-    // Send notifications to affected participants (showing both appointments)
-    if (affectedParticipants.length > 0) {
-        for (const participant of affectedParticipants) {
+      // Send notifications to affected participants (showing both appointments)
+      if (affectedParticipants.length > 0) {
+         for (const participant of affectedParticipants) {
             // Prepare timeslot objects for email
             const primaryTimeslot = participant.primary
-                ? {
-                      start_time: participant.primary.start_time,
-                      end_time: participant.primary.end_time,
-                      location: participant.primary.location,
-                  }
-                : null;
+               ? {
+                    start_time: participant.primary.start_time,
+                    end_time: participant.primary.end_time,
+                    location: participant.primary.location,
+                 }
+               : null;
 
             const followupTimeslot = participant.followup
-                ? {
-                      start_time: participant.followup.start_time,
-                      end_time: participant.followup.end_time,
-                      location: participant.followup.location,
-                  }
-                : null;
+               ? {
+                    start_time: participant.followup.start_time,
+                    end_time: participant.followup.end_time,
+                    location: participant.followup.location,
+                 }
+               : null;
 
             // Send cancellation email (both appointments)
-            mailer.sendCancellationEmail(
-                {
-                    name: participant.name,
-                    email: participant.email,
-                },
-                primaryTimeslot,
-                followupTimeslot,
-            ).catch(err => {
-                Logger.error('Failed to send cancellation email', err, {
-                    email: participant.email,
-                });
-            });
-        }
+            mailer
+               .sendCancellationEmail(
+                  {
+                     name: participant.name,
+                     email: participant.email,
+                  },
+                  primaryTimeslot,
+                  followupTimeslot,
+               )
+               .catch((err) => {
+                  Logger.error("Failed to send cancellation email", err, {
+                     email: participant.email,
+                  });
+               });
+         }
 
-        Logger.info('Timeslot deleted with notifications', {
+         Logger.info("Timeslot deleted with notifications", {
             timeslotId: id,
             notifiedCount: affectedParticipants.length,
-        });
-    }
+         });
+      }
 
-    res.json({
-        success: true,
-        message: 'Timeslot deleted and linked appointments cancelled',
-        notifiedParticipants: affectedParticipants.length,
-    });
-}));
+      res.json({
+         success: true,
+         message: "Timeslot deleted and linked appointments cancelled",
+         notifiedParticipants: affectedParticipants.length,
+      });
+   }),
+);
 
 // ============================================================================
 // Booking Routes
@@ -635,39 +728,54 @@ router.delete('/timeslots/:id', requireAdmin, asyncHandler(async (req, res) => {
  * GET /bookings
  * Get all bookings
  */
-router.get('/bookings', requireAdmin, asyncHandler(async (req, res) => {
-    const bookings = db.getAllBookings();
-    res.json(bookings);
-}));
+router.get(
+   "/bookings",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const bookings = db.getAllBookings();
+      res.json(bookings);
+   }),
+);
 
 /**
  * GET /bookings/unreviewed
  * Get past unreviewed bookings
  */
-router.get('/bookings/unreviewed', requireAdmin, asyncHandler(async (req, res) => {
-    const bookings = db.getPastUnreviewedBookings();
-    Logger.debug('Unreviewed bookings fetched', { count: bookings.length });
-    res.json(bookings);
-}));
+router.get(
+   "/bookings/unreviewed",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const bookings = db.getPastUnreviewedBookings();
+      Logger.debug("Unreviewed bookings fetched", { count: bookings.length });
+      res.json(bookings);
+   }),
+);
 
 /**
  * PATCH /bookings/:id/result-status
  * Update booking result status
  */
-router.patch('/bookings/:id/result-status', requireAdmin, asyncHandler(async (req, res) => {
-    const bookingId = parseInt(req.params.id);
-    const { resultStatus } = req.body;
+router.patch(
+   "/bookings/:id/result-status",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const bookingId = parseInt(req.params.id);
+      const { resultStatus } = req.body;
 
-    validateRequired(req.body, ['resultStatus']);
+      validateRequired(req.body, ["resultStatus"]);
 
-    const booking = BookingService.updateBookingResultStatus(bookingId, resultStatus);
+      const booking = BookingService.updateBookingResultStatus(
+         bookingId,
+         resultStatus,
+      );
 
-    res.json({
-        success: true,
-        message: 'Result status updated successfully',
-        booking,
-    });
-}));
+      res.json({
+         success: true,
+         message: "Result status updated successfully",
+         booking,
+      });
+   }),
+);
 
 // ============================================================================
 // Log Routes
@@ -677,28 +785,32 @@ router.patch('/bookings/:id/result-status', requireAdmin, asyncHandler(async (re
  * GET /logs
  * Get activity logs with optional pagination
  */
-router.get('/logs', requireAdmin, asyncHandler(async (req, res) => {
-    // Only use pagination if explicitly requested
-    const hasLimitParam = req.query.limit !== undefined;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 100;
-    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+router.get(
+   "/logs",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      // Only use pagination if explicitly requested
+      const hasLimitParam = req.query.limit !== undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+      const offset = req.query.offset ? parseInt(req.query.offset) : 0;
 
-    const logs = db.getLogs(limit, offset);
+      const logs = db.getLogs(limit, offset);
 
-    // Return paginated format only if limit param was provided
-    if (hasLimitParam) {
-        const total = db.getLogsCount();
-        res.json({
+      // Return paginated format only if limit param was provided
+      if (hasLimitParam) {
+         const total = db.getLogsCount();
+         res.json({
             logs,
             total,
             limit,
             offset,
-        });
-    } else {
-        // Backward compatibility: return array directly
-        res.json(logs);
-    }
-}));
+         });
+      } else {
+         // Backward compatibility: return array directly
+         res.json(logs);
+      }
+   }),
+);
 
 // ============================================================================
 // Email Routes
@@ -708,19 +820,28 @@ router.get('/logs', requireAdmin, asyncHandler(async (req, res) => {
  * POST /send-email
  * Send custom email to participant
  */
-router.post('/send-email', requireAdmin, asyncHandler(async (req, res) => {
-    const { email, name, subject, message } = req.body;
+router.post(
+   "/send-email",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { email, name, subject, message } = req.body;
 
-    validateRequired(req.body, ['email', 'subject', 'message']);
+      validateRequired(req.body, ["email", "subject", "message"]);
 
-    await NotificationService.sendCustomEmail(email, name || '', subject, message);
+      await NotificationService.sendCustomEmail(
+         email,
+         name || "",
+         subject,
+         message,
+      );
 
-    Logger.info('Custom email sent by admin', {
-        email,
-        subject,
-    });
+      Logger.info("Custom email sent by admin", {
+         email,
+         subject,
+      });
 
-    res.json({ success: true, message: 'Email sent successfully' });
-}));
+      res.json({ success: true, message: "Email sent successfully" });
+   }),
+);
 
 module.exports = router;
