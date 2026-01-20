@@ -201,4 +201,13 @@ router.get("/api/config", (req, res) => {
    });
 });
 
+/**
+ * GET /api/featured-timeslot
+ * Get the currently featured timeslot
+ */
+router.get("/api/featured-timeslot", (req, res) => {
+   const featured = db.getFeaturedTimeslot();
+   res.json(featured || null);
+});
+
 module.exports = router;

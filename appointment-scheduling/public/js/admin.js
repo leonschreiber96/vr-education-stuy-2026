@@ -718,6 +718,7 @@ function displayTimeslots() {
                        <th style="width: 40px;">
                            <input type="checkbox" onchange="toggleSelectAll(this)" title="Alle auswählen">
                        </th>
+                       <th style="width: 40px;">★</th>
                        <th>Datum</th>
                        <th>Uhrzeit</th>
                        <th>Ort</th>
@@ -804,6 +805,7 @@ function displayTimeslots() {
                                : "-";
 
                          const isSelected = selectedTimeslots.has(slot.id);
+                         const isFeatured = slot.is_featured === 1;
                          return `
                            <tr>
                                <td>
@@ -812,6 +814,26 @@ function displayTimeslots() {
                                           data-id="${slot.id}"
                                           ${isSelected ? "checked" : ""}
                                           onchange="toggleTimeslotSelection(${slot.id}, this)">
+                               </td>
+                               <td>
+                                   <button
+                                       class="btn btn-sm"
+                                       onclick="toggleFeaturedTimeslot(${slot.id})"
+                                       title="${isFeatured ? "Als empfohlenen Termin entfernen" : "Als empfohlenen Termin markieren"}"
+                                       style="
+                                           background: none;
+                                           border: none;
+                                           font-size: 20px;
+                                           cursor: pointer;
+                                           padding: 4px 8px;
+                                           color: ${isFeatured ? "#ffc107" : "#ccc"};
+                                           transition: all 0.2s;
+                                       "
+                                       onmouseover="this.style.transform='scale(1.2)'"
+                                       onmouseout="this.style.transform='scale(1)'"
+                                   >
+                                       ${isFeatured ? "★" : "☆"}
+                                   </button>
                                </td>
                                <td>${dateStr}</td>
                                <td>${timeStr}</td>
@@ -1718,6 +1740,30 @@ async function cancelBookingsForTimeslot(id) {
       displayUpcomingAppointments();
    } catch (error) {
       console.error("Error cancelling bookings:", error);
+      showDashboardAlert(error.message, "error");
+   }
+}
+
+// Toggle featured status for a timeslot
+async function toggleFeaturedTimeslot(id) {
+   try {
+      const response = await fetch(
+         BASE_PATH + `/api/admin/timeslots/${id}/toggle-featured`,
+         {
+            method: "POST",
+         },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+         throw new Error(data.error || "Fehler beim Ändern des Status");
+      }
+
+      showDashboardAlert(data.message, "success");
+      await loadTimeslots();
+   } catch (error) {
+      console.error("Error toggling featured status:", error);
       showDashboardAlert(error.message, "error");
    }
 }

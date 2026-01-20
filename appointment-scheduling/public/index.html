@@ -75,6 +75,72 @@
                      >
                   </p>
                </div>
+               <!-- Featured Timeslot Section -->
+               <div
+                  id="featuredTimeslotSection"
+                  class="hidden"
+                  style="margin-bottom: 20px"
+               >
+                  <div
+                     style="
+                        background: linear-gradient(
+                           135deg,
+                           #667eea 0%,
+                           #764ba2 100%
+                        );
+                        color: white;
+                        padding: 20px;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                     "
+                  >
+                     <div
+                        style="
+                           display: flex;
+                           align-items: center;
+                           gap: 10px;
+                           margin-bottom: 10px;
+                        "
+                     >
+                        <span style="font-size: 24px">⭐</span>
+                        <h3 style="margin: 0; font-size: 1.3em">
+                           Empfohlener Termin
+                        </h3>
+                     </div>
+                     <p
+                        style="margin: 10px 0; opacity: 0.95; font-size: 0.95em"
+                     >
+                        Wir empfehlen Ihnen diesen Termin. Er ist besonders gut
+                        verfügbar und optimal für die Studie geeignet.
+                     </p>
+                     <div
+                        id="featuredTimeslotCard"
+                        style="
+                           background: white;
+                           color: #333;
+                           padding: 15px;
+                           border-radius: 8px;
+                           margin-top: 15px;
+                           cursor: pointer;
+                           transition: transform 0.2s;
+                        "
+                        onmouseover="this.style.transform = 'scale(1.02)'"
+                        onmouseout="this.style.transform = 'scale(1)'"
+                     >
+                        <!-- Featured timeslot content will be inserted here -->
+                     </div>
+                  </div>
+                  <div
+                     style="
+                        text-align: center;
+                        margin: 15px 0;
+                        color: #666;
+                        font-weight: 500;
+                     "
+                  >
+                     oder wählen Sie einen anderen Termin unten
+                  </div>
+               </div>
                <div id="primaryTimeslotsLoading" class="loading">
                   <div class="loading-spinner"></div>
                   <p>Termine werden geladen...</p>

@@ -13,6 +13,7 @@ import {
    displayPrimaryTimeslots,
    displayFollowupTimeslots,
    displaySelectedPrimaryInfo,
+   displayFeaturedTimeslot,
    handlePrimaryTimeslotSelection,
    handleFollowupTimeslotSelection,
 } from "./pages/index/timeslotSelection.js";
@@ -61,6 +62,9 @@ async function loadPrimaryTimeslots() {
       const timeslots = await fetchPrimaryTimeslots();
       setPrimaryTimeslots(timeslots);
       console.log("Loaded primary timeslots:", timeslots.length);
+
+      // Load and display featured timeslot
+      await displayFeaturedTimeslot();
    } catch (error) {
       console.error("Error loading primary timeslots:", error);
       showError(

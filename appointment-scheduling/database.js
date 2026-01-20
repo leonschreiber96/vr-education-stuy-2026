@@ -94,6 +94,11 @@ function initialize() {
          definition: "INTEGER",
       },
       {
+         table: "timeslots",
+         column: "is_featured",
+         definition: "INTEGER DEFAULT 0",
+      },
+      {
          table: "bookings",
          column: "is_followup",
          definition: "INTEGER DEFAULT 0",
@@ -383,6 +388,33 @@ function updateTimeslot(id, updates) {
 function deleteTimeslot(id) {
    const stmt = db.prepare("DELETE FROM timeslots WHERE id = ?");
    stmt.run(id);
+}
+
+// Set a timeslot as featured (only one can be featured at a time)
+function setFeaturedTimeslot(timeslotId) {
+   const transaction = db.transaction(() => {
+      // Unfeatured all timeslots first
+      db.prepare("UPDATE timeslots SET is_featured = 0").run();
+      // Set the specified one as featured
+      if (timeslotId !== null) {
+         db.prepare("UPDATE timeslots SET is_featured = 1 WHERE id = ?").run(
+            timeslotId,
+         );
+      }
+   });
+   transaction();
+}
+
+// Get the currently featured timeslot
+function getFeaturedTimeslot() {
+   const stmt = db.prepare(`
+      SELECT t.*,
+      (SELECT COUNT(*) FROM bookings WHERE timeslot_id = t.id AND status = 'active') as booked_count
+      FROM timeslots t
+      WHERE t.is_featured = 1
+      LIMIT 1
+   `);
+   return stmt.get();
 }
 
 // Delete all bookings for a timeslot (including linked bookings)
@@ -1208,7 +1240,8 @@ module.exports = {
    getTimeslotsCount,
    updateTimeslot,
    deleteTimeslot,
-   deleteBookingsForTimeslotWithLinked,
+   setFeaturedTimeslot,
+   getFeaturedTimeslot,
    bulkDeleteTimeslots,
    getTimeslotsInRange,
    bulkCreateTimeslots,

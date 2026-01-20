@@ -720,6 +720,46 @@ router.delete(
    }),
 );
 
+/**
+ * POST /timeslots/:id/toggle-featured
+ * Toggle featured status for a timeslot (only one can be featured at a time)
+ */
+router.post(
+   "/timeslots/:id/toggle-featured",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { id } = req.params;
+
+      // Get timeslot data
+      const timeslot = db.getTimeslotById(id);
+      if (!timeslot) {
+         throw new NotFoundError("Timeslot not found");
+      }
+
+      const wasFeatured = timeslot.is_featured === 1;
+
+      if (wasFeatured) {
+         // Unfeatured this timeslot
+         db.setFeaturedTimeslot(null);
+         Logger.info("Timeslot unfeatured", { timeslotId: id });
+         res.json({
+            success: true,
+            message: "Timeslot unfeatured",
+            isFeatured: false,
+         });
+      } else {
+         // Feature this timeslot (and unfeatured all others)
+         db.setFeaturedTimeslot(id);
+         Logger.info("Timeslot featured", { timeslotId: id });
+         res.json({
+            success: true,
+            message: "Timeslot featured",
+            isFeatured: true,
+         });
+      }
+   }),
+);
+
 // ============================================================================
 // Booking Routes
 // ============================================================================

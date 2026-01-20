@@ -1,30 +1,106 @@
 // Timeslot selection and display logic for registration page
 
-import { formatDate, formatTimeRange, daysBetween, parseISODate } from '../../utils/dateFormatter.js';
-import { state, selectPrimaryTimeslot as selectPrimaryInState, selectFollowupTimeslot as selectFollowupInState } from './state.js';
-import { disable, enable, querySelectorAll, getElementById } from '../../utils/dom.js';
+import {
+   formatDate,
+   formatTimeRange,
+   daysBetween,
+   parseISODate,
+} from "../../utils/dateFormatter.js";
+import {
+   state,
+   selectPrimaryTimeslot as selectPrimaryInState,
+   selectFollowupTimeslot as selectFollowupInState,
+} from "./state.js";
+import {
+   disable,
+   enable,
+   querySelectorAll,
+   getElementById,
+} from "../../utils/dom.js";
+import { API_BASE } from "../../config.js";
+
+/**
+ * Display featured timeslot prominently
+ */
+export async function displayFeaturedTimeslot() {
+   const featuredSection = getElementById("featuredTimeslotSection");
+   const featuredCard = getElementById("featuredTimeslotCard");
+
+   if (!featuredSection || !featuredCard) return;
+
+   try {
+      // Fetch featured timeslot from API
+      const response = await fetch(`${API_BASE}/featured-timeslot`);
+      const featuredSlot = await response.json();
+
+      if (featuredSlot && featuredSlot.id) {
+         // Check if it has capacity
+         const bookedCount = featuredSlot.booked_count || 0;
+         const capacity = featuredSlot.capacity;
+         const hasCapacity = capacity === null || bookedCount < capacity;
+
+         if (hasCapacity) {
+            const startDate = parseISODate(featuredSlot.start_time);
+            const endDate = parseISODate(featuredSlot.end_time);
+            const dateStr = formatDate(startDate);
+            const timeStr = formatTimeRange(startDate, endDate);
+
+            featuredCard.innerHTML = `
+               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                     <div style="font-size: 1.2em; font-weight: 600; color: #667eea; margin-bottom: 5px;">
+                        ${dateStr}
+                     </div>
+                     <div style="font-size: 1em; color: #666; margin-bottom: 8px;">
+                        🕐 ${timeStr}
+                     </div>
+                     ${featuredSlot.location ? `<div style="font-size: 0.95em; color: #888;">📍 ${featuredSlot.location}</div>` : ""}
+                  </div>
+                  <button
+                     class="btn btn-primary"
+                     onclick="window.handlePrimaryTimeslotClick(${featuredSlot.id})"
+                     style="white-space: nowrap;">
+                     Diesen Termin wählen
+                  </button>
+               </div>
+            `;
+            featuredCard.onclick = () =>
+               window.handlePrimaryTimeslotClick(featuredSlot.id);
+            featuredSection.classList.remove("hidden");
+         } else {
+            featuredSection.classList.add("hidden");
+         }
+      } else {
+         featuredSection.classList.add("hidden");
+      }
+   } catch (error) {
+      console.error("Error loading featured timeslot:", error);
+      featuredSection.classList.add("hidden");
+   }
+}
 
 /**
  * Display primary timeslots in the UI
  */
 export function displayPrimaryTimeslots() {
-   const container = getElementById('primaryTimeslotsContainer');
-   const loading = getElementById('primaryTimeslotsLoading');
+   const container = getElementById("primaryTimeslotsContainer");
+   const loading = getElementById("primaryTimeslotsLoading");
 
    if (!container || !loading) return;
 
-   loading.classList.add('hidden');
-   container.classList.remove('hidden');
+   loading.classList.add("hidden");
+   container.classList.remove("hidden");
 
    if (state.primaryTimeslots.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">Derzeit sind keine Haupttermine verfügbar. Bitte schauen Sie später noch einmal vorbei.</p>';
+      container.innerHTML =
+         '<p style="text-align: center; color: #6c757d; padding: 40px;">Derzeit sind keine Haupttermine verfügbar. Bitte schauen Sie später noch einmal vorbei.</p>';
       return;
    }
 
    // Show scroll hint if there are many timeslots
-   const scrollHint = getElementById('primaryScrollHint');
+   const scrollHint = getElementById("primaryScrollHint");
    if (scrollHint && state.primaryTimeslots.length > 6) {
-      scrollHint.classList.remove('hidden');
+      scrollHint.classList.remove("hidden");
    }
 
    container.innerHTML = state.primaryTimeslots
@@ -47,32 +123,33 @@ export function displayPrimaryTimeslots() {
             </div>
          `;
       })
-      .join('');
+      .join("");
 }
 
 /**
  * Display followup timeslots in the UI
  */
 export function displayFollowupTimeslots() {
-   const container = getElementById('followupTimeslotsContainer');
-   const loading = getElementById('followupTimeslotsLoading');
+   const container = getElementById("followupTimeslotsContainer");
+   const loading = getElementById("followupTimeslotsLoading");
 
    if (!container || !loading) return;
 
-   loading.classList.add('hidden');
-   container.classList.remove('hidden');
+   loading.classList.add("hidden");
+   container.classList.remove("hidden");
 
    if (state.followupTimeslots.length === 0) {
-      container.innerHTML = '<div class="alert alert-warning">Leider sind keine passenden Folgetermine (29-31 Tage nach dem Haupttermin) verfügbar. Bitte wählen Sie einen anderen Haupttermin.</div>';
+      container.innerHTML =
+         '<div class="alert alert-warning">Leider sind keine passenden Folgetermine (29-31 Tage nach dem Haupttermin) verfügbar. Bitte wählen Sie einen anderen Haupttermin.</div>';
       return;
    }
 
    const primaryDate = parseISODate(state.selectedPrimaryTimeslot.start_time);
 
    // Show scroll hint if there are many timeslots
-   const scrollHint = getElementById('followupScrollHint');
+   const scrollHint = getElementById("followupScrollHint");
    if (scrollHint && state.followupTimeslots.length > 6) {
-      scrollHint.classList.remove('hidden');
+      scrollHint.classList.remove("hidden");
    }
 
    container.innerHTML = state.followupTimeslots
@@ -99,7 +176,7 @@ export function displayFollowupTimeslots() {
             </div>
          `;
       })
-      .join('');
+      .join("");
 }
 
 /**
@@ -110,14 +187,14 @@ export function handlePrimaryTimeslotSelection(timeslotId) {
    selectPrimaryInState(timeslotId);
 
    // Update UI - remove selection from all timeslots
-   querySelectorAll('#primaryTimeslotsContainer .timeslot').forEach((slot) => {
-      slot.classList.remove('selected');
+   querySelectorAll("#primaryTimeslotsContainer .timeslot").forEach((slot) => {
+      slot.classList.remove("selected");
    });
 
    // Add selection to clicked timeslot
    const clickedSlot = event?.currentTarget;
    if (clickedSlot) {
-      clickedSlot.classList.add('selected');
+      clickedSlot.classList.add("selected");
    }
 
    // Check the radio button
@@ -127,7 +204,7 @@ export function handlePrimaryTimeslotSelection(timeslotId) {
    }
 
    // Enable continue button
-   enable('continueToStep3Btn');
+   enable("continueToStep3Btn");
 }
 
 /**
@@ -138,14 +215,14 @@ export function handleFollowupTimeslotSelection(timeslotId) {
    selectFollowupInState(timeslotId);
 
    // Update UI - remove selection from all timeslots
-   querySelectorAll('#followupTimeslotsContainer .timeslot').forEach((slot) => {
-      slot.classList.remove('selected');
+   querySelectorAll("#followupTimeslotsContainer .timeslot").forEach((slot) => {
+      slot.classList.remove("selected");
    });
 
    // Add selection to clicked timeslot
    const clickedSlot = event?.currentTarget;
    if (clickedSlot) {
-      clickedSlot.classList.add('selected');
+      clickedSlot.classList.add("selected");
    }
 
    // Check the radio button
@@ -155,7 +232,7 @@ export function handleFollowupTimeslotSelection(timeslotId) {
    }
 
    // Enable submit button
-   enable('submitRegistrationBtn');
+   enable("submitRegistrationBtn");
 }
 
 /**
@@ -170,7 +247,7 @@ export function displaySelectedPrimaryInfo() {
    const dateStr = formatDate(startDate);
    const timeStr = formatTimeRange(startDate, endDate);
 
-   const infoElement = getElementById('selectedPrimaryInfo');
+   const infoElement = getElementById("selectedPrimaryInfo");
    if (infoElement) {
       infoElement.innerHTML = `
          <strong>${dateStr}</strong><br>
