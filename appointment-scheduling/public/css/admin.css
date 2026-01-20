@@ -21,7 +21,7 @@ body {
    display: flex;
    align-items: center;
    justify-content: center;
-   background: linear-gradient(135deg, #c40d1e 0%, #9013fe 100%);
+   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
    padding: 20px;
 }
 
@@ -35,7 +35,7 @@ body {
 }
 
 .login-box h1 {
-   color: #c40d1e;
+   color: #667eea;
    margin-bottom: 10px;
    text-align: center;
 }
@@ -65,7 +65,7 @@ body {
 }
 
 .dashboard-header h1 {
-   color: #c40d1e;
+   color: #667eea;
    font-size: 1.8em;
    margin: 0;
 }
@@ -73,7 +73,7 @@ body {
 .btn-logout {
    padding: 8px 16px;
    font-size: 14px;
-   background: #434343;
+   background: #6c757d;
    color: white;
    border: none;
    border-radius: 6px;
@@ -83,7 +83,7 @@ body {
 }
 
 .btn-logout:hover {
-   background: #000000;
+   background: #5a6268;
    transform: translateY(-1px);
    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -99,7 +99,7 @@ body {
 }
 
 .topbar h1 {
-   color: #c40d1e;
+   color: #667eea;
    font-size: 1.5em;
 }
 
@@ -137,19 +137,19 @@ body {
 }
 
 .tab:hover {
-   color: #c40d1e;
+   color: #667eea;
 }
 
 .tab.active {
-   color: #c40d1e;
-   border-bottom-color: #c40d1e;
+   color: #667eea;
+   border-bottom-color: #667eea;
 }
 
 .tab-notification-badge {
    position: absolute;
    top: 6px;
    right: 6px;
-   background: #c40d1e;
+   background: #dc3545;
    color: white;
    border-radius: 10px;
    padding: 2px 6px;
@@ -246,7 +246,7 @@ input[type="number"] {
 input:focus,
 textarea:focus {
    outline: none;
-   border-color: #c40d1e;
+   border-color: #667eea;
 }
 
 .btn {
@@ -262,40 +262,40 @@ textarea:focus {
 }
 
 .btn-primary {
-   background: linear-gradient(135deg, #ff6c00 0%, #c40d1e 100%);
+   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
    color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
    transform: translateY(-2px);
-   box-shadow: 0 6px 20px rgba(196, 13, 30, 0.4);
+   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-   background: #434343;
+   background: #6c757d;
    color: white;
 }
 
 .btn-secondary:hover {
-   background: #000000;
+   background: #5a6268;
 }
 
 .btn-success {
-   background: #49cb40;
+   background: #28a745;
    color: white;
 }
 
 .btn-success:hover {
-   background: #3ab032;
+   background: #218838;
 }
 
 .btn-danger {
-   background: #c40d1e;
+   background: #dc3545;
    color: white;
 }
 
 .btn-danger:hover {
-   background: #a00a18;
+   background: #c82333;
 }
 
 .btn-sm {
@@ -317,7 +317,7 @@ textarea:focus {
 }
 
 .card h2 {
-   color: #c40d1e;
+   color: #667eea;
    margin-bottom: 20px;
    font-size: 1.3em;
 }
@@ -455,39 +455,39 @@ textarea:focus {
 }
 
 .result-btn-success {
-   background: #49cb40;
+   background: #48bb78;
    color: white;
 }
 
 .result-btn-success:hover {
-   background: #3ab032;
+   background: #38a169;
 }
 
 .result-btn-issues {
-   background: #ff6c00;
+   background: #f6ad55;
    color: white;
 }
 
 .result-btn-issues:hover {
-   background: #e65f00;
+   background: #ed8936;
 }
 
 .result-btn-unusable {
-   background: #c40d1e;
+   background: #fc8181;
    color: white;
 }
 
 .result-btn-unusable:hover {
-   background: #a00a18;
+   background: #f56565;
 }
 
 .result-btn-noshow {
-   background: #b2b2b2;
-   color: #000000;
+   background: #cbd5e0;
+   color: #2d3748;
 }
 
 .result-btn-noshow:hover {
-   background: #999999;
+   background: #a0aec0;
 }
 
 .appointment-card {
@@ -527,15 +527,15 @@ textarea:focus {
 }
 
 .type-primary {
-   background: #c40d1e;
+   background: #667eea;
 }
 
 .type-followup {
-   background: #49cb40;
+   background: #48bb78;
 }
 
 .type-dual {
-   background: #434343;
+   background: #4a5568;
 }
 
 .table-container {
@@ -577,23 +577,23 @@ tr:hover {
 }
 
 .badge-success {
-   background: #e8f8e6;
-   color: #2a7a1f;
+   background: #d4edda;
+   color: #155724;
 }
 
 .badge-danger {
-   background: #ffe5e7;
-   color: #a00a18;
+   background: #f8d7da;
+   color: #721c24;
 }
 
 .badge-warning {
-   background: #fff3e0;
-   color: #e65f00;
+   background: #fff3cd;
+   color: #856404;
 }
 
 .badge-info {
-   background: #e3f2fd;
-   color: #1565c0;
+   background: #d1ecf1;
+   color: #0c5460;
 }
 
 .alert {
@@ -604,21 +604,21 @@ tr:hover {
 }
 
 .alert-success {
-   background: #e8f8e6;
-   border: 1px solid #c6ebc1;
-   color: #2a7a1f;
+   background: #d4edda;
+   border: 1px solid #c3e6cb;
+   color: #155724;
 }
 
 .alert-error {
-   background: #ffe5e7;
-   border: 1px solid #ffccd0;
-   color: #a00a18;
+   background: #f8d7da;
+   border: 1px solid #f5c6cb;
+   color: #721c24;
 }
 
 .alert-info {
-   background: #e3f2fd;
-   border: 1px solid #bbdefb;
-   color: #1565c0;
+   background: #d1ecf1;
+   border: 1px solid #bee5eb;
+   color: #0c5460;
 }
 
 .modal {
@@ -654,7 +654,7 @@ tr:hover {
 }
 
 .modal-header h3 {
-   color: #c40d1e;
+   color: #667eea;
    font-size: 1.5em;
 }
 
@@ -685,7 +685,7 @@ tr:hover {
 }
 
 .close-btn:hover {
-   color: #c40d1e;
+   color: #667eea;
 }
 
 .booking-badge {
@@ -701,7 +701,7 @@ tr:hover {
 .loading {
    text-align: center;
    padding: 40px;
-   color: #c40d1e;
+   color: #667eea;
 }
 
 .loading-spinner {
@@ -709,7 +709,7 @@ tr:hover {
    width: 40px;
    height: 40px;
    border: 4px solid #e0e0e0;
-   border-top-color: #c40d1e;
+   border-top-color: #667eea;
    border-radius: 50%;
    animation: spin 1s linear infinite;
 }
@@ -737,26 +737,9 @@ tr:hover {
 }
 
 .log-action {
-   color: #c40d1e;
+   color: #667eea;
    font-weight: 600;
    margin-right: 10px;
-}
-
-/* Featured Timeslot Star */
-.featured-star {
-   cursor: pointer;
-   font-size: 20px;
-   transition: all 0.2s;
-   color: #ddd;
-}
-
-.featured-star.active {
-   color: #ff6c00;
-   text-shadow: 0 0 8px rgba(255, 108, 0, 0.5);
-}
-
-.featured-star:hover {
-   transform: scale(1.2);
 }
 
 @media (max-width: 768px) {
@@ -810,7 +793,7 @@ tr:hover {
 }
 
 .calendar-day-today {
-   border: 3px solid #c40d1e !important;
+   border: 3px solid #667eea !important;
 }
 
 .calendar-event {
@@ -822,13 +805,13 @@ tr:hover {
 }
 
 .calendar-event-primary {
-   background: #c40d1e;
+   background: #667eea;
 }
 
 .calendar-event-followup {
-   background: #49cb40;
+   background: #48bb78;
 }
 
 .calendar-event-booked {
-   background: #ff6c00;
+   background: #ed8936;
 }
