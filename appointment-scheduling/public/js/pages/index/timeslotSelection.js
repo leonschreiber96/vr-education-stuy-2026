@@ -58,14 +58,13 @@ export async function displayFeaturedTimeslot() {
                   </div>
                   <button
                      class="btn btn-primary"
-                     onclick="window.handlePrimaryTimeslotClick(${featuredSlot.id})"
+                     onclick="window.handleFeaturedTimeslotClick(${featuredSlot.id})"
                      style="white-space: nowrap;">
                      Diesen Termin wählen
                   </button>
                </div>
             `;
-            featuredCard.onclick = () =>
-               window.handlePrimaryTimeslotClick(featuredSlot.id);
+            featuredCard.onclick = null; // Remove onclick from card itself to avoid double-triggering
             featuredSection.classList.remove("hidden");
          } else {
             featuredSection.classList.add("hidden");
@@ -205,6 +204,25 @@ export function handlePrimaryTimeslotSelection(timeslotId) {
 
    // Enable continue button
    enable("continueToStep3Btn");
+}
+
+/**
+ * Handle featured timeslot selection - directly proceed to followup selection
+ * @param {number} timeslotId - The selected timeslot ID
+ */
+export function handleFeaturedTimeslotSelection(timeslotId) {
+   selectPrimaryInState(timeslotId);
+
+   // Check the radio button if it exists in the main list
+   const radioButton = getElementById(`primary-slot-${timeslotId}`);
+   if (radioButton) {
+      radioButton.checked = true;
+   }
+
+   // Directly proceed to step 3 (followup selection)
+   if (window.continueToStep3) {
+      window.continueToStep3();
+   }
 }
 
 /**

@@ -16,6 +16,7 @@ import {
    displayFeaturedTimeslot,
    handlePrimaryTimeslotSelection,
    handleFollowupTimeslotSelection,
+   handleFeaturedTimeslotSelection,
 } from "./pages/index/timeslotSelection.js";
 import {
    fetchPrimaryTimeslots,
@@ -48,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Expose functions to global scope for onclick handlers
 window.handlePrimaryTimeslotClick = handlePrimaryTimeslotSelection;
 window.handleFollowupTimeslotClick = handleFollowupTimeslotSelection;
+window.handleFeaturedTimeslotClick = handleFeaturedTimeslotSelection;
 window.continueToStep2 = continueToStep2;
 window.continueToStep3 = continueToStep3;
 window.submitRegistration = submitRegistration;
