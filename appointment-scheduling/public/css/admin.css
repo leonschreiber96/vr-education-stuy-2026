@@ -662,6 +662,20 @@ tr:hover {
    margin-bottom: 20px;
 }
 
+.info-text {
+   padding: 15px;
+   background-color: #f0f7ff;
+   border-left: 4px solid #667eea;
+   border-radius: 4px;
+   margin-bottom: 20px;
+   font-size: 14px;
+   line-height: 1.5;
+}
+
+.info-text strong {
+   color: #667eea;
+}
+
 .modal-footer {
    display: flex;
    gap: 10px;

@@ -325,6 +325,220 @@ router.post(
 );
 
 /**
+ * PUT /timeslots/bulk-edit
+ * Bulk edit timeslots (location and/or appointment type)
+ */
+router.put(
+   "/timeslots/bulk-edit",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { ids, updates } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+         throw new ValidationError("Invalid or empty timeslot IDs array");
+      }
+
+      if (!updates || typeof updates !== "object") {
+         throw new ValidationError("Updates object is required");
+      }
+
+      // Validate that at least one field is being updated
+      const { location, appointmentType, capacity } = updates;
+      if (
+         location === undefined &&
+         appointmentType === undefined &&
+         capacity === undefined
+      ) {
+         throw new ValidationError(
+            "At least one field (location, appointmentType, or capacity) must be provided",
+         );
+      }
+
+      // Track results
+      const results = {
+         updated: 0,
+         failed: 0,
+         errors: [],
+         affectedParticipants: [],
+      };
+
+      // Process each timeslot
+      for (const id of ids) {
+         try {
+            const timeslot = db.getTimeslotById(id);
+            if (!timeslot) {
+               results.failed++;
+               results.errors.push({
+                  id,
+                  error: "Timeslot not found",
+               });
+               continue;
+            }
+
+            // Check if timeslot has bookings - need to notify participants if location changes
+            const affectedParticipants =
+               db.getAffectedParticipantsWithLinkedBookings(id);
+            const hasBookings = affectedParticipants.length > 0;
+
+            // Check if timeslot has variant capacities (primary_capacity or followup_capacity)
+            const hasVariantCapacities =
+               timeslot.primary_capacity !== null ||
+               timeslot.followup_capacity !== null;
+
+            // Prepare update object
+            const updateData = {};
+            if (location !== undefined) {
+               updateData.location = location;
+            }
+            if (capacity !== undefined) {
+               // Only allow capacity changes for timeslots with singular capacity
+               if (hasVariantCapacities) {
+                  results.failed++;
+                  results.errors.push({
+                     id,
+                     error: "Cannot change capacity: timeslot has variant capacities (primary/followup)",
+                  });
+                  continue;
+               }
+               updateData.capacity = capacity;
+            }
+            if (appointmentType !== undefined) {
+               updateData.appointmentType = appointmentType;
+
+               // Validate appointment type
+               const validTypes = ["primary", "followup", "dual"];
+               if (!validTypes.includes(appointmentType)) {
+                  results.failed++;
+                  results.errors.push({
+                     id,
+                     error: `Invalid appointment type: ${appointmentType}`,
+                  });
+                  continue;
+               }
+
+               // If timeslot has bookings, validate type compatibility
+               if (hasBookings) {
+                  // Check if any affected participants have incompatible bookings
+                  let hasIncompatibleBookings = false;
+                  let errorMessage = "";
+
+                  for (const participant of affectedParticipants) {
+                     const isPrimaryBooking =
+                        participant.primary &&
+                        participant.primary.timeslot_id === id;
+                     const isFollowupBooking =
+                        participant.followup &&
+                        participant.followup.timeslot_id === id;
+
+                     // Check if new type is compatible with existing bookings
+                     if (appointmentType === "primary" && isFollowupBooking) {
+                        hasIncompatibleBookings = true;
+                        errorMessage =
+                           "Cannot change to primary-only: has follow-up bookings";
+                        break;
+                     }
+                     if (appointmentType === "followup" && isPrimaryBooking) {
+                        hasIncompatibleBookings = true;
+                        errorMessage =
+                           "Cannot change to follow-up-only: has primary bookings";
+                        break;
+                     }
+                  }
+
+                  if (hasIncompatibleBookings) {
+                     results.failed++;
+                     results.errors.push({
+                        id,
+                        error: errorMessage,
+                     });
+                     continue;
+                  }
+               }
+            }
+
+            // Update the timeslot
+            db.updateTimeslot(id, updateData);
+            results.updated++;
+
+            // If location changed and has bookings, collect participants for notification
+            if (location !== undefined && hasBookings) {
+               for (const participantData of affectedParticipants) {
+                  // Check if we already have this participant
+                  if (
+                     !results.affectedParticipants.find(
+                        (p) => p.email === participantData.email,
+                     )
+                  ) {
+                     results.affectedParticipants.push({
+                        id: participantData.participant_id,
+                        email: participantData.email,
+                        name: participantData.name,
+                        oldLocation: timeslot.location, // Store old location
+                     });
+                  }
+               }
+            }
+
+            Logger.info("Timeslot updated via bulk edit", {
+               timeslotId: id,
+               updates: updateData,
+               hasBookings,
+            });
+         } catch (error) {
+            results.failed++;
+            results.errors.push({
+               id,
+               error: error.message,
+            });
+            Logger.error("Failed to update timeslot in bulk edit", error, {
+               timeslotId: id,
+            });
+         }
+      }
+
+      // Send notification emails to affected participants if location changed
+      if (location !== undefined && results.affectedParticipants.length > 0) {
+         for (const participant of results.affectedParticipants) {
+            const oldLocationText =
+               participant.oldLocation || "nicht angegeben";
+            const newLocationText = location || "nicht angegeben";
+            mailer
+               .sendCustomEmail(
+                  participant.email,
+                  participant.name,
+                  "Raumänderung - Ihre Termine wurden aktualisiert",
+                  `Der Ort für Ihre Termine wurde geändert.\n\nAlter Ort: ${oldLocationText}\nNeuer Ort: ${newLocationText}\n\nBitte notieren Sie sich die Änderung. Ihre Termine bleiben ansonsten unverändert.`,
+               )
+               .catch((err) => {
+                  Logger.error(
+                     "Failed to send location change notification",
+                     err,
+                     {
+                        participantId: participant.id,
+                     },
+                  );
+               });
+         }
+      }
+
+      Logger.info("Bulk edit completed", {
+         totalRequested: ids.length,
+         updated: results.updated,
+         failed: results.failed,
+         notifiedParticipants: results.affectedParticipants.length,
+      });
+
+      res.json({
+         success: true,
+         updated: results.updated,
+         failed: results.failed,
+         errors: results.errors,
+         notifiedParticipants: results.affectedParticipants.length,
+      });
+   }),
+);
+
+/**
  * PUT /timeslots/:id
  * Update a timeslot
  */

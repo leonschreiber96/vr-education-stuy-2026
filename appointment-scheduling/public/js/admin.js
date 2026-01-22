@@ -663,13 +663,18 @@ const selectedTimeslots = new Set();
 // Update bulk delete button visibility
 function updateBulkDeleteButton() {
    const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+   const bulkEditBtn = document.getElementById("bulkEditBtn");
    const selectedCount = document.getElementById("selectedCount");
+   const selectedCountEdit = document.getElementById("selectedCountEdit");
 
    if (selectedTimeslots.size > 0) {
       bulkDeleteBtn.style.display = "block";
+      bulkEditBtn.style.display = "block";
       selectedCount.textContent = selectedTimeslots.size;
+      selectedCountEdit.textContent = selectedTimeslots.size;
    } else {
       bulkDeleteBtn.style.display = "none";
+      bulkEditBtn.style.display = "none";
    }
 }
 
@@ -793,9 +798,45 @@ function displayTimeslots() {
                                b.timeslot_id === slot.id &&
                                b.status === "active",
                          );
-                         const capacityStr = slot.capacity
-                            ? `${activeBookingsForSlot.length}/${slot.capacity}`
-                            : `${activeBookingsForSlot.length}/∞`;
+
+                         // Show capacity - handle dual appointments with variant capacities
+                         let capacityStr;
+                         if (
+                            slot.primary_capacity !== null ||
+                            slot.followup_capacity !== null
+                         ) {
+                            // Dual appointment with variant capacities - count primary vs followup bookings
+                            const primaryBookings =
+                               activeBookingsForSlot.filter(
+                                  (b) => !b.is_followup,
+                               ).length;
+                            const followupBookings =
+                               activeBookingsForSlot.filter(
+                                  (b) => b.is_followup,
+                               ).length;
+
+                            const primaryCap =
+                               slot.primary_capacity !== null
+                                  ? slot.primary_capacity
+                                  : "∞";
+                            const followupCap =
+                               slot.followup_capacity !== null
+                                  ? slot.followup_capacity
+                                  : "∞";
+
+                            // Color-coded display with separate counts
+                            capacityStr = `
+                               <span style="color: #17a2b8; font-weight: 500;">H: ${primaryBookings}/${primaryCap}</span>
+                               <span style="color: #999; margin: 0 4px;">|</span>
+                               <span style="color: #28a745; font-weight: 500;">F: ${followupBookings}/${followupCap}</span>
+                            `;
+                         } else if (slot.capacity) {
+                            // Singular capacity
+                            capacityStr = `${activeBookingsForSlot.length}/${slot.capacity}`;
+                         } else {
+                            // No capacity limit
+                            capacityStr = `${activeBookingsForSlot.length}/∞`;
+                         }
 
                          const participantsList =
                             activeBookingsForSlot.length > 0
@@ -1794,6 +1835,127 @@ async function deleteTimeslot(id) {
    } catch (error) {
       console.error("Error deleting timeslot:", error);
       showDashboardAlert(error.message, "error");
+   }
+}
+
+// Show bulk edit modal
+function showBulkEditModal() {
+   if (selectedTimeslots.size === 0) {
+      showDashboardAlert(
+         "Bitte wählen Sie mindestens einen Zeitslot aus.",
+         "warning",
+      );
+      return;
+   }
+
+   // Update count in modal
+   document.getElementById("bulkEditCount").textContent =
+      selectedTimeslots.size;
+
+   // Reset form
+   document.getElementById("bulkEditForm").reset();
+
+   // Show modal
+   document.getElementById("bulkEditModal").style.display = "flex";
+}
+
+// Close bulk edit modal
+function closeBulkEditModal() {
+   document.getElementById("bulkEditModal").style.display = "none";
+}
+
+// Apply bulk edit changes
+async function applyBulkEdit() {
+   if (selectedTimeslots.size === 0) {
+      showDashboardAlert(
+         "Bitte wählen Sie mindestens einen Zeitslot aus.",
+         "warning",
+      );
+      return;
+   }
+
+   const location = document.getElementById("bulkEditLocation").value.trim();
+   const appointmentType = document.getElementById(
+      "bulkEditAppointmentType",
+   ).value;
+   const capacityInput = document.getElementById("bulkEditCapacity").value;
+   const capacity = capacityInput ? parseInt(capacityInput) : null;
+
+   // Check if at least one field is being updated
+   if (!location && !appointmentType && capacity === null) {
+      showDashboardAlert(
+         "Bitte geben Sie mindestens ein Feld zum Aktualisieren an.",
+         "warning",
+      );
+      return;
+   }
+
+   // Build updates object
+   const updates = {};
+   if (location) {
+      updates.location = location;
+   }
+   if (appointmentType) {
+      updates.appointmentType = appointmentType;
+   }
+   if (capacity !== null) {
+      updates.capacity = capacity;
+   }
+
+   const btn = document.getElementById("bulkEditSubmitBtn");
+   const originalText = btn.innerHTML;
+   btn.disabled = true;
+   btn.innerHTML = "Wird aktualisiert...";
+
+   try {
+      const response = await fetch(
+         BASE_PATH + "/api/admin/timeslots/bulk-edit",
+         {
+            method: "PUT",
+            headers: {
+               "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+               ids: Array.from(selectedTimeslots),
+               updates: updates,
+            }),
+         },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+         throw new Error(data.error || "Fehler beim Aktualisieren");
+      }
+
+      let message = `${data.updated} Zeitslot(s) erfolgreich aktualisiert`;
+      if (data.failed > 0) {
+         message += `, ${data.failed} fehlgeschlagen`;
+      }
+      if (data.notifiedParticipants > 0) {
+         message += `. ${data.notifiedParticipants} Teilnehmer wurden benachrichtigt.`;
+      }
+
+      showDashboardAlert(message, data.failed > 0 ? "warning" : "success");
+
+      // Close modal
+      closeBulkEditModal();
+
+      // Clear selection
+      selectedTimeslots.clear();
+      updateBulkDeleteButton();
+
+      // Reload all data and refresh displays
+      await loadBookings();
+      await loadTimeslots();
+      updateStatistics();
+      displayUpcomingAppointments();
+   } catch (error) {
+      console.error("Error bulk editing timeslots:", error);
+      showDashboardAlert(error.message, "error");
+   } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
    }
 }
 

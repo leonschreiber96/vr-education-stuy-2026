@@ -438,6 +438,14 @@
                         </button>
                      </div>
                      <button
+                        id="bulkEditBtn"
+                        class="btn btn-secondary"
+                        onclick="showBulkEditModal()"
+                        style="display: none"
+                     >
+                        <span id="selectedCountEdit">0</span> bearbeiten
+                     </button>
+                     <button
                         id="bulkDeleteBtn"
                         class="btn btn-danger"
                         onclick="bulkDeleteSelectedTimeslots()"
@@ -1182,6 +1190,96 @@
                      </button>
                   </div>
                </form>
+            </div>
+         </div>
+      </div>
+
+      <!-- Bulk Edit Timeslots Modal -->
+      <div id="bulkEditModal" class="modal">
+         <div class="modal-content" style="max-width: 600px">
+            <div class="modal-header">
+               <h3>Zeitslots bearbeiten</h3>
+               <button class="close-btn" onclick="closeBulkEditModal()">
+                  ×
+               </button>
+            </div>
+            <div class="modal-body">
+               <p class="info-text">
+                  <strong>Hinweis:</strong> Die Änderungen werden auf
+                  <span id="bulkEditCount">0</span> ausgewählte Zeitslots
+                  angewendet.
+               </p>
+               <form id="bulkEditForm">
+                  <div class="form-group">
+                     <label for="bulkEditLocation">Ort</label>
+                     <input
+                        type="text"
+                        id="bulkEditLocation"
+                        name="bulkEditLocation"
+                        placeholder="Leer lassen, um unverändert zu lassen"
+                     />
+                     <small
+                        style="display: block; margin-top: 5px; color: #666"
+                     >
+                        Teilnehmer mit Buchungen werden per E-Mail über
+                        Raumänderungen benachrichtigt.
+                     </small>
+                  </div>
+                  <div class="form-group">
+                     <label for="bulkEditAppointmentType">Termintyp</label>
+                     <select
+                        id="bulkEditAppointmentType"
+                        name="bulkEditAppointmentType"
+                     >
+                        <option value="">Unverändert lassen</option>
+                        <option value="dual">
+                           Dual (Haupt- oder Folgetermin)
+                        </option>
+                        <option value="primary">Nur Haupttermin</option>
+                        <option value="followup">Nur Folgetermin</option>
+                     </select>
+                     <small
+                        style="display: block; margin-top: 5px; color: #666"
+                     >
+                        Zeitslots mit inkompatiblen Buchungen werden
+                        übersprungen.
+                     </small>
+                  </div>
+                  <div class="form-group">
+                     <label for="bulkEditCapacity">Kapazität</label>
+                     <input
+                        type="number"
+                        id="bulkEditCapacity"
+                        name="bulkEditCapacity"
+                        min="1"
+                        placeholder="Leer lassen, um unverändert zu lassen"
+                     />
+                     <small
+                        style="display: block; margin-top: 5px; color: #666"
+                     >
+                        Nur für Zeitslots mit einheitlicher Kapazität. Zeitslots
+                        mit variablen Kapazitäten
+                        (Haupt-/Folgetermin-spezifisch) werden übersprungen.
+                     </small>
+                  </div>
+               </form>
+            </div>
+            <div class="modal-footer">
+               <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="closeBulkEditModal()"
+               >
+                  Abbrechen
+               </button>
+               <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="bulkEditSubmitBtn"
+                  onclick="applyBulkEdit()"
+               >
+                  Änderungen anwenden
+               </button>
             </div>
          </div>
       </div>

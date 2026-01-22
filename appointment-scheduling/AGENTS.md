@@ -81,6 +81,7 @@
 - `PUT /api/admin/timeslots/:id` - Update timeslot (sends notifications if booked)
 - `DELETE /api/admin/timeslots/:id` - Delete timeslot (cancels bookings)
 - `POST /api/admin/timeslots/bulk` - Bulk delete timeslots
+- `PUT /api/admin/timeslots/bulk-edit` - Bulk edit timeslots (location and/or appointment type)
 - `POST /api/admin/timeslots/:id/cancel-bookings` - Cancel all bookings for timeslot
 - `POST /api/admin/timeslots/:id/toggle-featured` - Set/unset featured timeslot
 - `GET /api/admin/bookings` - List all bookings
@@ -287,6 +288,13 @@ npm run check         # Verify setup
 2. For bulk: Use date range picker with time slots
 3. Set appointment_type: dual|primary|followup
 4. Set capacity or separate primary_capacity/followup_capacity
+
+### Bulk Editing Timeslots
+1. Admin → Timeslots tab → Select multiple timeslots using checkboxes
+2. Click "X bearbeiten" button
+3. Update location and/or appointment type
+4. System validates compatibility with existing bookings
+5. Participants are notified via email if location changes
 
 ### Viewing Unreviewed Appointments
 1. Admin → Bookings tab → "Unreviewed"
