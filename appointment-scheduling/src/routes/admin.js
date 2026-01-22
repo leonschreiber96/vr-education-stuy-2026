@@ -17,10 +17,10 @@ const {
    NotFoundError,
 } = require("../middleware/errorHandler");
 const { Logger } = require("../middleware/logging");
-const env = require("../config/env");
+const config = require("../../config");
 
-const FOLLOWUP_MIN_DAYS = env.FOLLOWUP_MIN_DAYS;
-const FOLLOWUP_MAX_DAYS = env.FOLLOWUP_MAX_DAYS;
+const FOLLOWUP_MIN_DAYS = config.FOLLOWUP_MIN_DAYS;
+const FOLLOWUP_MAX_DAYS = config.FOLLOWUP_MAX_DAYS;
 
 // ============================================================================
 // Authentication Routes

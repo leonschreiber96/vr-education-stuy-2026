@@ -1,7 +1,7 @@
 // Server entry point
 // Creates app and starts HTTP server
 
-const env = require("./src/config/env");
+const config = require("./config");
 const createApp = require("./src/app");
 const db = require("./database");
 const bcrypt = require("bcrypt");
@@ -9,14 +9,14 @@ const { Logger } = require("./src/middleware/logging");
 
 // Validate environment configuration
 try {
-   env.validate();
+   config.validate();
 } catch (error) {
    console.error("❌ Environment validation failed:", error.message);
    process.exit(1);
 }
 
 // Print configuration summary
-env.printSummary();
+config.printSummary();
 
 // Initialize database
 db.initialize();
@@ -26,11 +26,11 @@ Logger.info("Database initialized");
 async function createDefaultAdmin() {
    const adminExists = db.getAdminByUsername("admin");
    if (!adminExists) {
-      const defaultPassword = process.env.ADMIN_PASSWORD || "admin123";
+      const defaultPassword = config.ADMIN_PASSWORD || "admin123";
       const hashedPassword = await bcrypt.hash(defaultPassword, 10);
       db.createAdmin("admin", hashedPassword);
       Logger.info("Default admin created", { username: "admin" });
-      if (!process.env.ADMIN_PASSWORD) {
+      if (!config.ADMIN_PASSWORD) {
          Logger.warn(
             "⚠️  Using default password. Please change it or set ADMIN_PASSWORD environment variable!",
          );
@@ -48,15 +48,17 @@ async function startServer() {
       await createDefaultAdmin();
 
       // Start listening
-      const server = app.listen(env.PORT, () => {
+      const server = app.listen(config.PORT, () => {
          console.log("\n" + "=".repeat(60));
          console.log("🚀 Server started successfully!");
          console.log("=".repeat(60));
-         console.log(`📡 Port: ${env.PORT}`);
-         console.log(`🌐 Base Path: ${env.BASE_PATH || "(root)"}`);
-         console.log(`🔗 URL: http://localhost:${env.PORT}${env.BASE_PATH}`);
+         console.log(`📡 Port: ${config.PORT}`);
+         console.log(`🌐 Base Path: ${config.BASE_PATH || "(root)"}`);
          console.log(
-            `👤 Admin URL: http://localhost:${env.PORT}${env.BASE_PATH}/admin.html`,
+            `🔗 URL: http://localhost:${config.PORT}${config.BASE_PATH}`,
+         );
+         console.log(
+            `👤 Admin URL: http://localhost:${config.PORT}${config.BASE_PATH}/admin.html`,
          );
          console.log("=".repeat(60) + "\n");
       });

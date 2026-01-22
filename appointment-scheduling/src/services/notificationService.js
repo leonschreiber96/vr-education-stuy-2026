@@ -1,40 +1,42 @@
 // Notification service module
 // Handles all email notifications for the application
 
-const mailer = require('../../mailer');
-const { Logger } = require('../middleware/logging');
-const env = require('../config/env');
+const mailer = require("../../mailer");
+const { Logger } = require("../middleware/logging");
+const config = require("../../config");
 
 /**
  * Notification service for sending emails
  */
 class NotificationService {
-    /**
-     * Send booking confirmation email to participant
-     * @param {Object} booking - Booking details
-     * @param {Object} participant - Participant details
-     * @param {Object} timeslot - Timeslot details
-     * @returns {Promise<boolean>} True if email sent successfully
-     */
-    static async sendBookingConfirmation(booking, participant, timeslot) {
-        try {
-            const startTime = new Date(timeslot.start_time);
-            const endTime = new Date(timeslot.end_time);
+   /**
+    * Send booking confirmation email to participant
+    * @param {Object} booking - Booking details
+    * @param {Object} participant - Participant details
+    * @param {Object} timeslot - Timeslot details
+    * @returns {Promise<boolean>} True if email sent successfully
+    */
+   static async sendBookingConfirmation(booking, participant, timeslot) {
+      try {
+         const startTime = new Date(timeslot.start_time);
+         const endTime = new Date(timeslot.end_time);
 
-            const dateStr = startTime.toLocaleDateString('de-DE', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            });
+         const dateStr = startTime.toLocaleDateString("de-DE", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+         });
 
-            const timeStr = `${startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+         const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 
-            const appointmentTypeLabel = this.getAppointmentTypeLabel(timeslot.appointment_type);
+         const appointmentTypeLabel = this.getAppointmentTypeLabel(
+            timeslot.appointment_type,
+         );
 
-            const subject = `Terminbestätigung - ${appointmentTypeLabel}`;
+         const subject = `Terminbestätigung - ${appointmentTypeLabel}`;
 
-            const text = `
+         const text = `
 Hallo ${participant.name},
 
 Ihre Buchung wurde erfolgreich bestätigt!
@@ -43,7 +45,7 @@ Termindetails:
 - Datum: ${dateStr}
 - Uhrzeit: ${timeStr}
 - Typ: ${appointmentTypeLabel}
-- Ort: ${timeslot.location || 'Wird noch bekannt gegeben'}
+- Ort: ${timeslot.location || "Wird noch bekannt gegeben"}
 
 Buchungs-ID: ${booking.id}
 
@@ -53,7 +55,7 @@ Mit freundlichen Grüßen
 Ihr Team
             `.trim();
 
-            const html = `
+         const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -89,7 +91,7 @@ Ihr Team
                     <span class="detail-label">📋 Typ:</span> ${appointmentTypeLabel}
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">📍 Ort:</span> ${timeslot.location || 'Wird noch bekannt gegeben'}
+                    <span class="detail-label">📍 Ort:</span> ${timeslot.location || "Wird noch bekannt gegeben"}
                 </div>
                 <div class="detail-row" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
                     <span class="detail-label">🆔 Buchungs-ID:</span> <code>${booking.id}</code>
@@ -108,48 +110,56 @@ Ihr Team
 </html>
             `.trim();
 
-            await mailer.sendMail(participant.email, subject, text, html);
-            Logger.info('Booking confirmation email sent', {
-                participantId: participant.id,
-                bookingId: booking.id,
-                email: participant.email,
-            });
+         await mailer.sendMail(participant.email, subject, text, html);
+         Logger.info("Booking confirmation email sent", {
+            participantId: participant.id,
+            bookingId: booking.id,
+            email: participant.email,
+         });
 
-            return true;
-        } catch (error) {
-            Logger.error('Failed to send booking confirmation email', error, {
-                participantId: participant.id,
-                bookingId: booking.id,
-            });
-            // Don't throw - email failure shouldn't prevent booking
-            return false;
-        }
-    }
+         return true;
+      } catch (error) {
+         Logger.error("Failed to send booking confirmation email", error, {
+            participantId: participant.id,
+            bookingId: booking.id,
+         });
+         // Don't throw - email failure shouldn't prevent booking
+         return false;
+      }
+   }
 
-    /**
-     * Send booking cancellation email to participant
-     * @param {Object} booking - Booking details
-     * @param {Object} participant - Participant details
-     * @param {Object} timeslot - Timeslot details
-     * @param {string} reason - Cancellation reason
-     * @returns {Promise<boolean>} True if email sent successfully
-     */
-    static async sendBookingCancellation(booking, participant, timeslot, reason = '') {
-        try {
-            const startTime = new Date(timeslot.start_time);
-            const dateStr = startTime.toLocaleDateString('de-DE', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            });
-            const timeStr = startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+   /**
+    * Send booking cancellation email to participant
+    * @param {Object} booking - Booking details
+    * @param {Object} participant - Participant details
+    * @param {Object} timeslot - Timeslot details
+    * @param {string} reason - Cancellation reason
+    * @returns {Promise<boolean>} True if email sent successfully
+    */
+   static async sendBookingCancellation(
+      booking,
+      participant,
+      timeslot,
+      reason = "",
+   ) {
+      try {
+         const startTime = new Date(timeslot.start_time);
+         const dateStr = startTime.toLocaleDateString("de-DE", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+         });
+         const timeStr = startTime.toLocaleTimeString("de-DE", {
+            hour: "2-digit",
+            minute: "2-digit",
+         });
 
-            const subject = 'Terminabsage - Buchung storniert';
+         const subject = "Terminabsage - Buchung storniert";
 
-            const reasonText = reason ? `\n\nGrund: ${reason}` : '';
+         const reasonText = reason ? `\n\nGrund: ${reason}` : "";
 
-            const text = `
+         const text = `
 Hallo ${participant.name},
 
 Ihr Termin wurde leider storniert.
@@ -157,7 +167,7 @@ Ihr Termin wurde leider storniert.
 Stornierter Termin:
 - Datum: ${dateStr}
 - Uhrzeit: ${timeStr}
-- Ort: ${timeslot.location || 'Nicht angegeben'}
+- Ort: ${timeslot.location || "Nicht angegeben"}
 ${reasonText}
 
 Falls Sie einen neuen Termin vereinbaren möchten, besuchen Sie bitte unsere Buchungsseite.
@@ -168,7 +178,7 @@ Mit freundlichen Grüßen
 Ihr Team
             `.trim();
 
-            const html = `
+         const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -194,8 +204,8 @@ Ihr Team
                 <h3 style="margin-top: 0;">Stornierter Termin</h3>
                 <p><strong>Datum:</strong> ${dateStr}</p>
                 <p><strong>Uhrzeit:</strong> ${timeStr}</p>
-                <p><strong>Ort:</strong> ${timeslot.location || 'Nicht angegeben'}</p>
-                ${reason ? `<p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;"><strong>Grund:</strong> ${reason}</p>` : ''}
+                <p><strong>Ort:</strong> ${timeslot.location || "Nicht angegeben"}</p>
+                ${reason ? `<p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;"><strong>Grund:</strong> ${reason}</p>` : ""}
                 <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 12px;"><strong>Buchungs-ID:</strong> <code>${booking.id}</code></p>
             </div>
 
@@ -211,33 +221,33 @@ Ihr Team
 </html>
             `.trim();
 
-            await mailer.sendMail(participant.email, subject, text, html);
-            Logger.info('Cancellation email sent', {
-                participantId: participant.id,
-                bookingId: booking.id,
-            });
+         await mailer.sendMail(participant.email, subject, text, html);
+         Logger.info("Cancellation email sent", {
+            participantId: participant.id,
+            bookingId: booking.id,
+         });
 
-            return true;
-        } catch (error) {
-            Logger.error('Failed to send cancellation email', error, {
-                participantId: participant.id,
-                bookingId: booking.id,
-            });
-            return false;
-        }
-    }
+         return true;
+      } catch (error) {
+         Logger.error("Failed to send cancellation email", error, {
+            participantId: participant.id,
+            bookingId: booking.id,
+         });
+         return false;
+      }
+   }
 
-    /**
-     * Send custom email to participant
-     * @param {string} email - Recipient email
-     * @param {string} name - Recipient name
-     * @param {string} subject - Email subject
-     * @param {string} message - Email message
-     * @returns {Promise<boolean>} True if email sent successfully
-     */
-    static async sendCustomEmail(email, name, subject, message) {
-        try {
-            const text = `
+   /**
+    * Send custom email to participant
+    * @param {string} email - Recipient email
+    * @param {string} name - Recipient name
+    * @param {string} subject - Email subject
+    * @param {string} message - Email message
+    * @returns {Promise<boolean>} True if email sent successfully
+    */
+   static async sendCustomEmail(email, name, subject, message) {
+      try {
+         const text = `
 Hallo ${name},
 
 ${message}
@@ -246,7 +256,7 @@ Mit freundlichen Grüßen
 Ihr Team
             `.trim();
 
-            const html = `
+         const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -268,7 +278,7 @@ Ihr Team
             <p>Hallo <strong>${name}</strong>,</p>
 
             <div class="message">
-                ${message.replace(/\n/g, '<br>')}
+                ${message.replace(/\n/g, "<br>")}
             </div>
 
             <p style="margin-top: 30px;">Mit freundlichen Grüßen,<br>Ihr Team</p>
@@ -281,29 +291,29 @@ Ihr Team
 </html>
             `.trim();
 
-            await mailer.sendMail(email, subject, text, html);
-            Logger.info('Custom email sent', { email, subject });
+         await mailer.sendMail(email, subject, text, html);
+         Logger.info("Custom email sent", { email, subject });
 
-            return true;
-        } catch (error) {
-            Logger.error('Failed to send custom email', error, { email, subject });
-            throw error; // Throw for custom emails so admin knows it failed
-        }
-    }
+         return true;
+      } catch (error) {
+         Logger.error("Failed to send custom email", error, { email, subject });
+         throw error; // Throw for custom emails so admin knows it failed
+      }
+   }
 
-    /**
-     * Get human-readable appointment type label
-     * @param {string} appointmentType - Appointment type code
-     * @returns {string} Human-readable label
-     */
-    static getAppointmentTypeLabel(appointmentType) {
-        const labels = {
-            primary: 'Haupttermin',
-            followup: 'Folgetermin',
-            dual: 'Dual (Haupt- oder Folgetermin)',
-        };
-        return labels[appointmentType] || appointmentType;
-    }
+   /**
+    * Get human-readable appointment type label
+    * @param {string} appointmentType - Appointment type code
+    * @returns {string} Human-readable label
+    */
+   static getAppointmentTypeLabel(appointmentType) {
+      const labels = {
+         primary: "Haupttermin",
+         followup: "Folgetermin",
+         dual: "Dual (Haupt- oder Folgetermin)",
+      };
+      return labels[appointmentType] || appointmentType;
+   }
 }
 
 module.exports = NotificationService;
