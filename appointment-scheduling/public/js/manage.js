@@ -35,10 +35,7 @@ async function loadBookings() {
    const token = document.getElementById("tokenInput").value.trim();
 
    if (!token) {
-      showAlert(
-         "Bitte geben Sie einen Bestätigungscode ein.",
-         "warning",
-      );
+      showAlert("Bitte geben Sie einen Bestätigungscode ein.", "warning");
       return;
    }
 
@@ -73,14 +70,12 @@ async function loadBookings() {
 
       // Hide loading, show bookings
       document.getElementById("loadingSection").style.display = "none";
-      document.getElementById("bookingsSection").style.display =
-         "block";
+      document.getElementById("bookingsSection").style.display = "block";
    } catch (error) {
       console.error("Error loading bookings:", error);
       showAlert(error.message, "error");
       document.getElementById("loadingSection").style.display = "none";
-      document.getElementById("tokenInputSection").style.display =
-         "block";
+      document.getElementById("tokenInputSection").style.display = "block";
    }
 }
 
@@ -136,8 +131,7 @@ function displayAppointment(booking, type) {
    if (booking.timeslot_location) {
       document.getElementById(`${prefix}Location`).textContent =
          booking.timeslot_location;
-      document.getElementById(`${prefix}LocationRow`).style.display =
-         "flex";
+      document.getElementById(`${prefix}LocationRow`).style.display = "flex";
    }
 }
 
@@ -150,8 +144,7 @@ async function showRescheduleModal(type) {
    rescheduleStep = 1;
 
    const modal = document.getElementById("rescheduleModal");
-   const booking =
-      type === "primary" ? primaryBooking : followupBooking;
+   const booking = type === "primary" ? primaryBooking : followupBooking;
 
    // Update modal title
    const title =
@@ -177,13 +170,10 @@ async function showRescheduleModal(type) {
       hour: "2-digit",
       minute: "2-digit",
    });
-   document.getElementById("currentAppointmentInfo").textContent =
-      dateStr;
+   document.getElementById("currentAppointmentInfo").textContent = dateStr;
 
    // Show constraint info for follow-up
-   const constraintDiv = document.getElementById(
-      "rescheduleConstraintInfo",
-   );
+   const constraintDiv = document.getElementById("rescheduleConstraintInfo");
    if (type === "followup") {
       constraintDiv.innerHTML = `
                     <div class="info-box followup-info">
@@ -204,9 +194,7 @@ async function showRescheduleModal(type) {
 
 // Close reschedule modal
 function closeRescheduleModal() {
-   document
-      .getElementById("rescheduleModal")
-      .classList.remove("active");
+   document.getElementById("rescheduleModal").classList.remove("active");
    selectedNewTimeslotId = null;
    selectedNewFollowupTimeslotId = null;
    currentRescheduleType = null;
@@ -216,12 +204,8 @@ function closeRescheduleModal() {
 
 // Load available timeslots for reschedule
 async function loadAvailableTimeslotsForReschedule(type) {
-   const loading = document.getElementById(
-      "rescheduleTimeslotsLoading",
-   );
-   const container = document.getElementById(
-      "rescheduleTimeslotsContainer",
-   );
+   const loading = document.getElementById("rescheduleTimeslotsLoading");
+   const container = document.getElementById("rescheduleTimeslotsContainer");
 
    loading.style.display = "block";
    container.style.display = "none";
@@ -234,9 +218,7 @@ async function loadAvailableTimeslotsForReschedule(type) {
       } else {
          // For follow-up, we need to pass the primary date to get valid range
          const primaryDate = new Date(primaryBooking.timeslot_start);
-         const primaryDateStr = primaryDate
-            .toISOString()
-            .split("T")[0];
+         const primaryDateStr = primaryDate.toISOString().split("T")[0];
          url += `?type=followup&primaryDate=${primaryDateStr}`;
       }
 
@@ -258,12 +240,8 @@ async function loadAvailableTimeslotsForReschedule(type) {
 
 // Display available timeslots
 function displayAvailableTimeslots(type) {
-   const container = document.getElementById(
-      "rescheduleTimeslotsContainer",
-   );
-   const loading = document.getElementById(
-      "rescheduleTimeslotsLoading",
-   );
+   const container = document.getElementById("rescheduleTimeslotsContainer");
+   const loading = document.getElementById("rescheduleTimeslotsLoading");
 
    loading.style.display = "none";
    container.style.display = "grid";
@@ -276,9 +254,7 @@ function displayAvailableTimeslots(type) {
 
    const isFollowup = type === "followup";
    const primaryDate =
-      type === "followup"
-         ? new Date(primaryBooking.timeslot_start)
-         : null;
+      type === "followup" ? new Date(primaryBooking.timeslot_start) : null;
 
    container.innerHTML = availableTimeslots
       .map((slot) => {
@@ -300,9 +276,7 @@ function displayAvailableTimeslots(type) {
             minute: "2-digit",
          })}`;
 
-         const slotClass = isFollowup
-            ? "timeslot followup-slot"
-            : "timeslot";
+         const slotClass = isFollowup ? "timeslot followup-slot" : "timeslot";
          const badgeClass = isFollowup
             ? "badge-followup-slot"
             : "badge-primary-slot";
@@ -391,13 +365,10 @@ async function confirmReschedule() {
                btn.textContent = originalText;
 
                // Show message and load followup slots
-               document.getElementById(
-                  "rescheduleModalTitle",
-               ).textContent = "Schritt 2: Neuen Folgetermin wählen";
+               document.getElementById("rescheduleModalTitle").textContent =
+                  "Schritt 2: Neuen Folgetermin wählen";
 
-               document.getElementById(
-                  "rescheduleConstraintInfo",
-               ).innerHTML = `
+               document.getElementById("rescheduleConstraintInfo").innerHTML = `
                            <div class="alert alert-info" style="margin-bottom: 15px;">
                               <strong>⚠️ Folgetermin muss angepasst werden</strong>
                               <p>Der gewählte neue Haupttermin ist ${data.daysDiff} Tage vom aktuellen Folgetermin entfernt.</p>
@@ -410,9 +381,7 @@ async function confirmReschedule() {
                   (s) => s.id === selectedNewTimeslotId,
                );
                if (newPrimarySlot) {
-                  const newPrimaryDate = new Date(
-                     newPrimarySlot.start_time,
-                  );
+                  const newPrimaryDate = new Date(newPrimarySlot.start_time);
                   const primaryDateStr = newPrimaryDate
                      .toISOString()
                      .split("T")[0];
@@ -432,17 +401,14 @@ async function confirmReschedule() {
                   );
 
                   if (followupResponse.ok) {
-                     availableTimeslots =
-                        await followupResponse.json();
+                     availableTimeslots = await followupResponse.json();
                      displayAvailableTimeslots("followup");
                   }
                }
                return;
             }
 
-            throw new Error(
-               data.error || "Fehler beim Ändern des Termins",
-            );
+            throw new Error(data.error || "Fehler beim Ändern des Termins");
          }
 
          showAlert("Termin erfolgreich geändert!", "success");
@@ -478,8 +444,7 @@ async function confirmReschedule() {
 
       // If we're rescheduling both, include the followup
       if (needsFollowupReschedule && selectedNewFollowupTimeslotId) {
-         requestBody.newFollowupTimeslotId =
-            selectedNewFollowupTimeslotId;
+         requestBody.newFollowupTimeslotId = selectedNewFollowupTimeslotId;
       }
 
       const response = await fetch("/api/reschedule", {
@@ -493,9 +458,7 @@ async function confirmReschedule() {
       const data = await response.json();
 
       if (!response.ok) {
-         throw new Error(
-            data.error || "Fehler beim Ändern des Termins",
-         );
+         throw new Error(data.error || "Fehler beim Ändern des Termins");
       }
 
       if (data.rescheduledBoth) {
@@ -528,8 +491,7 @@ function showCancelModal() {
       hour: "2-digit",
       minute: "2-digit",
    });
-   document.getElementById("cancelPrimaryInfo").textContent =
-      primaryDateStr;
+   document.getElementById("cancelPrimaryInfo").textContent = primaryDateStr;
 
    // Format follow-up appointment info
    const followupStart = new Date(followupBooking.timeslot_start);
@@ -541,8 +503,7 @@ function showCancelModal() {
       hour: "2-digit",
       minute: "2-digit",
    });
-   document.getElementById("cancelFollowupInfo").textContent =
-      followupDateStr;
+   document.getElementById("cancelFollowupInfo").textContent = followupDateStr;
 
    modal.classList.add("active");
 }
@@ -579,13 +540,9 @@ async function confirmCancel() {
 
       // Show success message
       closeCancelModal();
-      document.getElementById("bookingsSection").style.display =
-         "none";
+      document.getElementById("bookingsSection").style.display = "none";
 
-      showAlert(
-         "Ihre Termine wurden erfolgreich storniert.",
-         "success",
-      );
+      showAlert("Ihre Termine wurden erfolgreich storniert.", "success");
 
       // Show success message in main content
       document.getElementById("mainContent").innerHTML = `
@@ -594,7 +551,7 @@ async function confirmCancel() {
                         <p style="font-size: 1.1em; margin-bottom: 30px;">
                             Ihre Teilnahme wurde abgesagt. Sie erhalten eine Bestätigung per E-Mail.
                         </p>
-                        <a href="/" class="btn btn-primary" style="color: white;">Zur Startseite</a>
+                        <a href="index.html" class="btn btn-primary" style="color: white;">Zur Startseite</a>
                     </div>
                 `;
    } catch (error) {

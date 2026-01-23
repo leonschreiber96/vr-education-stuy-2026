@@ -272,7 +272,7 @@ function showSuccessPage(data) {
                <a href="${managementUrl}" class="btn btn-primary" style="color: white;">
                   Zu meinen Terminen
                </a>
-               <a href="/" class="btn btn-secondary" style="margin-left: 10px; color: white;">
+               <a href="index.html" class="btn btn-secondary" style="margin-left: 10px; color: white;">
                   Zur Startseite
                </a>
             </div>
