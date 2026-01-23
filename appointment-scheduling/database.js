@@ -316,15 +316,11 @@ function getAvailableTimeslots(appointmentType = null) {
 }
 
 function getAllTimeslots(limit = null, offset = 0) {
+   // Don't join with bookings here - the frontend loads bookings separately
+   // and uses that data to display participants. Joining here causes duplicate rows.
    let query = `
-    SELECT
-      t.*,
-      b.id as booking_id,
-      p.name as participant_name,
-      p.email as participant_email
+    SELECT t.*
     FROM timeslots t
-    LEFT JOIN bookings b ON t.id = b.timeslot_id AND b.status = 'active'
-    LEFT JOIN participants p ON b.participant_id = p.id
     ORDER BY t.start_time ASC
   `;
 

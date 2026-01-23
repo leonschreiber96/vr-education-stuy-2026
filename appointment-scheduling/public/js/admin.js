@@ -2404,33 +2404,39 @@ function renderCalendar() {
          );
       });
 
-      // Count by type and status
+      // Helper to check if a timeslot has active bookings
+      const hasBooking = (slotId) =>
+         allData.bookings.some(
+            (b) => b.timeslot_id === slotId && b.status === "active",
+         );
+
+      // Count by type and status - check bookings from separate array
       const availableDual = dayTimeslots.filter(
-         (s) => s.appointment_type === "dual" && !s.booking_id,
+         (s) => s.appointment_type === "dual" && !hasBooking(s.id),
       ).length;
       const availablePrimary = dayTimeslots.filter(
-         (s) => s.appointment_type === "primary" && !s.booking_id,
+         (s) => s.appointment_type === "primary" && !hasBooking(s.id),
       ).length;
       const availableFollowup = dayTimeslots.filter(
-         (s) => s.appointment_type === "followup" && !s.booking_id,
+         (s) => s.appointment_type === "followup" && !hasBooking(s.id),
       ).length;
 
       // Count booked by original type to show what was booked
       const bookedPrimary = dayTimeslots.filter(
          (s) =>
-            s.booking_id &&
+            hasBooking(s.id) &&
             (s.original_type === "primary" || s.appointment_type === "primary"),
       ).length;
       const bookedFollowup = dayTimeslots.filter(
          (s) =>
-            s.booking_id &&
+            hasBooking(s.id) &&
             (s.original_type === "followup" ||
                s.appointment_type === "followup"),
       ).length;
       const bookedDual = dayTimeslots.filter(
-         (s) => s.booking_id && s.original_type === "dual",
+         (s) => hasBooking(s.id) && s.original_type === "dual",
       ).length;
-      const totalBooked = dayTimeslots.filter((s) => s.booking_id).length;
+      const totalBooked = dayTimeslots.filter((s) => hasBooking(s.id)).length;
 
       const todayBorder = isToday ? "border: 3px solid #667eea;" : "";
 
@@ -2551,9 +2557,19 @@ function showDayDetails(dateStr) {
       day: "numeric",
    });
 
-   // Separate booked and available timeslots
-   const bookedSlots = dayTimeslots.filter((s) => s.booking_id);
-   const availableSlots = dayTimeslots.filter((s) => !s.booking_id);
+   // Separate booked and available timeslots by checking bookings data
+   // Now that timeslots don't include booking data via JOIN, we check allData.bookings
+   const bookedSlots = dayTimeslots.filter((slot) =>
+      allData.bookings.some(
+         (b) => b.timeslot_id === slot.id && b.status === "active",
+      ),
+   );
+   const availableSlots = dayTimeslots.filter(
+      (slot) =>
+         !allData.bookings.some(
+            (b) => b.timeslot_id === slot.id && b.status === "active",
+         ),
+   );
 
    // Build list of timeslots
    let details = `<div style="margin-bottom: 20px;">`;
@@ -2568,6 +2584,14 @@ function showDayDetails(dateStr) {
             const startTime = new Date(slot.start_time);
             const endTime = new Date(slot.end_time);
             const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+
+            // Get booking and participant info from separate bookings array
+            const bookings = allData.bookings.filter(
+               (b) => b.timeslot_id === slot.id && b.status === "active",
+            );
+            const participants = bookings.map((b) => `${b.name}`).join(", ");
+            const emails = bookings.map((b) => b.email).join(", ");
+            const firstBooking = bookings[0] || {};
 
             let typeLabel = "";
             let typeColor = "#4a5568";
@@ -2603,9 +2627,9 @@ function showDayDetails(dateStr) {
                   <div style="flex: 1; min-width: 200px;">
                      <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${timeStr}</div>
                      <div style="color: #333; margin-bottom: 4px;">
-                        <strong>${slot.participant_name || "Unbekannt"}</strong>
+                        <strong>${participants || "Unbekannt"}</strong>
                      </div>
-                     <div style="color: #666; font-size: 14px; margin-bottom: 4px;">${slot.participant_email || "Keine Email"}</div>
+                     <div style="color: #666; font-size: 14px; margin-bottom: 4px;">${emails || "Keine Email"}</div>
                      <div style="color: #666; font-size: 14px;">${slot.location || "Kein Ort"}</div>
                      <div style="margin-top: 6px;">
                         <span style="background: ${typeColor}; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: 500;">${typeLabel}</span>${originalInfo}
@@ -2613,7 +2637,7 @@ function showDayDetails(dateStr) {
                   </div>
                   <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                      <button class="btn btn-secondary btn-sm" onclick="closeDayDetailsModal(); editTimeslot(${slot.id})">Bearbeiten</button>
-                     <button class="btn btn-secondary btn-sm" onclick="closeDayDetailsModal(); showSendEmailModal('${slot.participant_email}', '${slot.participant_name?.replace(/'/g, "\\'")}')">✉️ Email</button>
+                     <button class="btn btn-secondary btn-sm" onclick="closeDayDetailsModal(); showSendEmailModal('${firstBooking.email || ""}', '${(firstBooking.name || "").replace(/'/g, "\\'")}')">✉️ Email</button>
                   </div>
                </div>
             </div>
