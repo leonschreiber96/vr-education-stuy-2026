@@ -116,17 +116,19 @@ function generateICalEvent(appointment, participantName, isForAdmin = false) {
       ? `${type} [${participantName}]`
       : `Studie (${ORGANIZER_NAME}) - Teilnahme ${type}`;
 
-   // Format dates for iCal (YYYYMMDDTHHMMSS)
+   // Format dates for iCal in UTC format (YYYYMMDDTHHMMSSZ)
+   // Using UTC ensures consistent timezone handling across all calendar clients
    const formatICalDate = (date) => {
       const pad = (n) => String(n).padStart(2, "0");
       return (
-         date.getFullYear() +
-         pad(date.getMonth() + 1) +
-         pad(date.getDate()) +
+         date.getUTCFullYear() +
+         pad(date.getUTCMonth() + 1) +
+         pad(date.getUTCDate()) +
          "T" +
-         pad(date.getHours()) +
-         pad(date.getMinutes()) +
-         pad(date.getSeconds())
+         pad(date.getUTCHours()) +
+         pad(date.getUTCMinutes()) +
+         pad(date.getUTCSeconds()) +
+         "Z"
       );
    };
 

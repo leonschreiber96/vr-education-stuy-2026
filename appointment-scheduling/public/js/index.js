@@ -230,7 +230,9 @@ function showSuccessPage(data) {
    const followupStart = parseISODate(followupSlot.start_time);
    const followupEnd = parseISODate(followupSlot.end_time);
 
-   const managementUrl = `${window.location.origin}/manage.html?token=${data.confirmationToken}`;
+   // Calculate BASE_PATH from current URL to support subdirectory deployment
+   const basePath = window.location.pathname.split("/").slice(0, -1).join("/");
+   const managementUrl = `${window.location.origin}${basePath}/manage.html?token=${data.confirmationToken}`;
 
    const mainContent = document.getElementById("mainContent");
    if (mainContent) {
