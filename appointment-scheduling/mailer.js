@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const config = require("./config");
 
 // Email configuration from environment variables
 const EMAIL_CONFIG = {
@@ -27,6 +28,25 @@ const EMAIL_CONFIG = {
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
 const FROM_EMAIL = process.env.FROM_EMAIL || EMAIL_CONFIG.auth.user;
 const ORGANIZER_NAME = process.env.ORGANIZER_NAME || "Leon Schreiber";
+
+/**
+ * Build a full URL including BASE_PATH
+ * @param {string} path - The path (e.g., "manage.html")
+ * @returns {string} Full URL
+ */
+function buildUrl(path) {
+   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+   const basePath = config.BASE_PATH || "";
+
+   // Remove leading slash from path if present
+   const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+
+   // Construct full URL: baseUrl + basePath + "/" + path
+   if (basePath) {
+      return `${baseUrl}${basePath}/${cleanPath}`;
+   }
+   return `${baseUrl}/${cleanPath}`;
+}
 
 // Create transporter
 let transporter;
@@ -215,7 +235,7 @@ async function sendEmail(to, subject, html, icalAttachment = null) {
 // Send registration confirmation email to participant (single appointment - legacy)
 async function sendRegistrationEmail(participant, timeslot) {
    const subject = "Terminbestätigung - Studie Teilnahme";
-   const managementUrl = `${process.env.BASE_URL || "http://localhost:3000"}/manage.html?token=${participant.confirmationToken}`;
+   const managementUrl = `${buildUrl("manage.html")}?token=${participant.confirmationToken}`;
 
    const html = `
     <h2>Vielen Dank für Ihre Anmeldung!</h2>
@@ -260,7 +280,7 @@ async function sendDualRegistrationEmail(
    followupTimeslot,
 ) {
    const subject = "Terminbestätigung - Studie Teilnahme (2 Termine)";
-   const managementUrl = `${process.env.BASE_URL || "http://localhost:3000"}/manage.html?token=${participant.confirmationToken}`;
+   const managementUrl = `${buildUrl("manage.html")}?token=${participant.confirmationToken}`;
 
    const html = `
     <h2>Vielen Dank für Ihre Anmeldung!</h2>
@@ -354,7 +374,7 @@ async function sendDualRegistrationEmail(
 // Send reschedule confirmation email
 async function sendRescheduleEmail(booking, oldTimeslot, newTimeslot) {
    const subject = "Terminänderung bestätigt";
-   const managementUrl = `${process.env.BASE_URL || "http://localhost:3000"}/manage.html?token=${booking.confirmation_token}`;
+   const managementUrl = `${buildUrl("manage.html")}?token=${booking.confirmation_token}`;
 
    const html = `
     <h2>Ihr Termin wurde geändert</h2>
@@ -610,7 +630,7 @@ async function sendTimeslotUpdateEmail(
    isFollowup = false,
 ) {
    const subject = "Terminänderung durch Studienleitung";
-   const managementUrl = `${process.env.BASE_URL || "http://localhost:3000"}/manage.html?token=${participant.confirmation_token}`;
+   const managementUrl = `${buildUrl("manage.html")}?token=${participant.confirmation_token}`;
    const appointmentType = isFollowup ? "Folgetermin" : "Ersttermin";
 
    const html = `
