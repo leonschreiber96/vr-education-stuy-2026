@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Expose functions to global scope for onclick handlers
+window.proceedToRegistration = proceedToRegistration;
 window.handlePrimaryTimeslotClick = handlePrimaryTimeslotSelection;
 window.handleFollowupTimeslotClick = handleFollowupTimeslotSelection;
 window.handleFeaturedTimeslotClick = handleFeaturedTimeslotSelection;
@@ -73,6 +74,20 @@ async function loadPrimaryTimeslots() {
          "Fehler beim Laden der Termine. Bitte versuchen Sie es später erneut.",
       );
    }
+}
+
+/**
+ * Step 0 → Step 1: Proceed from study description to registration
+ */
+function proceedToRegistration() {
+   hide("studyDescriptionSection");
+   show("personalInfoSection");
+
+   // Update step indicator
+   document.getElementById("step0").classList.remove("active");
+   document.getElementById("step1").classList.add("active");
+
+   scrollToTop();
 }
 
 /**
