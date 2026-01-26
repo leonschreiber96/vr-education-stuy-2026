@@ -13,6 +13,7 @@ let followupBooking = null;
 let availableTimeslots = [];
 let selectedNewTimeslotId = null;
 let selectedNewFollowupTimeslotId = null;
+let selectedNewPrimaryTimeslot = null; // Store the new primary timeslot object for step 2
 let currentRescheduleType = null; // 'primary' or 'followup'
 let needsFollowupReschedule = false; // If primary reschedule requires followup change
 let rescheduleStep = 1; // 1 = select primary, 2 = select followup
@@ -147,6 +148,7 @@ async function showRescheduleModal(type) {
    currentRescheduleType = type;
    selectedNewTimeslotId = null;
    selectedNewFollowupTimeslotId = null;
+   selectedNewPrimaryTimeslot = null;
    needsFollowupReschedule = false;
    rescheduleStep = 1;
 
@@ -204,6 +206,7 @@ function closeRescheduleModal() {
    document.getElementById("rescheduleModal").classList.remove("active");
    selectedNewTimeslotId = null;
    selectedNewFollowupTimeslotId = null;
+   selectedNewPrimaryTimeslot = null;
    currentRescheduleType = null;
    needsFollowupReschedule = false;
    rescheduleStep = 1;
@@ -224,8 +227,14 @@ async function loadAvailableTimeslotsForReschedule(type) {
          url += "?type=primary";
       } else {
          // For follow-up, we need to pass the primary date to get valid range
-         const primaryDate = new Date(primaryBooking.timeslot_start);
-         const primaryDateStr = primaryDate.toISOString().split("T")[0];
+         // If we're in step 2 (after changing primary), use the NEW primary date
+         let primaryDateToUse;
+         if (selectedNewPrimaryTimeslot) {
+            primaryDateToUse = new Date(selectedNewPrimaryTimeslot.start_time);
+         } else {
+            primaryDateToUse = new Date(primaryBooking.timeslot_start);
+         }
+         const primaryDateStr = primaryDateToUse.toISOString().split("T")[0];
          url += `?type=followup&primaryDate=${primaryDateStr}`;
       }
 
@@ -371,47 +380,30 @@ async function confirmReschedule() {
                btn.disabled = true;
                btn.textContent = originalText;
 
+               // Store the selected new primary timeslot for step 2
+               selectedNewPrimaryTimeslot = availableTimeslots.find(
+                  (s) => s.id === selectedNewTimeslotId,
+               );
+
                // Show message and load followup slots
                document.getElementById("rescheduleModalTitle").textContent =
                   "Schritt 2: Neuen Folgetermin wählen";
 
+               const minDays = data.minDays || 29;
+               const maxDays = data.maxDays || 31;
                document.getElementById("rescheduleConstraintInfo").innerHTML = `
                            <div class="alert alert-info" style="margin-bottom: 15px;">
                               <strong>⚠️ Folgetermin muss angepasst werden</strong>
                               <p>Der gewählte neue Haupttermin ist ${data.daysDiff} Tage vom aktuellen Folgetermin entfernt.</p>
-                              <p>Bitte wählen Sie jetzt auch einen neuen Folgetermin (29-31 Tage nach dem neuen Haupttermin).</p>
+                              <p>Bitte wählen Sie jetzt auch einen neuen Folgetermin (${minDays}-${maxDays} Tage nach dem neuen Haupttermin).</p>
                            </div>
                         `;
 
+               // Reset selected followup
+               selectedNewFollowupTimeslotId = null;
+
                // Load followup slots based on new primary date
-               const newPrimarySlot = availableTimeslots.find(
-                  (s) => s.id === selectedNewTimeslotId,
-               );
-               if (newPrimarySlot) {
-                  const newPrimaryDate = new Date(newPrimarySlot.start_time);
-                  const primaryDateStr = newPrimaryDate
-                     .toISOString()
-                     .split("T")[0];
-
-                  const loadingDiv = document.getElementById(
-                     "rescheduleTimeslotsLoading",
-                  );
-                  const container = document.getElementById(
-                     "rescheduleTimeslotsContainer",
-                  );
-
-                  loadingDiv.style.display = "block";
-                  container.style.display = "none";
-
-                  const followupResponse = await fetch(
-                     `${API_BASE}/timeslots?type=followup&primaryDate=${primaryDateStr}`,
-                  );
-
-                  if (followupResponse.ok) {
-                     availableTimeslots = await followupResponse.json();
-                     displayAvailableTimeslots("followup");
-                  }
-               }
+               await loadAvailableTimeslotsForReschedule("followup");
                return;
             }
 
