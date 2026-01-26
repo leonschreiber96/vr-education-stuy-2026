@@ -214,4 +214,209 @@ router.get("/api/featured-timeslot", (req, res) => {
    res.json(featured || null);
 });
 
+/**
+ * GET /api/booking/:token
+ * Get all bookings for a participant by confirmation token
+ */
+router.get(
+   "/api/booking/:token",
+   asyncHandler(async (req, res) => {
+      const { token } = req.params;
+
+      if (!token) {
+         throw new ValidationError("Token is required");
+      }
+
+      // Get all bookings for this participant
+      const bookings = db.getAllBookingsByToken(token);
+
+      if (!bookings || bookings.length === 0) {
+         throw new ValidationError("No bookings found for this token");
+      }
+
+      Logger.info("Bookings retrieved by token", {
+         token: token.substring(0, 8) + "...",
+         count: bookings.length,
+      });
+
+      res.json(bookings);
+   }),
+);
+
+/**
+ * POST /api/reschedule
+ * Reschedule a booking to a new timeslot
+ */
+router.post(
+   "/api/reschedule",
+   asyncHandler(async (req, res) => {
+      const { token, bookingId, newTimeslotId, newFollowupTimeslotId } =
+         req.body;
+
+      validateRequired(req.body, ["token", "bookingId", "newTimeslotId"]);
+
+      // Verify token matches booking
+      const bookings = db.getAllBookingsByToken(token);
+      const booking = bookings.find((b) => b.booking_id === bookingId);
+
+      if (!booking) {
+         throw new ValidationError("Booking not found or invalid token");
+      }
+
+      // Get old and new timeslots
+      const oldTimeslot = db.getTimeslotById(booking.timeslot_id);
+      const newTimeslot = db.getTimeslotById(newTimeslotId);
+
+      if (!newTimeslot) {
+         throw new ValidationError("New timeslot not found");
+      }
+
+      // Check capacity
+      if (!db.hasCapacity(newTimeslotId)) {
+         throw new ValidationError("New timeslot is at full capacity");
+      }
+
+      // If rescheduling primary and there's a followup, validate followup timeslot
+      if (!booking.is_followup && newFollowupTimeslotId) {
+         const newFollowupTimeslot = db.getTimeslotById(newFollowupTimeslotId);
+
+         if (!newFollowupTimeslot) {
+            throw new ValidationError("New followup timeslot not found");
+         }
+
+         if (!db.hasCapacity(newFollowupTimeslotId)) {
+            throw new ValidationError(
+               "New followup timeslot is at full capacity",
+            );
+         }
+
+         // Validate followup is within configured days
+         const primaryDate = new Date(newTimeslot.start_time);
+         const followupDate = new Date(newFollowupTimeslot.start_time);
+         const daysDiff = Math.floor(
+            (followupDate - primaryDate) / (1000 * 60 * 60 * 24),
+         );
+
+         if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
+            throw new ValidationError(
+               `Follow-up appointment must be ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} days after primary appointment`,
+            );
+         }
+
+         // Reschedule followup as well
+         const followupBooking = bookings.find(
+            (b) => b.parent_booking_id === bookingId,
+         );
+         if (followupBooking) {
+            db.rescheduleBooking(
+               followupBooking.booking_id,
+               newFollowupTimeslotId,
+            );
+         }
+      }
+
+      // Reschedule the booking
+      db.rescheduleBooking(bookingId, newTimeslotId);
+
+      Logger.info("Booking rescheduled", {
+         bookingId,
+         oldTimeslotId: booking.timeslot_id,
+         newTimeslotId,
+      });
+
+      // Send confirmation email
+      mailer
+         .sendRescheduleEmail(booking, oldTimeslot, newTimeslot)
+         .catch((err) => {
+            Logger.error("Failed to send reschedule email", err, {
+               bookingId,
+            });
+         });
+
+      res.json({
+         success: true,
+         message: "Booking rescheduled successfully",
+      });
+   }),
+);
+
+/**
+ * POST /api/cancel
+ * Cancel all bookings for a participant
+ */
+router.post(
+   "/api/cancel",
+   asyncHandler(async (req, res) => {
+      const { token } = req.body;
+
+      validateRequired(req.body, ["token"]);
+
+      // Get all bookings for this participant
+      const bookings = db.getAllBookingsByToken(token);
+
+      if (!bookings || bookings.length === 0) {
+         throw new ValidationError("No bookings found for this token");
+      }
+
+      // Cancel all bookings
+      let cancelledCount = 0;
+      for (const booking of bookings) {
+         if (booking.status === "active") {
+            db.cancelBooking(booking.booking_id);
+            cancelledCount++;
+         }
+      }
+
+      Logger.info("Bookings cancelled by participant", {
+         token: token.substring(0, 8) + "...",
+         cancelledCount,
+      });
+
+      // Send cancellation confirmation email
+      const participant = {
+         name: bookings[0].name,
+         email: bookings[0].email,
+      };
+
+      // Get primary and followup timeslots
+      const primaryBooking = bookings.find((b) => !b.is_followup);
+      const followupBooking = bookings.find((b) => b.is_followup);
+
+      const primaryTimeslot = primaryBooking
+         ? {
+              start_time: primaryBooking.timeslot_start,
+              end_time: primaryBooking.timeslot_end,
+              location: primaryBooking.location,
+           }
+         : null;
+
+      const followupTimeslot = followupBooking
+         ? {
+              start_time: followupBooking.timeslot_start,
+              end_time: followupBooking.timeslot_end,
+              location: followupBooking.location,
+           }
+         : null;
+
+      mailer
+         .sendCancellationEmail(
+            participant,
+            primaryTimeslot,
+            followupTimeslot,
+            "participant",
+         )
+         .catch((err) => {
+            Logger.error("Failed to send cancellation email", err, {
+               email: participant.email,
+            });
+         });
+
+      res.json({
+         success: true,
+         message: "All bookings cancelled successfully",
+         cancelledCount,
+      });
+   }),
+);
+
 module.exports = router;
