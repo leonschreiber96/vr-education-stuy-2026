@@ -31,11 +31,15 @@ router.get(
       if (type === "followup" && primaryDate) {
          // Get follow-up slots based on configured days after primary date
          const primaryDateTime = new Date(primaryDate);
+         primaryDateTime.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
+
          const startDate = new Date(primaryDateTime);
          startDate.setDate(startDate.getDate() + FOLLOWUP_MIN_DAYS);
+         startDate.setHours(0, 0, 0, 0); // Start of day
 
          const endDate = new Date(primaryDateTime);
          endDate.setDate(endDate.getDate() + FOLLOWUP_MAX_DAYS);
+         endDate.setHours(23, 59, 59, 999); // End of day
 
          timeslots = db.getTimeslotsInRange(
             startDate.toISOString(),
@@ -91,9 +95,12 @@ router.post(
          throw new ValidationError("Follow-up timeslot not found");
       }
 
-      // Validate follow-up is within configured days after primary
+      // Validate follow-up is within configured days after primary (date-only, ignore time)
       const primaryDate = new Date(primaryTimeslot.start_time);
       const followupDate = new Date(followupTimeslot.start_time);
+      // Set to midnight to compare dates only
+      primaryDate.setHours(0, 0, 0, 0);
+      followupDate.setHours(0, 0, 0, 0);
       const daysDiff = Math.floor(
          (followupDate - primaryDate) / (1000 * 60 * 60 * 24),
       );
@@ -255,6 +262,16 @@ router.post(
 
       validateRequired(req.body, ["token", "bookingId", "newTimeslotId"]);
 
+      // Helper function to calculate days difference (date-only, ignoring time)
+      const calculateDaysDifference = (date1, date2) => {
+         const d1 = new Date(date1);
+         const d2 = new Date(date2);
+         // Set to midnight to compare dates only
+         d1.setHours(0, 0, 0, 0);
+         d2.setHours(0, 0, 0, 0);
+         return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+      };
+
       // Verify token matches booking
       const bookings = db.getAllBookingsByToken(token);
       const booking = bookings.find((b) => b.booking_id === bookingId);
@@ -276,8 +293,52 @@ router.post(
          throw new ValidationError("New timeslot is at full capacity");
       }
 
-      // If rescheduling primary and there's a followup, validate followup timeslot
-      if (!booking.is_followup && newFollowupTimeslotId) {
+      // Check if rescheduling would violate constraints with linked appointment
+      const primaryBooking = booking.is_followup
+         ? bookings.find((b) => b.booking_id === booking.parent_booking_id)
+         : booking;
+      const followupBooking = booking.is_followup
+         ? booking
+         : bookings.find((b) => b.parent_booking_id === booking.booking_id);
+
+      // If rescheduling primary and there's a followup
+      if (!booking.is_followup && followupBooking && !newFollowupTimeslotId) {
+         // Check if existing followup would still be valid with new primary
+         const daysDiff = calculateDaysDifference(
+            newTimeslot.start_time,
+            followupBooking.timeslot_start,
+         );
+
+         if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
+            // Return error requiring followup reschedule
+            return res.status(400).json({
+               error: "Der neue Haupttermin ist nicht im gültigen Abstand zum Folgetermin",
+               requiresFollowupReschedule: true,
+               daysDiff: daysDiff,
+               minDays: FOLLOWUP_MIN_DAYS,
+               maxDays: FOLLOWUP_MAX_DAYS,
+            });
+         }
+      }
+
+      // If rescheduling followup and there's a primary
+      if (booking.is_followup && primaryBooking && !newFollowupTimeslotId) {
+         // Check if new followup would be valid with existing primary
+         const daysDiff = calculateDaysDifference(
+            primaryBooking.timeslot_start,
+            newTimeslot.start_time,
+         );
+
+         if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
+            // Return error - cannot reschedule followup to invalid date
+            throw new ValidationError(
+               `Der Folgetermin muss ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage nach dem Haupttermin liegen. Aktuell: ${daysDiff} Tage.`,
+            );
+         }
+      }
+
+      // If both are being rescheduled, validate the relationship
+      if (newFollowupTimeslotId) {
          const newFollowupTimeslot = db.getTimeslotById(newFollowupTimeslotId);
 
          if (!newFollowupTimeslot) {
@@ -290,23 +351,19 @@ router.post(
             );
          }
 
-         // Validate followup is within configured days
-         const primaryDate = new Date(newTimeslot.start_time);
-         const followupDate = new Date(newFollowupTimeslot.start_time);
-         const daysDiff = Math.floor(
-            (followupDate - primaryDate) / (1000 * 60 * 60 * 24),
+         // Validate followup is within configured days (date-only comparison)
+         const daysDiff = calculateDaysDifference(
+            newTimeslot.start_time,
+            newFollowupTimeslot.start_time,
          );
 
          if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
             throw new ValidationError(
-               `Follow-up appointment must be ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} days after primary appointment`,
+               `Der Folgetermin muss ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage nach dem Haupttermin liegen. Gewählt: ${daysDiff} Tage.`,
             );
          }
 
          // Reschedule followup as well
-         const followupBooking = bookings.find(
-            (b) => b.parent_booking_id === bookingId,
-         );
          if (followupBooking) {
             db.rescheduleBooking(
                followupBooking.booking_id,
