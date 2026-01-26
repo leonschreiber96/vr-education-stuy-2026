@@ -1,3 +1,10 @@
+// Calculate BASE_PATH from current URL to support subdirectory deployment
+const BASE_PATH =
+   window.location.pathname.split("/").slice(0, -1).join("/") || "";
+const API_BASE = BASE_PATH + "/api";
+
+console.log("Manage page BASE_PATH:", BASE_PATH || "(root)");
+
 // Application state
 let currentToken = null;
 let bookings = [];
@@ -46,7 +53,7 @@ async function loadBookings() {
    document.getElementById("loadingSection").style.display = "block";
 
    try {
-      const response = await fetch(`/api/booking/${token}`);
+      const response = await fetch(`${API_BASE}/booking/${token}`);
 
       if (!response.ok) {
          throw new Error("Ungültiger Bestätigungscode");
@@ -211,7 +218,7 @@ async function loadAvailableTimeslotsForReschedule(type) {
    container.style.display = "none";
 
    try {
-      let url = "/api/timeslots";
+      let url = `${API_BASE}/timeslots`;
 
       if (type === "primary") {
          url += "?type=primary";
@@ -342,7 +349,7 @@ async function confirmReschedule() {
       try {
          const bookingId = primaryBooking.booking_id;
 
-         const response = await fetch("/api/reschedule", {
+         const response = await fetch(`${API_BASE}/reschedule`, {
             method: "POST",
             headers: {
                "Content-Type": "application/json",
@@ -397,7 +404,7 @@ async function confirmReschedule() {
                   container.style.display = "none";
 
                   const followupResponse = await fetch(
-                     `/api/timeslots?type=followup&primaryDate=${primaryDateStr}`,
+                     `${API_BASE}/timeslots?type=followup&primaryDate=${primaryDateStr}`,
                   );
 
                   if (followupResponse.ok) {
@@ -447,7 +454,7 @@ async function confirmReschedule() {
          requestBody.newFollowupTimeslotId = selectedNewFollowupTimeslotId;
       }
 
-      const response = await fetch("/api/reschedule", {
+      const response = await fetch(`${API_BASE}/reschedule`, {
          method: "POST",
          headers: {
             "Content-Type": "application/json",
@@ -522,7 +529,7 @@ async function confirmCancel() {
    btn.textContent = "Wird storniert...";
 
    try {
-      const response = await fetch("/api/cancel", {
+      const response = await fetch(`${API_BASE}/cancel`, {
          method: "POST",
          headers: {
             "Content-Type": "application/json",
