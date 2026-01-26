@@ -57,7 +57,13 @@ router.get(
 router.post(
    "/api/register",
    asyncHandler(async (req, res) => {
-      const { name, email, primaryTimeslotId, followupTimeslotId } = req.body;
+      const {
+         name,
+         email,
+         primaryTimeslotId,
+         followupTimeslotId,
+         questionnaireData,
+      } = req.body;
 
       // Validate required fields
       validateRequired(req.body, [
@@ -108,7 +114,7 @@ router.post(
       }
 
       // Create participant and dual booking
-      const participant = db.createParticipant(name, email);
+      const participant = db.createParticipant(name, email, questionnaireData);
       const bookings = db.createDualBooking(
          participant.id,
          primaryTimeslotId,

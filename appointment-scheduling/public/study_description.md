@@ -26,7 +26,7 @@ Das Experiment besteht aus **zwei Terminen**, die zeitlich voneinander getrennt
 ### Ort
 MAR-Gebäude der TU Berlin  
 **Marchstraße 23, 10587 Berlin**  
-(Abweichungen werden rechtzeitig kommuniziert)
+(Sofern nicht anders angegeben)
 ### Anforderungen an TeilnehmerInnen
 - Aktuelle Einschreibung an einer Hochschule oder Hochschulabschluss bzw. Einschreibung innerhalb der letzten **drei Jahre**
 - Ausreichende **englische Sprachkenntnisse**

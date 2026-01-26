@@ -111,8 +111,44 @@ function continueToStep2() {
       return;
    }
 
-   // Save participant info to state
-   setParticipantInfo(name, email);
+   // Validate questionnaire fields
+   const visionCorrection = getValue("visionCorrection");
+   if (!visionCorrection) {
+      showWarning("Bitte wählen Sie Ihre Sehkorrektur aus.");
+      return;
+   }
+
+   const studySubject = getValue("studySubject").trim();
+   if (!studySubject) {
+      showWarning("Bitte geben Sie Ihr Studienfach an.");
+      return;
+   }
+
+   const vrExperience = document.querySelector(
+      'input[name="vrExperience"]:checked',
+   );
+   if (!vrExperience) {
+      showWarning("Bitte bewerten Sie Ihre VR-Erfahrung.");
+      return;
+   }
+
+   const motionSickness = document.querySelector(
+      'input[name="motionSickness"]:checked',
+   );
+   if (!motionSickness) {
+      showWarning("Bitte bewerten Sie Ihre Neigung zu Reiseübelkeit.");
+      return;
+   }
+
+   // Save participant info and questionnaire data to state
+   const questionnaireData = {
+      visionCorrection,
+      studySubject,
+      vrExperience: parseInt(vrExperience.value),
+      motionSickness: parseInt(motionSickness.value),
+   };
+
+   setParticipantInfo(name, email, questionnaireData);
    setStep(2);
 
    // Update UI
@@ -214,6 +250,7 @@ async function submitRegistration() {
          email: state.participantEmail,
          primaryTimeslotId: state.selectedPrimaryTimeslotId,
          followupTimeslotId: state.selectedFollowupTimeslotId,
+         questionnaireData: state.questionnaireData,
       });
 
       // Show success page

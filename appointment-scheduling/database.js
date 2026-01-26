@@ -114,6 +114,26 @@ function initialize() {
          column: "result_status",
          definition: "TEXT",
       },
+      {
+         table: "participants",
+         column: "vision_correction",
+         definition: "TEXT",
+      },
+      {
+         table: "participants",
+         column: "study_subject",
+         definition: "TEXT",
+      },
+      {
+         table: "participants",
+         column: "vr_experience",
+         definition: "INTEGER",
+      },
+      {
+         table: "participants",
+         column: "motion_sickness",
+         definition: "INTEGER",
+      },
    ];
 
    for (const { table, column, definition } of columnsToAdd) {
@@ -187,17 +207,29 @@ function getAdminByUsername(username) {
 
 // ===== PARTICIPANT FUNCTIONS =====
 
-function createParticipant(name, email) {
+function createParticipant(name, email, questionnaireData = {}) {
    const token = crypto.randomBytes(32).toString("hex");
    const stmt = db.prepare(
-      "INSERT INTO participants (name, email, confirmation_token) VALUES (?, ?, ?)",
+      "INSERT INTO participants (name, email, confirmation_token, vision_correction, study_subject, vr_experience, motion_sickness) VALUES (?, ?, ?, ?, ?, ?, ?)",
    );
-   const result = stmt.run(name, email, token);
+   const result = stmt.run(
+      name,
+      email,
+      token,
+      questionnaireData.visionCorrection || null,
+      questionnaireData.studySubject || null,
+      questionnaireData.vrExperience || null,
+      questionnaireData.motionSickness || null,
+   );
    return {
       id: result.lastInsertRowid,
       name,
       email,
       confirmationToken: token,
+      visionCorrection: questionnaireData.visionCorrection || null,
+      studySubject: questionnaireData.studySubject || null,
+      vrExperience: questionnaireData.vrExperience || null,
+      motionSickness: questionnaireData.motionSickness || null,
    };
 }
 
@@ -1026,6 +1058,10 @@ function getAllBookings() {
       b.*,
       p.name,
       p.email,
+      p.vision_correction,
+      p.study_subject,
+      p.vr_experience,
+      p.motion_sickness,
       t.start_time,
       t.end_time,
       t.location

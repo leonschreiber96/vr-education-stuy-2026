@@ -477,6 +477,7 @@ function displayParticipants() {
                        <th>E-Mail</th>
                        <th>Termin</th>
                        <th>Status</th>
+                       <th>Fragebogen</th>
                        <th>Registriert</th>
                        <th>Aktionen</th>
                    </tr>
@@ -495,6 +496,29 @@ function displayParticipants() {
                               })
                             : "-";
 
+                         // Questionnaire data formatting
+                         const visionMap = {
+                            none: "Keine Sehhilfe",
+                            glasses: "Brille",
+                            contacts: "Kontaktlinsen",
+                         };
+                         const visionText = p.vision_correction
+                            ? visionMap[p.vision_correction] ||
+                              p.vision_correction
+                            : "n/a";
+                         const studySubject = p.study_subject || "n/a";
+                         const vrExp = p.vr_experience || "n/a";
+                         const motionSick = p.motion_sickness || "n/a";
+
+                         const hasQuestionnaire =
+                            p.vision_correction ||
+                            p.study_subject ||
+                            p.vr_experience ||
+                            p.motion_sickness;
+                         const questionnaireTooltip = hasQuestionnaire
+                            ? `Sehkorrektur: ${visionText}\nStudienfach: ${studySubject}\nVR-Erfahrung: ${vrExp}/5\nReiseübelkeit: ${motionSick}/5`
+                            : "Keine Daten";
+
                          return `
                            <tr>
                                <td>${p.name}</td>
@@ -505,6 +529,15 @@ function displayParticipants() {
                                       hasBooking
                                          ? `<span class="badge badge-success">Gebucht</span>`
                                          : `<span class="badge badge-warning">Kein Termin</span>`
+                                   }
+                               </td>
+                               <td>
+                                   ${
+                                      hasQuestionnaire
+                                         ? `<span title="${questionnaireTooltip}" style="cursor: help; color: #667eea;">
+                                               📋 <span style="text-decoration: underline;">Details</span>
+                                           </span>`
+                                         : `<span style="color: #999;">-</span>`
                                    }
                                </td>
                                <td>${new Date(p.created_at).toLocaleDateString("de-DE")}</td>
@@ -2593,6 +2626,36 @@ function showDayDetails(dateStr) {
             const emails = bookings.map((b) => b.email).join(", ");
             const firstBooking = bookings[0] || {};
 
+            // Format questionnaire data
+            const visionMap = {
+               none: "Keine Sehhilfe",
+               glasses: "Brille",
+               contacts: "Kontaktlinsen",
+            };
+            const questionnaireInfo = bookings
+               .map((b) => {
+                  if (
+                     !b.vision_correction &&
+                     !b.study_subject &&
+                     !b.vr_experience &&
+                     !b.motion_sickness
+                  ) {
+                     return `<div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; font-size: 13px;">
+                        <strong>${b.name}:</strong> <span style="color: #999;">Keine Fragebogendaten</span>
+                     </div>`;
+                  }
+                  return `<div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; font-size: 13px;">
+                     <strong>${b.name}:</strong><br>
+                     <span style="color: #666;">
+                        👁️ ${visionMap[b.vision_correction] || b.vision_correction || "n/a"} |
+                        📚 ${b.study_subject || "n/a"} |
+                        🥽 VR: ${b.vr_experience || "n/a"}/5 |
+                        🤢 Übelkeit: ${b.motion_sickness || "n/a"}/5
+                     </span>
+                  </div>`;
+               })
+               .join("");
+
             let typeLabel = "";
             let typeColor = "#4a5568";
             if (slot.appointment_type === "primary") {
@@ -2634,6 +2697,7 @@ function showDayDetails(dateStr) {
                      <div style="margin-top: 6px;">
                         <span style="background: ${typeColor}; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: 500;">${typeLabel}</span>${originalInfo}
                      </div>
+                     ${questionnaireInfo}
                   </div>
                   <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                      <button class="btn btn-secondary btn-sm" onclick="closeDayDetailsModal(); editTimeslot(${slot.id})">Bearbeiten</button>

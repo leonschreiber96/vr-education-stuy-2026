@@ -194,7 +194,7 @@
                      <p style="margin: 5px 0 0 0">
                         <strong>Marchstraße 23, 10587 Berlin</strong><br />
                         <span style="color: #666; font-size: 0.9em"
-                           >(Abweichungen werden rechtzeitig kommuniziert)</span
+                           >(Sofern nicht anders angegegen)</span
                         >
                      </p>
                   </div>
@@ -243,9 +243,10 @@
                </div>
             </div>
 
-            <!-- Step 1: Personal Information -->
+            <!-- Step 1: Personal Information and Questionnaire -->
             <div id="personalInfoSection" class="section hidden">
-               <h2>Ihre Daten</h2>
+               <h2>Ihre Daten & Vorabfragen</h2>
+
                <div class="form-group">
                   <label for="name">Name *</label>
                   <input type="text" id="name" name="name" required />
@@ -254,6 +255,288 @@
                   <label for="email">E-Mail *</label>
                   <input type="email" id="email" name="email" required />
                </div>
+
+               <div
+                  style="
+                     border-top: 2px solid #e0e0e0;
+                     margin: 30px 0 20px 0;
+                     padding-top: 20px;
+                  "
+               >
+                  <h3 style="color: #667eea; margin-bottom: 20px">
+                     📋 Vorabfragen zur Studie
+                  </h3>
+
+                  <!-- Vision Correction -->
+                  <div class="form-group">
+                     <label for="visionCorrection">Sehkorrektur *</label>
+                     <select
+                        id="visionCorrection"
+                        name="visionCorrection"
+                        required
+                     >
+                        <option value="">Bitte wählen...</option>
+                        <option value="none">
+                           Keine Sehhilfe erforderlich
+                        </option>
+                        <option value="glasses">Brille</option>
+                        <option value="contacts">Kontaktlinsen</option>
+                     </select>
+                     <small
+                        style="
+                           display: block;
+                           margin-top: 8px;
+                           color: #666;
+                           line-height: 1.5;
+                        "
+                     >
+                        <strong>Hinweis:</strong> Falls Sie normalerweise keine
+                        Kontaktlinsen tragen, aber bereit wären, diese für die
+                        Studie zu verwenden, wählen Sie bitte "Kontaktlinsen".
+                        Dies wäre von Vorteil, ist aber keine Voraussetzung für
+                        die Teilnahme.
+                     </small>
+                  </div>
+
+                  <!-- Study Subject -->
+                  <div class="form-group">
+                     <label for="studySubject"
+                        >Studienfach (aktuell oder in der Vergangenheit)
+                        *</label
+                     >
+                     <input
+                        type="text"
+                        id="studySubject"
+                        name="studySubject"
+                        placeholder="z.B. Informatik, Psychologie, Maschinenbau..."
+                        required
+                     />
+                     <small
+                        style="display: block; margin-top: 8px; color: #666"
+                     >
+                        Bitte geben Sie Ihr Hauptstudienfach an, auch wenn Sie
+                        bereits abgeschlossen haben.
+                     </small>
+                  </div>
+
+                  <!-- VR Experience -->
+                  <div class="form-group">
+                     <label for="vrExperience"
+                        >Vorerfahrung mit Virtual Reality (VR) *</label
+                     >
+                     <div style="margin-top: 10px">
+                        <div
+                           style="
+                              display: flex;
+                              justify-content: space-between;
+                              margin-bottom: 8px;
+                              font-size: 0.9em;
+                              color: #666;
+                           "
+                        >
+                           <span>Keine Erfahrung</span>
+                           <span>Sehr viel Erfahrung</span>
+                        </div>
+                        <div
+                           style="display: flex; gap: 10px; align-items: center"
+                        >
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="vrExperience"
+                                 value="1"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">1</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="vrExperience"
+                                 value="2"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">2</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="vrExperience"
+                                 value="3"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">3</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="vrExperience"
+                                 value="4"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">4</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="vrExperience"
+                                 value="5"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">5</span>
+                           </label>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Motion Sickness -->
+                  <div class="form-group">
+                     <label for="motionSickness"
+                        >Neigung zu Reiseübelkeit / Motion Sickness *</label
+                     >
+                     <div style="margin-top: 10px">
+                        <div
+                           style="
+                              display: flex;
+                              justify-content: space-between;
+                              margin-bottom: 8px;
+                              font-size: 0.9em;
+                              color: #666;
+                           "
+                        >
+                           <span>Gar nicht anfällig</span>
+                           <span>Sehr anfällig</span>
+                        </div>
+                        <div
+                           style="display: flex; gap: 10px; align-items: center"
+                        >
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="motionSickness"
+                                 value="1"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">1</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="motionSickness"
+                                 value="2"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">2</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="motionSickness"
+                                 value="3"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">3</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="motionSickness"
+                                 value="4"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">4</span>
+                           </label>
+                           <label
+                              style="
+                                 flex: 1;
+                                 text-align: center;
+                                 cursor: pointer;
+                              "
+                           >
+                              <input
+                                 type="radio"
+                                 name="motionSickness"
+                                 value="5"
+                                 required
+                                 style="display: block; margin: 0 auto 5px"
+                              />
+                              <span style="font-size: 0.9em">5</span>
+                           </label>
+                        </div>
+                     </div>
+                     <small
+                        style="display: block; margin-top: 8px; color: #666"
+                     >
+                        Haben Sie in der Vergangenheit Übelkeit bei Autofahrten,
+                        auf Schiffen, in VR oder bei anderen Bewegungen
+                        verspürt?
+                     </small>
+                  </div>
+               </div>
+
                <button
                   type="button"
                   class="btn btn-primary"

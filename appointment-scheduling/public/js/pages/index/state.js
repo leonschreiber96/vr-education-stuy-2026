@@ -11,6 +11,14 @@ export const state = {
    participantName: "",
    participantEmail: "",
 
+   // Questionnaire data
+   questionnaireData: {
+      visionCorrection: null,
+      studySubject: null,
+      vrExperience: null,
+      motionSickness: null,
+   },
+
    // Selected timeslot IDs
    selectedPrimaryTimeslotId: null,
    selectedFollowupTimeslotId: null,
@@ -31,6 +39,12 @@ export function resetState() {
    state.currentStep = 1;
    state.participantName = "";
    state.participantEmail = "";
+   state.questionnaireData = {
+      visionCorrection: null,
+      studySubject: null,
+      vrExperience: null,
+      motionSickness: null,
+   };
    state.selectedPrimaryTimeslotId = null;
    state.selectedFollowupTimeslotId = null;
    state.primaryTimeslots = [];
@@ -43,10 +57,19 @@ export function resetState() {
  * Update participant information
  * @param {string} name - Participant name
  * @param {string} email - Participant email
+ * @param {Object} questionnaire - Questionnaire data (optional)
  */
-export function setParticipantInfo(name, email) {
+export function setParticipantInfo(name, email, questionnaire = {}) {
    state.participantName = name;
    state.participantEmail = email;
+   if (questionnaire) {
+      state.questionnaireData = {
+         visionCorrection: questionnaire.visionCorrection || null,
+         studySubject: questionnaire.studySubject || null,
+         vrExperience: questionnaire.vrExperience || null,
+         motionSickness: questionnaire.motionSickness || null,
+      };
+   }
 }
 
 /**
@@ -72,7 +95,7 @@ export function setFollowupTimeslots(timeslots) {
 export function selectPrimaryTimeslot(timeslotId) {
    state.selectedPrimaryTimeslotId = timeslotId;
    state.selectedPrimaryTimeslot = state.primaryTimeslots.find(
-      (slot) => slot.id === timeslotId
+      (slot) => slot.id === timeslotId,
    );
 }
 
@@ -83,7 +106,7 @@ export function selectPrimaryTimeslot(timeslotId) {
 export function selectFollowupTimeslot(timeslotId) {
    state.selectedFollowupTimeslotId = timeslotId;
    state.selectedFollowupTimeslot = state.followupTimeslots.find(
-      (slot) => slot.id === timeslotId
+      (slot) => slot.id === timeslotId,
    );
 }
 
@@ -126,7 +149,9 @@ export function hasPrimaryTimeslot() {
  * @returns {boolean} True if followup timeslot is selected
  */
 export function hasFollowupTimeslot() {
-   return !!(state.selectedFollowupTimeslotId && state.selectedFollowupTimeslot);
+   return !!(
+      state.selectedFollowupTimeslotId && state.selectedFollowupTimeslot
+   );
 }
 
 /**
