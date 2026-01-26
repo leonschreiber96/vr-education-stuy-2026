@@ -516,8 +516,16 @@ function displayParticipants() {
                             p.vr_experience ||
                             p.motion_sickness;
                          const questionnaireTooltip = hasQuestionnaire
-                            ? `Sehkorrektur: ${visionText}\nStudienfach: ${studySubject}\nVR-Erfahrung: ${vrExp}/5\nReiseübelkeit: ${motionSick}/5`
+                            ? `Sehkorrektur: ${visionText}&#13;Studienfach: ${studySubject}&#13;VR-Erfahrung: ${vrExp}/5&#13;Reiseübelkeit: ${motionSick}/5`
                             : "Keine Daten";
+
+                         // Create detailed questionnaire info for modal
+                         const questionnaireDetails = hasQuestionnaire
+                            ? `<strong>Sehkorrektur:</strong> ${visionText}<br>
+                               <strong>Studienfach:</strong> ${studySubject}<br>
+                               <strong>VR-Erfahrung:</strong> ${vrExp}/5<br>
+                               <strong>Reiseübelkeit:</strong> ${motionSick}/5`
+                            : "Keine Fragebogendaten verfügbar";
 
                          return `
                            <tr>
@@ -534,8 +542,8 @@ function displayParticipants() {
                                <td>
                                    ${
                                       hasQuestionnaire
-                                         ? `<span title="${questionnaireTooltip}" style="cursor: help; color: #667eea;">
-                                               📋 <span style="text-decoration: underline;">Details</span>
+                                         ? `<span onclick="showQuestionnaireModal('${p.name.replace(/'/g, "\\'")}', \`${questionnaireDetails}\`)" style="cursor: pointer; color: #667eea;">
+                                               📋 <span style="text-decoration: underline;">Anzeigen</span>
                                            </span>`
                                          : `<span style="color: #999;">-</span>`
                                    }
@@ -789,15 +797,73 @@ function displayTimeslots() {
                             minute: "2-digit",
                          })}`;
 
-                         const hasActiveBookings =
+                         const activeBookingsForThisSlot =
                             allData.bookings.filter(
                                (b) =>
                                   b.timeslot_id === slot.id &&
                                   b.status === "active",
-                            ).length > 0;
-                         const statusBadge = hasActiveBookings
-                            ? '<span class="badge badge-danger">Gebucht</span>'
-                            : '<span class="badge badge-success">Verfügbar</span>';
+                            );
+                         const hasActiveBookings =
+                            activeBookingsForThisSlot.length > 0;
+
+                         // Determine status based on capacity
+                         let statusBadge =
+                            '<span class="badge badge-success">Verfügbar</span>';
+                         let totalCapacity = slot.capacity;
+
+                         // For dual appointments with variant capacities
+                         if (
+                            slot.primary_capacity !== null ||
+                            slot.followup_capacity !== null
+                         ) {
+                            const primaryBookings =
+                               activeBookingsForThisSlot.filter(
+                                  (b) => !b.is_followup,
+                               ).length;
+                            const followupBookings =
+                               activeBookingsForThisSlot.filter(
+                                  (b) => b.is_followup,
+                               ).length;
+                            const primaryCap =
+                               slot.primary_capacity !== null
+                                  ? slot.primary_capacity
+                                  : Infinity;
+                            const followupCap =
+                               slot.followup_capacity !== null
+                                  ? slot.followup_capacity
+                                  : Infinity;
+
+                            if (
+                               primaryBookings >= primaryCap &&
+                               followupBookings >= followupCap
+                            ) {
+                               statusBadge =
+                                  '<span class="badge badge-danger">Ausgebucht</span>';
+                            } else if (
+                               primaryBookings > 0 ||
+                               followupBookings > 0
+                            ) {
+                               statusBadge =
+                                  '<span class="badge badge-warning">Teilweise gebucht</span>';
+                            }
+                         } else if (totalCapacity) {
+                            // Singular capacity
+                            if (
+                               activeBookingsForThisSlot.length >= totalCapacity
+                            ) {
+                               statusBadge =
+                                  '<span class="badge badge-danger">Ausgebucht</span>';
+                            } else if (activeBookingsForThisSlot.length > 0) {
+                               statusBadge =
+                                  '<span class="badge badge-warning">Teilweise gebucht</span>';
+                            }
+                         } else {
+                            // No capacity limit
+                            if (hasActiveBookings) {
+                               statusBadge =
+                                  '<span class="badge badge-info">Gebucht</span>';
+                            }
+                         }
 
                          let typeBadge = "";
                          if (slot.appointment_type === "primary") {
@@ -871,12 +937,21 @@ function displayTimeslots() {
                             capacityStr = `${activeBookingsForSlot.length}/∞`;
                          }
 
-                         const participantsList =
-                            activeBookingsForSlot.length > 0
-                               ? activeBookingsForSlot
-                                    .map((b) => `${b.name}`)
-                                    .join(", ")
-                               : "-";
+                         // Show participant list or link to modal
+                         let participantsList = "-";
+                         if (activeBookingsForSlot.length > 0) {
+                            if (activeBookingsForSlot.length <= 2) {
+                               // Show names directly if 2 or fewer
+                               participantsList = activeBookingsForSlot
+                                  .map((b) => `${b.name}`)
+                                  .join(", ");
+                            } else {
+                               // Show link to modal if more than 2
+                               participantsList = `<a href="#" onclick="showTimeslotParticipantsModal(${slot.id}); return false;" style="color: #667eea; text-decoration: underline;">
+                                  ${activeBookingsForSlot.length} Teilnehmer anzeigen
+                               </a>`;
+                            }
+                         }
 
                          const isSelected = selectedTimeslots.has(slot.id);
                          const isFeatured = slot.is_featured === 1;
@@ -2245,6 +2320,138 @@ function previewBulkCreate() {
    `;
 }
 
+// Show questionnaire modal
+function showQuestionnaireModal(participantName, questionnaireDetails) {
+   const modal = document.getElementById("questionnaireModal");
+   if (!modal) {
+      // Create modal if it doesn't exist
+      const modalHtml = `
+         <div id="questionnaireModal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+               <div class="modal-header">
+                  <h2 id="questionnaireModalTitle">Fragebogen</h2>
+                  <button class="modal-close" onclick="closeQuestionnaireModal()">×</button>
+               </div>
+               <div class="modal-body" id="questionnaireModalContent"></div>
+            </div>
+         </div>
+      `;
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+   }
+
+   document.getElementById("questionnaireModalTitle").textContent =
+      `Fragebogen - ${participantName}`;
+   document.getElementById("questionnaireModalContent").innerHTML = `
+      <div style="line-height: 1.8;">
+         ${questionnaireDetails}
+      </div>
+   `;
+   document.getElementById("questionnaireModal").classList.add("active");
+}
+
+// Close questionnaire modal
+function closeQuestionnaireModal() {
+   const modal = document.getElementById("questionnaireModal");
+   if (modal) {
+      modal.classList.remove("active");
+   }
+}
+
+// Show timeslot participants modal
+function showTimeslotParticipantsModal(timeslotId) {
+   const slot = allData.timeslots.find((s) => s.id === timeslotId);
+   if (!slot) return;
+
+   const bookings = allData.bookings.filter(
+      (b) => b.timeslot_id === timeslotId && b.status === "active",
+   );
+
+   if (bookings.length === 0) return;
+
+   const modal = document.getElementById("timeslotParticipantsModal");
+   if (!modal) {
+      // Create modal if it doesn't exist
+      const modalHtml = `
+         <div id="timeslotParticipantsModal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+               <div class="modal-header">
+                  <h2 id="timeslotParticipantsModalTitle">Teilnehmer</h2>
+                  <button class="modal-close" onclick="closeTimeslotParticipantsModal()">×</button>
+               </div>
+               <div class="modal-body" id="timeslotParticipantsModalContent"></div>
+            </div>
+         </div>
+      `;
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+   }
+
+   const startTime = new Date(slot.start_time);
+   const endTime = new Date(slot.end_time);
+   const dateStr = startTime.toLocaleDateString("de-DE", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+   });
+   const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+
+   document.getElementById("timeslotParticipantsModalTitle").textContent =
+      `Teilnehmer - ${dateStr}, ${timeStr}`;
+
+   // Format questionnaire data
+   const visionMap = {
+      none: "Keine Sehhilfe",
+      glasses: "Brille",
+      contacts: "Kontaktlinsen",
+   };
+
+   const participantsHtml = bookings
+      .map((b) => {
+         const hasQuestionnaire =
+            b.vision_correction ||
+            b.study_subject ||
+            b.vr_experience ||
+            b.motion_sickness;
+         let questionnaireInfo = "";
+
+         if (hasQuestionnaire) {
+            questionnaireInfo = `
+            <div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; font-size: 13px;">
+               <strong>Fragebogen:</strong><br>
+               <span style="color: #666;">
+                  👁️ ${visionMap[b.vision_correction] || b.vision_correction || "n/a"} |
+                  📚 ${b.study_subject || "n/a"} |
+                  🥽 VR: ${b.vr_experience || "n/a"}/5 |
+                  🤢 Übelkeit: ${b.motion_sickness || "n/a"}/5
+               </span>
+            </div>
+         `;
+         }
+
+         return `
+         <div style="border: 1px solid #e0e0e0; padding: 12px; margin: 8px 0; border-radius: 6px; background: #fff;">
+            <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">${b.name}</div>
+            <div style="color: #666; font-size: 14px; margin-bottom: 4px;">${b.email}</div>
+            ${b.is_followup ? '<span class="badge badge-success" style="font-size: 11px;">Folgetermin</span>' : '<span class="badge badge-info" style="font-size: 11px;">Haupttermin</span>'}
+            ${questionnaireInfo}
+         </div>
+      `;
+      })
+      .join("");
+
+   document.getElementById("timeslotParticipantsModalContent").innerHTML =
+      participantsHtml;
+   document.getElementById("timeslotParticipantsModal").classList.add("active");
+}
+
+// Close timeslot participants modal
+function closeTimeslotParticipantsModal() {
+   const modal = document.getElementById("timeslotParticipantsModal");
+   if (modal) {
+      modal.classList.remove("active");
+   }
+}
+
 // Delete participant
 async function deleteParticipant(id, name) {
    const confirmMessage = `Möchten Sie den Teilnehmer "${name}" wirklich löschen?\n\nAlle zugehörigen Buchungen werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`;
@@ -2354,6 +2561,10 @@ window.onclick = function (event) {
    const emailModal = document.getElementById("sendEmailModal");
    const dayDetailsModal = document.getElementById("dayDetailsModal");
    const bulkCreateModal = document.getElementById("bulkCreateModal");
+   const questionnaireModal = document.getElementById("questionnaireModal");
+   const timeslotParticipantsModal = document.getElementById(
+      "timeslotParticipantsModal",
+   );
 
    if (event.target === timeslotModal) {
       closeTimeslotModal();
@@ -2366,6 +2577,12 @@ window.onclick = function (event) {
    }
    if (event.target === bulkCreateModal) {
       closeBulkCreateModal();
+   }
+   if (event.target === questionnaireModal) {
+      closeQuestionnaireModal();
+   }
+   if (event.target === timeslotParticipantsModal) {
+      closeTimeslotParticipantsModal();
    }
 };
 
