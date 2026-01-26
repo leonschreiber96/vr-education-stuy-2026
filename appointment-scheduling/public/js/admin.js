@@ -468,6 +468,39 @@ function displayParticipants() {
       return;
    }
 
+   // Deduplicate participants by ID and collect all their bookings
+   const participantsMap = new Map();
+   allData.participants.forEach((p) => {
+      if (!participantsMap.has(p.id)) {
+         participantsMap.set(p.id, {
+            id: p.id,
+            name: p.name,
+            email: p.email,
+            created_at: p.created_at,
+            vision_correction: p.vision_correction,
+            study_subject: p.study_subject,
+            vr_experience: p.vr_experience,
+            motion_sickness: p.motion_sickness,
+            bookings: [],
+         });
+      }
+      // Add booking info if it exists
+      if (p.booking_id) {
+         participantsMap.get(p.id).bookings.push({
+            booking_id: p.booking_id,
+            start_time: p.start_time,
+            end_time: p.end_time,
+            location: p.location,
+            booking_status: p.booking_status,
+         });
+      }
+   });
+
+   // Convert map to array and sort by creation date (newest first)
+   const uniqueParticipants = Array.from(participantsMap.values()).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at),
+   );
+
    container.innerHTML = `
        <div class="table-container">
            <table>
@@ -475,7 +508,7 @@ function displayParticipants() {
                    <tr>
                        <th>Name</th>
                        <th>E-Mail</th>
-                       <th>Termin</th>
+                       <th>Termin(e)</th>
                        <th>Status</th>
                        <th>Fragebogen</th>
                        <th>Registriert</th>
@@ -483,18 +516,41 @@ function displayParticipants() {
                    </tr>
                </thead>
                <tbody>
-                   ${allData.participants
+                   ${uniqueParticipants
                       .map((p) => {
-                         const hasBooking = p.booking_id;
-                         const appointmentTime = hasBooking
-                            ? new Date(p.start_time).toLocaleString("de-DE", {
-                                 day: "2-digit",
-                                 month: "2-digit",
-                                 year: "numeric",
-                                 hour: "2-digit",
-                                 minute: "2-digit",
-                              })
-                            : "-";
+                         const hasBookings = p.bookings.length > 0;
+
+                         // Format all appointments
+                         let appointmentTimeDisplay = "-";
+                         if (hasBookings) {
+                            if (p.bookings.length === 1) {
+                               appointmentTimeDisplay = new Date(
+                                  p.bookings[0].start_time,
+                               ).toLocaleString("de-DE", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                               });
+                            } else {
+                               // Multiple bookings - show them all
+                               appointmentTimeDisplay = p.bookings
+                                  .map((b) =>
+                                     new Date(b.start_time).toLocaleString(
+                                        "de-DE",
+                                        {
+                                           day: "2-digit",
+                                           month: "2-digit",
+                                           year: "numeric",
+                                           hour: "2-digit",
+                                           minute: "2-digit",
+                                        },
+                                     ),
+                                  )
+                                  .join("<br>");
+                            }
+                         }
 
                          // Questionnaire data formatting
                          const visionMap = {
@@ -515,9 +571,6 @@ function displayParticipants() {
                             p.study_subject ||
                             p.vr_experience ||
                             p.motion_sickness;
-                         const questionnaireTooltip = hasQuestionnaire
-                            ? `Sehkorrektur: ${visionText}&#13;Studienfach: ${studySubject}&#13;VR-Erfahrung: ${vrExp}/5&#13;Reiseübelkeit: ${motionSick}/5`
-                            : "Keine Daten";
 
                          // Create detailed questionnaire info for modal
                          const questionnaireDetails = hasQuestionnaire
@@ -531,11 +584,11 @@ function displayParticipants() {
                            <tr>
                                <td>${p.name}</td>
                                <td>${p.email}</td>
-                               <td>${appointmentTime}</td>
+                               <td>${appointmentTimeDisplay}</td>
                                <td>
                                    ${
-                                      hasBooking
-                                         ? `<span class="badge badge-success">Gebucht</span>`
+                                      hasBookings
+                                         ? `<span class="badge badge-success">Gebucht${p.bookings.length > 1 ? ` (${p.bookings.length})` : ""}</span>`
                                          : `<span class="badge badge-warning">Kein Termin</span>`
                                    }
                                </td>
