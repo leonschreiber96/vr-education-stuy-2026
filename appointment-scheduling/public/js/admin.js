@@ -811,11 +811,12 @@ function displayTimeslots() {
                             '<span class="badge badge-success">Verfügbar</span>';
                          let totalCapacity = slot.capacity;
 
-                         // For dual appointments with variant capacities
-                         if (
+                         // Check if timeslot has variant capacities and what type it currently is
+                         const hasVariantCapacities =
                             slot.primary_capacity !== null ||
-                            slot.followup_capacity !== null
-                         ) {
+                            slot.followup_capacity !== null;
+
+                         if (hasVariantCapacities) {
                             const primaryBookings =
                                activeBookingsForThisSlot.filter(
                                   (b) => !b.is_followup,
@@ -833,18 +834,40 @@ function displayTimeslots() {
                                   ? slot.followup_capacity
                                   : Infinity;
 
-                            if (
-                               primaryBookings >= primaryCap &&
-                               followupBookings >= followupCap
-                            ) {
-                               statusBadge =
-                                  '<span class="badge badge-danger">Ausgebucht</span>';
-                            } else if (
-                               primaryBookings > 0 ||
-                               followupBookings > 0
-                            ) {
-                               statusBadge =
-                                  '<span class="badge badge-warning">Teilweise gebucht</span>';
+                            // Check status based on current appointment_type
+                            if (slot.appointment_type === "primary") {
+                               // Only consider primary capacity
+                               if (primaryBookings >= primaryCap) {
+                                  statusBadge =
+                                     '<span class="badge badge-danger">Ausgebucht</span>';
+                               } else if (primaryBookings > 0) {
+                                  statusBadge =
+                                     '<span class="badge badge-warning">Teilweise gebucht</span>';
+                               }
+                            } else if (slot.appointment_type === "followup") {
+                               // Only consider followup capacity
+                               if (followupBookings >= followupCap) {
+                                  statusBadge =
+                                     '<span class="badge badge-danger">Ausgebucht</span>';
+                               } else if (followupBookings > 0) {
+                                  statusBadge =
+                                     '<span class="badge badge-warning">Teilweise gebucht</span>';
+                               }
+                            } else {
+                               // Still dual - check both capacities
+                               if (
+                                  primaryBookings >= primaryCap &&
+                                  followupBookings >= followupCap
+                               ) {
+                                  statusBadge =
+                                     '<span class="badge badge-danger">Ausgebucht</span>';
+                               } else if (
+                                  primaryBookings > 0 ||
+                                  followupBookings > 0
+                               ) {
+                                  statusBadge =
+                                     '<span class="badge badge-warning">Teilweise gebucht</span>';
+                               }
                             }
                          } else if (totalCapacity) {
                             // Singular capacity
@@ -900,11 +923,11 @@ function displayTimeslots() {
 
                          // Show capacity - handle dual appointments with variant capacities
                          let capacityStr;
-                         if (
+                         const hasVariantCapacitiesForDisplay =
                             slot.primary_capacity !== null ||
-                            slot.followup_capacity !== null
-                         ) {
-                            // Dual appointment with variant capacities - count primary vs followup bookings
+                            slot.followup_capacity !== null;
+
+                         if (hasVariantCapacitiesForDisplay) {
                             const primaryBookings =
                                activeBookingsForSlot.filter(
                                   (b) => !b.is_followup,
@@ -923,12 +946,21 @@ function displayTimeslots() {
                                   ? slot.followup_capacity
                                   : "∞";
 
-                            // Color-coded display with separate counts
-                            capacityStr = `
-                               <span style="color: #17a2b8; font-weight: 500;">H: ${primaryBookings}/${primaryCap}</span>
-                               <span style="color: #999; margin: 0 4px;">|</span>
-                               <span style="color: #28a745; font-weight: 500;">F: ${followupBookings}/${followupCap}</span>
-                            `;
+                            // Show capacity based on current appointment_type
+                            if (slot.appointment_type === "primary") {
+                               // Only show primary capacity
+                               capacityStr = `${primaryBookings}/${primaryCap}`;
+                            } else if (slot.appointment_type === "followup") {
+                               // Only show followup capacity
+                               capacityStr = `${followupBookings}/${followupCap}`;
+                            } else {
+                               // Still dual - show both capacities
+                               capacityStr = `
+                                  <span style="color: #17a2b8; font-weight: 500;">H: ${primaryBookings}/${primaryCap}</span>
+                                  <span style="color: #999; margin: 0 4px;">|</span>
+                                  <span style="color: #28a745; font-weight: 500;">F: ${followupBookings}/${followupCap}</span>
+                               `;
+                            }
                          } else if (slot.capacity) {
                             // Singular capacity
                             capacityStr = `${activeBookingsForSlot.length}/${slot.capacity}`;
