@@ -6,6 +6,7 @@ const createApp = require("./src/app");
 const db = require("./database");
 const bcrypt = require("bcrypt");
 const { Logger } = require("./src/middleware/logging");
+const reminderScheduler = require("./src/services/reminderScheduler");
 
 // Validate environment configuration
 try {
@@ -47,6 +48,12 @@ async function startServer() {
       // Create default admin
       await createDefaultAdmin();
 
+      // Start reminder scheduler
+      reminderScheduler.start();
+      Logger.info(
+         "Reminder scheduler started - checking every hour for reminders",
+      );
+
       // Start listening
       const server = app.listen(config.PORT, () => {
          console.log("\n" + "=".repeat(60));
@@ -60,12 +67,17 @@ async function startServer() {
          console.log(
             `👤 Admin URL: http://localhost:${config.PORT}${config.BASE_PATH}/admin.html`,
          );
+         console.log("⏰ Reminder system: Active (checking hourly)");
          console.log("=".repeat(60) + "\n");
       });
 
       // Graceful shutdown
       const shutdown = async (signal) => {
          Logger.info(`${signal} received. Starting graceful shutdown...`);
+
+         // Stop reminder scheduler
+         reminderScheduler.stop();
+         Logger.info("Reminder scheduler stopped");
 
          server.close(() => {
             Logger.info("HTTP server closed");

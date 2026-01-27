@@ -9,6 +9,7 @@ const db = require("../../database");
 const mailer = require("../../mailer");
 const BookingService = require("../services/bookingService");
 const NotificationService = require("../services/notificationService");
+const reminderScheduler = require("../services/reminderScheduler");
 const { requireAdmin } = require("../middleware/auth");
 const {
    asyncHandler,
@@ -1095,6 +1096,28 @@ router.post(
       });
 
       res.json({ success: true, message: "Email sent successfully" });
+   }),
+);
+
+/**
+ * POST /trigger-reminders
+ * Manually trigger reminder check (for testing/admin purposes)
+ */
+router.post(
+   "/trigger-reminders",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      Logger.info("Manual reminder check triggered by admin");
+
+      // Trigger the reminder check asynchronously
+      reminderScheduler.triggerManualCheck().catch((error) => {
+         Logger.error("Error during manual reminder check", error);
+      });
+
+      res.json({
+         success: true,
+         message: "Reminder check initiated. Check logs for results.",
+      });
    }),
 );
 

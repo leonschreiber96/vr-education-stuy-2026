@@ -134,6 +134,16 @@ function initialize() {
          column: "motion_sickness",
          definition: "INTEGER",
       },
+      {
+         table: "bookings",
+         column: "reminder_7day_sent",
+         definition: "INTEGER DEFAULT 0",
+      },
+      {
+         table: "bookings",
+         column: "reminder_1day_sent",
+         definition: "INTEGER DEFAULT 0",
+      },
    ];
 
    for (const { table, column, definition } of columnsToAdd) {
@@ -182,6 +192,7 @@ function initialize() {
     CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
     CREATE INDEX IF NOT EXISTS idx_bookings_followup ON bookings(is_followup);
     CREATE INDEX IF NOT EXISTS idx_bookings_parent ON bookings(parent_booking_id);
+    CREATE INDEX IF NOT EXISTS idx_bookings_reminders ON bookings(reminder_7day_sent, reminder_1day_sent);
     CREATE INDEX IF NOT EXISTS idx_timeslots_type ON timeslots(appointment_type);
     CREATE INDEX IF NOT EXISTS idx_timeslots_parent ON timeslots(parent_appointment_id);
     CREATE INDEX IF NOT EXISTS idx_participants_token ON participants(confirmation_token);
@@ -1242,6 +1253,94 @@ function getLogsCount() {
    return stmt.get().count;
 }
 
+/**
+ * Get bookings that need 7-day reminders
+ * @returns {Array} Bookings needing 7-day reminders
+ */
+function getBookingsNeedingSevenpDayReminder() {
+   const stmt = db.prepare(`
+      SELECT
+         b.id as booking_id,
+         b.participant_id,
+         b.timeslot_id,
+         b.is_followup,
+         b.appointment_type,
+         p.name as participant_name,
+         p.email as participant_email,
+         p.confirmation_token,
+         t.start_time,
+         t.end_time,
+         t.location
+      FROM bookings b
+      JOIN participants p ON b.participant_id = p.id
+      JOIN timeslots t ON b.timeslot_id = t.id
+      WHERE b.status = 'active'
+        AND b.reminder_7day_sent = 0
+        AND datetime(t.start_time) > datetime('now')
+        AND datetime(t.start_time) <= datetime('now', '+8 days')
+        AND datetime(t.start_time) >= datetime('now', '+6 days')
+      ORDER BY t.start_time
+   `);
+   return stmt.all();
+}
+
+/**
+ * Get bookings that need 1-day reminders
+ * @returns {Array} Bookings needing 1-day reminders
+ */
+function getBookingsNeedingOneDayReminder() {
+   const stmt = db.prepare(`
+      SELECT
+         b.id as booking_id,
+         b.participant_id,
+         b.timeslot_id,
+         b.is_followup,
+         b.appointment_type,
+         p.name as participant_name,
+         p.email as participant_email,
+         p.confirmation_token,
+         t.start_time,
+         t.end_time,
+         t.location
+      FROM bookings b
+      JOIN participants p ON b.participant_id = p.id
+      JOIN timeslots t ON b.timeslot_id = t.id
+      WHERE b.status = 'active'
+        AND b.reminder_1day_sent = 0
+        AND datetime(t.start_time) > datetime('now')
+        AND datetime(t.start_time) <= datetime('now', '+2 days')
+        AND datetime(t.start_time) >= datetime('now', '+12 hours')
+      ORDER BY t.start_time
+   `);
+   return stmt.all();
+}
+
+/**
+ * Mark 7-day reminder as sent for a booking
+ * @param {number} bookingId - Booking ID
+ */
+function markSevenDayReminderSent(bookingId) {
+   const stmt = db.prepare(`
+      UPDATE bookings
+      SET reminder_7day_sent = 1
+      WHERE id = ?
+   `);
+   stmt.run(bookingId);
+}
+
+/**
+ * Mark 1-day reminder as sent for a booking
+ * @param {number} bookingId - Booking ID
+ */
+function markOneDayReminderSent(bookingId) {
+   const stmt = db.prepare(`
+      UPDATE bookings
+      SET reminder_1day_sent = 1
+      WHERE id = ?
+   `);
+   stmt.run(bookingId);
+}
+
 // ===== UTILITY FUNCTIONS =====
 
 function close() {
@@ -1252,11 +1351,6 @@ function close() {
 
 module.exports = {
    initialize,
-   close,
-   getAffectedParticipantsByTimeslot,
-   getAffectedParticipantsWithLinkedBookings,
-   cancelBookingsForTimeslot,
-   cancelBookingsForTimeslotWithLinked,
    createAdmin,
    getAdminByUsername,
    createParticipant,
@@ -1264,8 +1358,6 @@ module.exports = {
    getAllParticipants,
    deleteParticipant,
    createTimeslot,
-   setTimeslotType,
-   revertTimeslotToOriginalType,
    getTimeslotById,
    getAvailableTimeslots,
    getAllTimeslots,
@@ -1274,22 +1366,34 @@ module.exports = {
    deleteTimeslot,
    setFeaturedTimeslot,
    getFeaturedTimeslot,
+   deleteBookingsForTimeslotWithLinked,
    bulkDeleteTimeslots,
+   getAffectedParticipantsByTimeslot,
+   cancelBookingsForTimeslot,
+   cancelBookingsForTimeslotWithLinked,
+   getAffectedParticipantsWithLinkedBookings,
    getTimeslotsInRange,
    bulkCreateTimeslots,
    hasCapacity,
    createBooking,
+   setTimeslotType,
+   revertTimeslotToOriginalType,
    createDualBooking,
    getBookingById,
    getBookingByToken,
    getAllBookingsByToken,
    getAllBookings,
+   updateBookingResultStatus,
+   getPastUnreviewedBookings,
    rescheduleBooking,
    cancelBooking,
    cancelAllBookingsByToken,
    logAction,
    getLogs,
    getLogsCount,
-   updateBookingResultStatus,
-   getPastUnreviewedBookings,
+   getBookingsNeedingSevenpDayReminder,
+   getBookingsNeedingOneDayReminder,
+   markSevenDayReminderSent,
+   markOneDayReminderSent,
+   close,
 };

@@ -711,6 +711,82 @@ async function sendCustomEmail(email, name, subject, message) {
 }
 
 /**
+ * Send reminder email for an upcoming appointment
+ * @param {string} email - Participant email
+ * @param {string} name - Participant name
+ * @param {Object} timeslot - Timeslot information
+ * @param {number} daysUntil - Days until appointment (7 or 1)
+ * @param {string} confirmationToken - Token for managing booking
+ * @param {boolean} isFollowup - Whether this is a followup appointment
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendReminderEmail(
+   email,
+   name,
+   timeslot,
+   daysUntil,
+   confirmationToken,
+   isFollowup = false,
+) {
+   const reminderText = daysUntil === 7 ? "in einer Woche" : "morgen";
+   const subject = `Erinnerung: Ihr ${isFollowup ? "Nachfolge-" : ""}Termin ${reminderText}`;
+   const managementUrl = buildUrl(`/manage.html?token=${confirmationToken}`);
+
+   const { hour, minute } = formatDateTime(timeslot.start_time);
+   const appointmentType = isFollowup ? "Nachfolgetermin" : "Ersttermin";
+
+   const html = `
+    <h2>Terminerinnerung</h2>
+    <p>Hallo ${name},</p>
+    <p>dies ist eine freundliche Erinnerung an Ihren bevorstehenden ${appointmentType} ${reminderText}:</p>
+
+    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <p><strong>📅 Datum:</strong> ${formatDateTime(timeslot.start_time)}</p>
+      <p><strong>🕒 Uhrzeit:</strong> ${hour}:${minute} Uhr</p>
+      <p><strong>📍 Ort:</strong> ${timeslot.location || "Wird noch bekannt gegeben"}</p>
+      <p><strong>📝 Typ:</strong> ${appointmentType}</p>
+    </div>
+
+    ${
+       daysUntil === 1
+          ? `
+    <p style="background-color: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; margin: 15px 0;">
+      <strong>⚠️ Wichtig:</strong> Ihr Termin findet morgen statt! Bitte erscheinen Sie pünktlich.
+    </p>
+    `
+          : ""
+    }
+
+    <p>Falls Sie den Termin nicht wahrnehmen können, bitten wir Sie, diesen rechtzeitig abzusagen:</p>
+    <p style="text-align: center; margin: 25px 0;">
+      <a href="${managementUrl}"
+         style="display: inline-block; padding: 12px 30px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        Termin verwalten
+      </a>
+    </p>
+
+    <p>Wir freuen uns auf Ihre Teilnahme!</p>
+
+    <hr>
+    <p style="color: #666; font-size: 0.9em;">Bei Fragen wenden Sie sich bitte an: ${ADMIN_EMAIL}</p>
+  `;
+
+   const icalContent = generateICalEvent(
+      timeslot.start_time,
+      timeslot.end_time,
+      timeslot.location,
+      appointmentType,
+   );
+
+   const icalAttachment = {
+      filename: "termin.ics",
+      content: icalContent,
+   };
+
+   return sendEmail(email, subject, html, icalAttachment);
+}
+
+/**
  * Generic function to send an email (used by notification service)
  * @param {string} to - Recipient email address
  * @param {string} subject - Email subject
@@ -728,6 +804,7 @@ module.exports = {
    sendRescheduleEmail,
    sendCancellationEmail,
    sendAdminNotification,
+   sendReminderEmail,
    sendTimeslotUpdateEmail,
    sendTimeslotDeletionEmail,
    sendCustomEmail,

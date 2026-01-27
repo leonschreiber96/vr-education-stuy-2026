@@ -124,6 +124,23 @@
 - `sendBookingCancellation(booking, participant, timeslot, reason)` - After cancellation
 - `sendCustomEmail(email, name, subject, message)` - Admin-initiated emails
 
+### ReminderScheduler (src/services/reminderScheduler.js) **NEW**
+**Purpose**: Automatic reminder system for upcoming appointments
+
+**Key Methods**:
+- `start()` - Start the scheduler (runs automatically on server startup)
+- `stop()` - Stop the scheduler (runs automatically on server shutdown)
+- `triggerManualCheck()` - Manually trigger a reminder check (admin endpoint)
+- `checkAndSendReminders()` - Main process that finds and sends reminders
+
+**Functionality**:
+- Runs every hour automatically
+- Sends 7-day reminders (6-8 days before appointment)
+- Sends 1-day reminders (12 hours - 2 days before appointment)
+- Tracks sent reminders in database to avoid duplicates
+- Logs all activities for monitoring
+- See `REMINDER_SYSTEM.md` for detailed documentation
+
 ## EMAIL SYSTEM (mailer.js)
 
 ### Email Functions
@@ -135,6 +152,7 @@
 - `sendTimeslotUpdateEmail()` - Timeslot changed (to affected participants)
 - `sendTimeslotDeletionEmail()` - Timeslot deleted (to affected participants)
 - `sendCustomEmail()` - Custom message from admin
+- `sendReminderEmail()` - **NEW** Automatic reminder emails (7 days & 1 day before appointment)
 
 ### Email Configuration (env vars)
 - `MAIL_ENABLED` - Enable/disable email sending
