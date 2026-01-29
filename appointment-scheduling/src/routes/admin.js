@@ -10,13 +10,9 @@ const mailer = require("../../mailer");
 const BookingService = require("../services/bookingService");
 const NotificationService = require("../services/notificationService");
 const reminderScheduler = require("../services/reminderScheduler");
+const dailySummaryScheduler = require("../services/dailySummaryScheduler");
 const { requireAdmin } = require("../middleware/auth");
-const {
-   asyncHandler,
-   validateRequired,
-   ValidationError,
-   NotFoundError,
-} = require("../middleware/errorHandler");
+const { asyncHandler, validateRequired, ValidationError, NotFoundError } = require("../middleware/errorHandler");
 const { Logger } = require("../middleware/logging");
 const config = require("../../config");
 
@@ -199,15 +195,7 @@ router.post(
    "/timeslots",
    requireAdmin,
    asyncHandler(async (req, res) => {
-      const {
-         startTime,
-         endTime,
-         location,
-         appointmentType,
-         capacity,
-         primaryCapacity,
-         followupCapacity,
-      } = req.body;
+      const { startTime, endTime, location, appointmentType, capacity, primaryCapacity, followupCapacity } = req.body;
 
       validateRequired(req.body, ["startTime", "endTime"]);
 
@@ -255,14 +243,7 @@ router.post(
          workingHours,
       } = req.body;
 
-      validateRequired(req.body, [
-         "startDate",
-         "endDate",
-         "duration",
-         "breakTime",
-         "weekdays",
-         "workingHours",
-      ]);
+      validateRequired(req.body, ["startDate", "endDate", "duration", "breakTime", "weekdays", "workingHours"]);
 
       // Validate inputs
       if (duration <= 0) {
@@ -278,9 +259,7 @@ router.post(
       }
 
       if (!Array.isArray(workingHours) || workingHours.length === 0) {
-         throw new ValidationError(
-            "At least one working hours range must be specified",
-         );
+         throw new ValidationError("At least one working hours range must be specified");
       }
 
       // Validate working hours
@@ -289,9 +268,7 @@ router.post(
             throw new ValidationError("Invalid working hours format");
          }
          if (hours.start >= hours.end) {
-            throw new ValidationError(
-               "End time must be after start time in working hours",
-            );
+            throw new ValidationError("End time must be after start time in working hours");
          }
       }
 
@@ -345,14 +322,8 @@ router.put(
 
       // Validate that at least one field is being updated
       const { location, appointmentType, capacity } = updates;
-      if (
-         location === undefined &&
-         appointmentType === undefined &&
-         capacity === undefined
-      ) {
-         throw new ValidationError(
-            "At least one field (location, appointmentType, or capacity) must be provided",
-         );
+      if (location === undefined && appointmentType === undefined && capacity === undefined) {
+         throw new ValidationError("At least one field (location, appointmentType, or capacity) must be provided");
       }
 
       // Track results
@@ -377,14 +348,11 @@ router.put(
             }
 
             // Check if timeslot has bookings - need to notify participants if location changes
-            const affectedParticipants =
-               db.getAffectedParticipantsWithLinkedBookings(id);
+            const affectedParticipants = db.getAffectedParticipantsWithLinkedBookings(id);
             const hasBookings = affectedParticipants.length > 0;
 
             // Check if timeslot has variant capacities (primary_capacity or followup_capacity)
-            const hasVariantCapacities =
-               timeslot.primary_capacity !== null ||
-               timeslot.followup_capacity !== null;
+            const hasVariantCapacities = timeslot.primary_capacity !== null || timeslot.followup_capacity !== null;
 
             // Prepare update object
             const updateData = {};
@@ -424,24 +392,18 @@ router.put(
                   let errorMessage = "";
 
                   for (const participant of affectedParticipants) {
-                     const isPrimaryBooking =
-                        participant.primary &&
-                        participant.primary.timeslot_id === id;
-                     const isFollowupBooking =
-                        participant.followup &&
-                        participant.followup.timeslot_id === id;
+                     const isPrimaryBooking = participant.primary && participant.primary.timeslot_id === id;
+                     const isFollowupBooking = participant.followup && participant.followup.timeslot_id === id;
 
                      // Check if new type is compatible with existing bookings
                      if (appointmentType === "primary" && isFollowupBooking) {
                         hasIncompatibleBookings = true;
-                        errorMessage =
-                           "Cannot change to primary-only: has follow-up bookings";
+                        errorMessage = "Cannot change to primary-only: has follow-up bookings";
                         break;
                      }
                      if (appointmentType === "followup" && isPrimaryBooking) {
                         hasIncompatibleBookings = true;
-                        errorMessage =
-                           "Cannot change to follow-up-only: has primary bookings";
+                        errorMessage = "Cannot change to follow-up-only: has primary bookings";
                         break;
                      }
                   }
@@ -465,11 +427,7 @@ router.put(
             if (location !== undefined && hasBookings) {
                for (const participantData of affectedParticipants) {
                   // Check if we already have this participant
-                  if (
-                     !results.affectedParticipants.find(
-                        (p) => p.email === participantData.email,
-                     )
-                  ) {
+                  if (!results.affectedParticipants.find((p) => p.email === participantData.email)) {
                      results.affectedParticipants.push({
                         id: participantData.participant_id,
                         email: participantData.email,
@@ -500,8 +458,7 @@ router.put(
       // Send notification emails to affected participants if location changed
       if (location !== undefined && results.affectedParticipants.length > 0) {
          for (const participant of results.affectedParticipants) {
-            const oldLocationText =
-               participant.oldLocation || "nicht angegeben";
+            const oldLocationText = participant.oldLocation || "nicht angegeben";
             const newLocationText = location || "nicht angegeben";
             mailer
                .sendCustomEmail(
@@ -511,13 +468,9 @@ router.put(
                   `Der Ort für Ihre Termine wurde geändert.\n\nAlter Ort: ${oldLocationText}\nNeuer Ort: ${newLocationText}\n\nBitte notieren Sie sich die Änderung. Ihre Termine bleiben ansonsten unverändert.`,
                )
                .catch((err) => {
-                  Logger.error(
-                     "Failed to send location change notification",
-                     err,
-                     {
-                        participantId: participant.id,
-                     },
-                  );
+                  Logger.error("Failed to send location change notification", err, {
+                     participantId: participant.id,
+                  });
                });
          }
       }
@@ -548,15 +501,7 @@ router.put(
    requireAdmin,
    asyncHandler(async (req, res) => {
       const { id } = req.params;
-      const {
-         startTime,
-         endTime,
-         location,
-         appointmentType,
-         capacity,
-         primaryCapacity,
-         followupCapacity,
-      } = req.body;
+      const { startTime, endTime, location, appointmentType, capacity, primaryCapacity, followupCapacity } = req.body;
 
       // Get old timeslot data before updating
       const oldTimeslot = db.getTimeslotById(id);
@@ -565,9 +510,7 @@ router.put(
       }
 
       // Check if time changed
-      const timeChanged =
-         startTime !== oldTimeslot.start_time ||
-         endTime !== oldTimeslot.end_time;
+      const timeChanged = startTime !== oldTimeslot.start_time || endTime !== oldTimeslot.end_time;
 
       // If time is changing, validate 29-31 day rule for linked bookings
       if (timeChanged) {
@@ -575,29 +518,17 @@ router.put(
 
          for (const booking of affectedBookings) {
             // If this is a primary timeslot, check all linked followups
-            if (
-               oldTimeslot.appointment_type === "primary" &&
-               !booking.is_followup
-            ) {
+            if (oldTimeslot.appointment_type === "primary" && !booking.is_followup) {
                // Find this participant's followup booking
-               const allParticipantBookings = db.getAllBookingsByToken(
-                  booking.confirmation_token,
-               );
-               const followupBooking = allParticipantBookings.find(
-                  (b) => b.parent_booking_id === booking.booking_id,
-               );
+               const allParticipantBookings = db.getAllBookingsByToken(booking.confirmation_token);
+               const followupBooking = allParticipantBookings.find((b) => b.parent_booking_id === booking.booking_id);
 
                if (followupBooking) {
                   const newPrimaryDate = new Date(startTime);
                   const followupDate = new Date(followupBooking.timeslot_start);
-                  const daysDiff = Math.floor(
-                     (followupDate - newPrimaryDate) / (1000 * 60 * 60 * 24),
-                  );
+                  const daysDiff = Math.floor((followupDate - newPrimaryDate) / (1000 * 60 * 60 * 24));
 
-                  if (
-                     daysDiff < FOLLOWUP_MIN_DAYS ||
-                     daysDiff > FOLLOWUP_MAX_DAYS
-                  ) {
+                  if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
                      throw new ValidationError(
                         `Zeitänderung nicht möglich: Würde die ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage Regel verletzen. Folgetermin ist ${daysDiff} Tage nach dem neuen Haupttermin. Bitte stornieren Sie zuerst die Buchungen.`,
                      );
@@ -606,28 +537,16 @@ router.put(
             }
 
             // If this is a followup timeslot, check against linked primary
-            if (
-               oldTimeslot.appointment_type === "followup" &&
-               booking.is_followup
-            ) {
-               const allParticipantBookings = db.getAllBookingsByToken(
-                  booking.confirmation_token,
-               );
-               const primaryBooking = allParticipantBookings.find(
-                  (b) => b.booking_id === booking.parent_booking_id,
-               );
+            if (oldTimeslot.appointment_type === "followup" && booking.is_followup) {
+               const allParticipantBookings = db.getAllBookingsByToken(booking.confirmation_token);
+               const primaryBooking = allParticipantBookings.find((b) => b.booking_id === booking.parent_booking_id);
 
                if (primaryBooking) {
                   const primaryDate = new Date(primaryBooking.timeslot_start);
                   const newFollowupDate = new Date(startTime);
-                  const daysDiff = Math.floor(
-                     (newFollowupDate - primaryDate) / (1000 * 60 * 60 * 24),
-                  );
+                  const daysDiff = Math.floor((newFollowupDate - primaryDate) / (1000 * 60 * 60 * 24));
 
-                  if (
-                     daysDiff < FOLLOWUP_MIN_DAYS ||
-                     daysDiff > FOLLOWUP_MAX_DAYS
-                  ) {
+                  if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
                      throw new ValidationError(
                         `Zeitänderung nicht möglich: Würde die ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} Tage Regel verletzen. Neuer Folgetermin wäre ${daysDiff} Tage nach dem Haupttermin. Bitte stornieren Sie zuerst die Buchungen.`,
                      );
@@ -639,9 +558,7 @@ router.put(
 
       // Check if time or location changed (for notifications)
       const timeOrLocationChanged =
-         startTime !== oldTimeslot.start_time ||
-         endTime !== oldTimeslot.end_time ||
-         location !== oldTimeslot.location;
+         startTime !== oldTimeslot.start_time || endTime !== oldTimeslot.end_time || location !== oldTimeslot.location;
 
       // Get affected participants before updating (if changes warrant notification)
       let affectedParticipants = [];
@@ -655,18 +572,10 @@ router.put(
          endTime,
          location,
          appointmentType,
-         capacity:
-            capacity === "" || capacity === undefined
-               ? null
-               : parseInt(capacity),
-         primaryCapacity:
-            primaryCapacity === "" || primaryCapacity === undefined
-               ? null
-               : parseInt(primaryCapacity),
+         capacity: capacity === "" || capacity === undefined ? null : parseInt(capacity),
+         primaryCapacity: primaryCapacity === "" || primaryCapacity === undefined ? null : parseInt(primaryCapacity),
          followupCapacity:
-            followupCapacity === "" || followupCapacity === undefined
-               ? null
-               : parseInt(followupCapacity),
+            followupCapacity === "" || followupCapacity === undefined ? null : parseInt(followupCapacity),
       });
 
       // Get updated timeslot data
@@ -676,12 +585,7 @@ router.put(
       if (timeOrLocationChanged && affectedParticipants.length > 0) {
          for (const participant of affectedParticipants) {
             mailer
-               .sendTimeslotUpdateEmail(
-                  participant,
-                  oldTimeslot,
-                  newTimeslot,
-                  participant.is_followup === 1,
-               )
+               .sendTimeslotUpdateEmail(participant, oldTimeslot, newTimeslot, participant.is_followup === 1)
                .catch((err) => {
                   Logger.error("Failed to send timeslot update email", err, {
                      participantId: participant.id,
@@ -793,8 +697,7 @@ router.post(
       }
 
       // Get affected participants WITH their linked bookings (primary + followup)
-      const affectedParticipants =
-         db.getAffectedParticipantsWithLinkedBookings(id);
+      const affectedParticipants = db.getAffectedParticipantsWithLinkedBookings(id);
 
       if (affectedParticipants.length === 0) {
          return res.json({
@@ -875,8 +778,7 @@ router.delete(
       }
 
       // Get affected participants WITH their linked bookings before deleting
-      const affectedParticipants =
-         db.getAffectedParticipantsWithLinkedBookings(id);
+      const affectedParticipants = db.getAffectedParticipantsWithLinkedBookings(id);
 
       // Delete all bookings for this timeslot AND their linked bookings
       db.deleteBookingsForTimeslotWithLinked(id);
@@ -1019,10 +921,7 @@ router.patch(
 
       validateRequired(req.body, ["resultStatus"]);
 
-      const booking = BookingService.updateBookingResultStatus(
-         bookingId,
-         resultStatus,
-      );
+      const booking = BookingService.updateBookingResultStatus(bookingId, resultStatus);
 
       res.json({
          success: true,
@@ -1083,12 +982,7 @@ router.post(
 
       validateRequired(req.body, ["email", "subject", "message"]);
 
-      await NotificationService.sendCustomEmail(
-         email,
-         name || "",
-         subject,
-         message,
-      );
+      await NotificationService.sendCustomEmail(email, name || "", subject, message);
 
       Logger.info("Custom email sent by admin", {
          email,
@@ -1117,6 +1011,29 @@ router.post(
       res.json({
          success: true,
          message: "Reminder check initiated. Check logs for results.",
+      });
+   }),
+);
+
+/**
+ * POST /trigger-daily-summary
+ * Manually trigger daily summary email (for testing/admin purposes)
+ */
+router.post(
+   "/trigger-daily-summary",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      Logger.info("Manual daily summary triggered by admin");
+
+      // Trigger the daily summary asynchronously
+      const result = await dailySummaryScheduler.triggerManualSummary();
+
+      res.json({
+         success: true,
+         message: result.skipped
+            ? "No appointments tomorrow - email not sent"
+            : `Daily summary sent with ${result.appointmentCount} appointments`,
+         result,
       });
    }),
 );

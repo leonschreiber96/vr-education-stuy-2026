@@ -8,11 +8,7 @@ const db = require("../../database");
 const mailer = require("../../mailer");
 const config = require("../../config");
 const BookingService = require("../services/bookingService");
-const {
-   asyncHandler,
-   validateRequired,
-   ValidationError,
-} = require("../middleware/errorHandler");
+const { asyncHandler, validateRequired, ValidationError } = require("../middleware/errorHandler");
 const { Logger } = require("../middleware/logging");
 const FOLLOWUP_MIN_DAYS = config.FOLLOWUP_MIN_DAYS;
 const FOLLOWUP_MAX_DAYS = config.FOLLOWUP_MAX_DAYS;
@@ -41,11 +37,7 @@ router.get(
          endDate.setDate(endDate.getDate() + FOLLOWUP_MAX_DAYS);
          endDate.setHours(23, 59, 59, 999); // End of day
 
-         timeslots = db.getTimeslotsInRange(
-            startDate.toISOString(),
-            endDate.toISOString(),
-            "followup",
-         );
+         timeslots = db.getTimeslotsInRange(startDate.toISOString(), endDate.toISOString(), "followup");
       } else {
          timeslots = db.getAvailableTimeslots(type || "primary");
       }
@@ -61,21 +53,10 @@ router.get(
 router.post(
    "/api/register",
    asyncHandler(async (req, res) => {
-      const {
-         name,
-         email,
-         primaryTimeslotId,
-         followupTimeslotId,
-         questionnaireData,
-      } = req.body;
+      const { name, email, primaryTimeslotId, followupTimeslotId, questionnaireData } = req.body;
 
       // Validate required fields
-      validateRequired(req.body, [
-         "name",
-         "email",
-         "primaryTimeslotId",
-         "followupTimeslotId",
-      ]);
+      validateRequired(req.body, ["name", "email", "primaryTimeslotId", "followupTimeslotId"]);
 
       // Validate email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,9 +82,7 @@ router.post(
       // Set to midnight to compare dates only
       primaryDate.setHours(0, 0, 0, 0);
       followupDate.setHours(0, 0, 0, 0);
-      const daysDiff = Math.floor(
-         (followupDate - primaryDate) / (1000 * 60 * 60 * 24),
-      );
+      const daysDiff = Math.floor((followupDate - primaryDate) / (1000 * 60 * 60 * 24));
 
       if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
          throw new ValidationError(
@@ -122,11 +101,7 @@ router.post(
 
       // Create participant and dual booking
       const participant = db.createParticipant(name, email, questionnaireData);
-      const bookings = db.createDualBooking(
-         participant.id,
-         primaryTimeslotId,
-         followupTimeslotId,
-      );
+      const bookings = db.createDualBooking(participant.id, primaryTimeslotId, followupTimeslotId);
 
       Logger.info("Dual booking created", {
          participantId: participant.id,
@@ -135,17 +110,11 @@ router.post(
       });
 
       // Send confirmation email (async, don't wait)
-      mailer
-         .sendDualRegistrationEmail(
-            participant,
-            primaryTimeslot,
-            followupTimeslot,
-         )
-         .catch((err) => {
-            Logger.error("Failed to send dual registration email", err, {
-               participantId: participant.id,
-            });
+      mailer.sendDualRegistrationEmail(participant, primaryTimeslot, followupTimeslot).catch((err) => {
+         Logger.error("Failed to send dual registration email", err, {
+            participantId: participant.id,
          });
+      });
 
       // Send admin notification (async, don't wait)
       mailer
@@ -180,11 +149,7 @@ router.post(
       validateRequired(req.body, ["participantId", "timeslotId"]);
 
       // Use booking service for validation and creation
-      const result = BookingService.createBooking(
-         participantId,
-         timeslotId,
-         isFollowup || false,
-      );
+      const result = BookingService.createBooking(participantId, timeslotId, isFollowup || false);
 
       Logger.info("Single booking created", {
          participantId,
@@ -257,8 +222,7 @@ router.get(
 router.post(
    "/api/reschedule",
    asyncHandler(async (req, res) => {
-      const { token, bookingId, newTimeslotId, newFollowupTimeslotId } =
-         req.body;
+      const { token, bookingId, newTimeslotId, newFollowupTimeslotId } = req.body;
 
       validateRequired(req.body, ["token", "bookingId", "newTimeslotId"]);
 
@@ -304,10 +268,7 @@ router.post(
       // If rescheduling primary and there's a followup
       if (!booking.is_followup && followupBooking && !newFollowupTimeslotId) {
          // Check if existing followup would still be valid with new primary
-         const daysDiff = calculateDaysDifference(
-            newTimeslot.start_time,
-            followupBooking.timeslot_start,
-         );
+         const daysDiff = calculateDaysDifference(newTimeslot.start_time, followupBooking.timeslot_start);
 
          if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
             // Return error requiring followup reschedule
@@ -324,10 +285,7 @@ router.post(
       // If rescheduling followup and there's a primary
       if (booking.is_followup && primaryBooking && !newFollowupTimeslotId) {
          // Check if new followup would be valid with existing primary
-         const daysDiff = calculateDaysDifference(
-            primaryBooking.timeslot_start,
-            newTimeslot.start_time,
-         );
+         const daysDiff = calculateDaysDifference(primaryBooking.timeslot_start, newTimeslot.start_time);
 
          if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
             // Return error - cannot reschedule followup to invalid date
@@ -346,16 +304,11 @@ router.post(
          }
 
          if (!db.hasCapacity(newFollowupTimeslotId)) {
-            throw new ValidationError(
-               "New followup timeslot is at full capacity",
-            );
+            throw new ValidationError("New followup timeslot is at full capacity");
          }
 
          // Validate followup is within configured days (date-only comparison)
-         const daysDiff = calculateDaysDifference(
-            newTimeslot.start_time,
-            newFollowupTimeslot.start_time,
-         );
+         const daysDiff = calculateDaysDifference(newTimeslot.start_time, newFollowupTimeslot.start_time);
 
          if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
             throw new ValidationError(
@@ -365,10 +318,7 @@ router.post(
 
          // Reschedule followup as well
          if (followupBooking) {
-            db.rescheduleBooking(
-               followupBooking.booking_id,
-               newFollowupTimeslotId,
-            );
+            db.rescheduleBooking(followupBooking.booking_id, newFollowupTimeslotId);
          }
       }
 
@@ -382,12 +332,21 @@ router.post(
       });
 
       // Send confirmation email
+      mailer.sendRescheduleEmail(booking, oldTimeslot, newTimeslot).catch((err) => {
+         Logger.error("Failed to send reschedule email", err, {
+            bookingId,
+         });
+      });
+
+      // Send admin notification
       mailer
-         .sendRescheduleEmail(booking, oldTimeslot, newTimeslot)
+         .sendAdminNotification(
+            "reschedule",
+            { name: booking.participant_name, email: booking.participant_email },
+            { old: oldTimeslot, new: newTimeslot },
+         )
          .catch((err) => {
-            Logger.error("Failed to send reschedule email", err, {
-               bookingId,
-            });
+            Logger.error("Failed to send admin reschedule notification", err);
          });
 
       res.json({
@@ -455,17 +414,17 @@ router.post(
            }
          : null;
 
+      mailer.sendCancellationEmail(participant, primaryTimeslot, followupTimeslot, "participant").catch((err) => {
+         Logger.error("Failed to send cancellation email", err, {
+            email: participant.email,
+         });
+      });
+
+      // Send admin notification
       mailer
-         .sendCancellationEmail(
-            participant,
-            primaryTimeslot,
-            followupTimeslot,
-            "participant",
-         )
+         .sendAdminNotification("cancellation", participant, { primary: primaryTimeslot, followup: followupTimeslot })
          .catch((err) => {
-            Logger.error("Failed to send cancellation email", err, {
-               email: participant.email,
-            });
+            Logger.error("Failed to send admin cancellation notification", err);
          });
 
       res.json({

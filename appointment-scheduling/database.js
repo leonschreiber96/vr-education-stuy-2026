@@ -2,8 +2,7 @@ const Database = require("better-sqlite3");
 const crypto = require("crypto");
 const path = require("path");
 
-const DB_PATH =
-   process.env.DATABASE_PATH || path.join(__dirname, "data", "appointments.db");
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, "data", "appointments.db");
 let db;
 
 // Initialize database and create tables
@@ -204,9 +203,7 @@ function initialize() {
 // ===== ADMIN FUNCTIONS =====
 
 function createAdmin(username, passwordHash) {
-   const stmt = db.prepare(
-      "INSERT INTO admins (username, password_hash) VALUES (?, ?)",
-   );
+   const stmt = db.prepare("INSERT INTO admins (username, password_hash) VALUES (?, ?)");
    const result = stmt.run(username, passwordHash);
    return { id: result.lastInsertRowid, username };
 }
@@ -269,15 +266,11 @@ function getAllParticipants() {
 function deleteParticipant(id) {
    const transaction = db.transaction(() => {
       // First delete all bookings for this participant
-      const deleteBookingsStmt = db.prepare(
-         "DELETE FROM bookings WHERE participant_id = ?",
-      );
+      const deleteBookingsStmt = db.prepare("DELETE FROM bookings WHERE participant_id = ?");
       deleteBookingsStmt.run(id);
 
       // Then delete the participant
-      const deleteParticipantStmt = db.prepare(
-         "DELETE FROM participants WHERE id = ?",
-      );
+      const deleteParticipantStmt = db.prepare("DELETE FROM participants WHERE id = ?");
       const result = deleteParticipantStmt.run(id);
 
       return { changes: result.changes };
@@ -418,9 +411,7 @@ function updateTimeslot(id, updates) {
    if (fields.length === 0) return;
 
    values.push(id);
-   const stmt = db.prepare(
-      `UPDATE timeslots SET ${fields.join(", ")} WHERE id = ?`,
-   );
+   const stmt = db.prepare(`UPDATE timeslots SET ${fields.join(", ")} WHERE id = ?`);
    stmt.run(...values);
 }
 
@@ -436,9 +427,7 @@ function setFeaturedTimeslot(timeslotId) {
       db.prepare("UPDATE timeslots SET is_featured = 0").run();
       // Set the specified one as featured
       if (timeslotId !== null) {
-         db.prepare("UPDATE timeslots SET is_featured = 1 WHERE id = ?").run(
-            timeslotId,
-         );
+         db.prepare("UPDATE timeslots SET is_featured = 1 WHERE id = ?").run(timeslotId);
       }
    });
    transaction();
@@ -462,9 +451,7 @@ function deleteBookingsForTimeslotWithLinked(timeslotId) {
    const transaction = db.transaction(() => {
       // Get all bookings for this timeslot (active OR cancelled)
       const bookings = db
-         .prepare(
-            "SELECT id, is_followup, parent_booking_id FROM bookings WHERE timeslot_id = ?",
-         )
+         .prepare("SELECT id, is_followup, parent_booking_id FROM bookings WHERE timeslot_id = ?")
          .all(timeslotId);
 
       if (bookings.length === 0) {
@@ -482,9 +469,7 @@ function deleteBookingsForTimeslotWithLinked(timeslotId) {
             bookingIdsToDelete.add(booking.parent_booking_id);
          } else if (booking.is_followup === 0) {
             // This is a primary, find and delete the follow-up
-            const followup = db
-               .prepare("SELECT id FROM bookings WHERE parent_booking_id = ?")
-               .get(booking.id);
+            const followup = db.prepare("SELECT id FROM bookings WHERE parent_booking_id = ?").get(booking.id);
             if (followup) {
                bookingIdsToDelete.add(followup.id);
             }
@@ -495,9 +480,7 @@ function deleteBookingsForTimeslotWithLinked(timeslotId) {
       const bookingIdsList = Array.from(bookingIdsToDelete);
       if (bookingIdsList.length > 0) {
          const placeholders = bookingIdsList.map(() => "?").join(",");
-         const deleteStmt = db.prepare(
-            `DELETE FROM bookings WHERE id IN (${placeholders})`,
-         );
+         const deleteStmt = db.prepare(`DELETE FROM bookings WHERE id IN (${placeholders})`);
          deleteStmt.run(...bookingIdsList);
       }
 
@@ -596,9 +579,7 @@ function cancelBookingsForTimeslotWithLinked(timeslotId) {
          } else if (booking.is_followup === 0) {
             // This is a primary, find and cancel the follow-up
             const followup = db
-               .prepare(
-                  "SELECT id FROM bookings WHERE parent_booking_id = ? AND status = 'active'",
-               )
+               .prepare("SELECT id FROM bookings WHERE parent_booking_id = ? AND status = 'active'")
                .get(booking.id);
             if (followup) {
                bookingIdsToCancel.add(followup.id);
@@ -810,9 +791,7 @@ function bulkCreateTimeslots(
 
             // Generate slots within this working period
             while (currentTime < workingEnd) {
-               const slotEnd = new Date(
-                  currentTime.getTime() + duration * 60000,
-               );
+               const slotEnd = new Date(currentTime.getTime() + duration * 60000);
 
                if (slotEnd <= workingEnd) {
                   const slot = createTimeslot(
@@ -862,34 +841,21 @@ function hasCapacity(timeslotId) {
 
 // ===== BOOKING FUNCTIONS =====
 
-function createBooking(
-   participantId,
-   timeslotId,
-   isFollowup = false,
-   parentBookingId = null,
-) {
+function createBooking(participantId, timeslotId, isFollowup = false, parentBookingId = null) {
    // Check capacity before booking
    if (!hasCapacity(timeslotId)) {
       throw new Error("Timeslot is at full capacity");
    }
 
    // Get appointment_type from timeslot
-   const timeslotStmt = db.prepare(
-      "SELECT appointment_type FROM timeslots WHERE id = ?",
-   );
+   const timeslotStmt = db.prepare("SELECT appointment_type FROM timeslots WHERE id = ?");
    const timeslot = timeslotStmt.get(timeslotId);
    const appointmentType = timeslot ? timeslot.appointment_type : null;
 
    const stmt = db.prepare(
       "INSERT INTO bookings (participant_id, timeslot_id, is_followup, parent_booking_id, appointment_type) VALUES (?, ?, ?, ?, ?)",
    );
-   const result = stmt.run(
-      participantId,
-      timeslotId,
-      isFollowup ? 1 : 0,
-      parentBookingId,
-      appointmentType,
-   );
+   const result = stmt.run(participantId, timeslotId, isFollowup ? 1 : 0, parentBookingId, appointmentType);
 
    return {
       id: result.lastInsertRowid,
@@ -912,40 +878,27 @@ function setTimeslotType(timeslotId, newType) {
 
       if (newType === "primary" && timeslot.primary_capacity !== null) {
          newCapacity = timeslot.primary_capacity;
-      } else if (
-         newType === "followup" &&
-         timeslot.followup_capacity !== null
-      ) {
+      } else if (newType === "followup" && timeslot.followup_capacity !== null) {
          newCapacity = timeslot.followup_capacity;
       }
 
-      const stmt = db.prepare(
-         "UPDATE timeslots SET appointment_type = ?, capacity = ? WHERE id = ?",
-      );
+      const stmt = db.prepare("UPDATE timeslots SET appointment_type = ?, capacity = ? WHERE id = ?");
       stmt.run(newType, newCapacity, timeslotId);
    } else {
       // Non-dual timeslot, just update the type
-      const stmt = db.prepare(
-         "UPDATE timeslots SET appointment_type = ? WHERE id = ?",
-      );
+      const stmt = db.prepare("UPDATE timeslots SET appointment_type = ? WHERE id = ?");
       stmt.run(newType, timeslotId);
    }
 }
 
 // Revert timeslot to its original type
 function revertTimeslotToOriginalType(timeslotId) {
-   const stmt = db.prepare(
-      "UPDATE timeslots SET appointment_type = original_type WHERE id = ?",
-   );
+   const stmt = db.prepare("UPDATE timeslots SET appointment_type = original_type WHERE id = ?");
    stmt.run(timeslotId);
 }
 
 // Create dual booking (primary + followup)
-function createDualBooking(
-   participantId,
-   primaryTimeslotId,
-   followupTimeslotId,
-) {
+function createDualBooking(participantId, primaryTimeslotId, followupTimeslotId) {
    const transaction = db.transaction(() => {
       // Get timeslot info to check if they're dual type
       const primarySlot = getTimeslotById(primaryTimeslotId);
@@ -960,34 +913,18 @@ function createDualBooking(
       }
 
       // If slots are dual type, convert them to their specific types
-      if (
-         primarySlot.original_type === "dual" ||
-         primarySlot.appointment_type === "dual"
-      ) {
+      if (primarySlot.original_type === "dual" || primarySlot.appointment_type === "dual") {
          setTimeslotType(primaryTimeslotId, "primary");
       }
-      if (
-         followupSlot.original_type === "dual" ||
-         followupSlot.appointment_type === "dual"
-      ) {
+      if (followupSlot.original_type === "dual" || followupSlot.appointment_type === "dual") {
          setTimeslotType(followupTimeslotId, "followup");
       }
 
       // Create primary booking
-      const primaryBooking = createBooking(
-         participantId,
-         primaryTimeslotId,
-         false,
-         null,
-      );
+      const primaryBooking = createBooking(participantId, primaryTimeslotId, false, null);
 
       // Create follow-up booking linked to primary
-      const followupBooking = createBooking(
-         participantId,
-         followupTimeslotId,
-         true,
-         primaryBooking.id,
-      );
+      const followupBooking = createBooking(participantId, followupTimeslotId, true, primaryBooking.id);
 
       return {
          primary: primaryBooking,
@@ -1086,19 +1023,12 @@ function getAllBookings() {
 
 function updateBookingResultStatus(bookingId, resultStatus) {
    // Validate result status
-   const validStatuses = [
-      "successful",
-      "issues_arised",
-      "unusable_data",
-      "no_show",
-   ];
+   const validStatuses = ["successful", "issues_arised", "unusable_data", "no_show"];
    if (resultStatus && !validStatuses.includes(resultStatus)) {
       throw new Error(`Invalid result status: ${resultStatus}`);
    }
 
-   const stmt = db.prepare(
-      "UPDATE bookings SET result_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-   );
+   const stmt = db.prepare("UPDATE bookings SET result_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
    const result = stmt.run(resultStatus, bookingId);
 
    if (result.changes === 0) {
@@ -1143,9 +1073,7 @@ function rescheduleBooking(bookingId, newTimeslotId) {
       }
 
       // Update booking
-      const stmt = db.prepare(
-         "UPDATE bookings SET timeslot_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      );
+      const stmt = db.prepare("UPDATE bookings SET timeslot_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
       stmt.run(newTimeslotId, bookingId);
    });
 
@@ -1164,18 +1092,14 @@ function cancelBooking(bookingId) {
       const timeslot = getTimeslotById(booking.timeslot_id);
 
       // Update booking status
-      const stmt = db.prepare(
-         "UPDATE bookings SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      );
+      const stmt = db.prepare("UPDATE bookings SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
       stmt.run(bookingId);
 
       // If timeslot was originally dual type, revert it back
       if (timeslot && timeslot.original_type === "dual") {
          // Check if there are any other active bookings for this timeslot
          const activeBookings = db
-            .prepare(
-               "SELECT COUNT(*) as count FROM bookings WHERE timeslot_id = ? AND status = 'active'",
-            )
+            .prepare("SELECT COUNT(*) as count FROM bookings WHERE timeslot_id = ? AND status = 'active'")
             .get(booking.timeslot_id);
 
          if (activeBookings.count === 0) {
@@ -1185,9 +1109,7 @@ function cancelBooking(bookingId) {
 
       // If this is a primary booking, also cancel the follow-up
       if (!booking.is_followup) {
-         const followupBooking = db
-            .prepare("SELECT * FROM bookings WHERE parent_booking_id = ?")
-            .get(bookingId);
+         const followupBooking = db.prepare("SELECT * FROM bookings WHERE parent_booking_id = ?").get(bookingId);
 
          if (followupBooking) {
             const followupStmt = db.prepare(
@@ -1196,14 +1118,10 @@ function cancelBooking(bookingId) {
             followupStmt.run(bookingId);
 
             // Also revert followup timeslot if it was dual
-            const followupTimeslot = getTimeslotById(
-               followupBooking.timeslot_id,
-            );
+            const followupTimeslot = getTimeslotById(followupBooking.timeslot_id);
             if (followupTimeslot && followupTimeslot.original_type === "dual") {
                const followupActiveBookings = db
-                  .prepare(
-                     "SELECT COUNT(*) as count FROM bookings WHERE timeslot_id = ? AND status = 'active'",
-                  )
+                  .prepare("SELECT COUNT(*) as count FROM bookings WHERE timeslot_id = ? AND status = 'active'")
                   .get(followupBooking.timeslot_id);
 
                if (followupActiveBookings.count === 0) {
@@ -1219,9 +1137,7 @@ function cancelBooking(bookingId) {
 
 // Cancel all bookings for a participant by token
 function cancelAllBookingsByToken(token) {
-   const participant = db
-      .prepare("SELECT id FROM participants WHERE confirmation_token = ?")
-      .get(token);
+   const participant = db.prepare("SELECT id FROM participants WHERE confirmation_token = ?").get(token);
    if (!participant) {
       throw new Error("Participant not found");
    }
@@ -1242,9 +1158,7 @@ function logAction(ipAddress, actionType, actionPath, userType, details = "") {
 }
 
 function getLogs(limit = 100, offset = 0) {
-   const stmt = db.prepare(
-      "SELECT * FROM activity_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-   );
+   const stmt = db.prepare("SELECT * FROM activity_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?");
    return stmt.all(limit, offset);
 }
 
@@ -1341,6 +1255,33 @@ function markOneDayReminderSent(bookingId) {
    stmt.run(bookingId);
 }
 
+/**
+ * Get all appointments scheduled for tomorrow
+ * @returns {Array} Appointments for tomorrow with participant and timeslot details
+ */
+function getTomorrowsAppointments() {
+   const stmt = db.prepare(`
+      SELECT
+         b.id as booking_id,
+         b.participant_id,
+         b.timeslot_id,
+         b.is_followup,
+         b.appointment_type,
+         p.name as participant_name,
+         p.email as participant_email,
+         t.start_time,
+         t.end_time,
+         t.location
+      FROM bookings b
+      JOIN participants p ON b.participant_id = p.id
+      JOIN timeslots t ON b.timeslot_id = t.id
+      WHERE b.status = 'active'
+        AND date(t.start_time) = date('now', '+1 day')
+      ORDER BY t.start_time ASC
+   `);
+   return stmt.all();
+}
+
 // ===== UTILITY FUNCTIONS =====
 
 function close() {
@@ -1395,5 +1336,6 @@ module.exports = {
    getBookingsNeedingOneDayReminder,
    markSevenDayReminderSent,
    markOneDayReminderSent,
+   getTomorrowsAppointments,
    close,
 };

@@ -90,6 +90,8 @@
 - `GET /api/admin/logs` - Get activity logs (supports pagination)
 - `GET /api/admin/stats` - Get study progress statistics
 - `POST /api/admin/send-email` - Send custom email to participant
+- `POST /api/admin/trigger-reminders` - Manually trigger reminder check
+- `POST /api/admin/trigger-daily-summary` - **NEW** Manually trigger daily summary email
 
 ### Static Files
 - `public/index.html` - Participant registration interface (3-step: data, primary, follow-up)
@@ -134,25 +136,45 @@
 - `checkAndSendReminders()` - Main process that finds and sends reminders
 
 **Functionality**:
-- Runs every hour automatically
+- Runs hourly (configured via CHECK_INTERVAL constant)
 - Sends 7-day reminders (6-8 days before appointment)
 - Sends 1-day reminders (12 hours - 2 days before appointment)
 - Tracks sent reminders in database to avoid duplicates
 - Logs all activities for monitoring
 - See `REMINDER_SYSTEM.md` for detailed documentation
 
+### DailySummaryScheduler (src/services/dailySummaryScheduler.js) **NEW**
+**Purpose**: Daily email summary of tomorrow's appointments for admin
+
+**Key Methods**:
+- `start()` - Start the scheduler (runs automatically on server startup)
+- `stop()` - Stop the scheduler (runs automatically on server shutdown)
+- `triggerManualSummary()` - Manually trigger summary (admin endpoint)
+- `sendDailySummary()` - Main process that sends daily summary
+
+**Functionality**:
+- Runs daily at configured time (default: 18:00 / 6 PM)
+- Queries database for tomorrow's appointments
+- Sends formatted email to admin with all appointments
+- Groups by primary/followup appointments
+- Includes time, participant name, email, and location
+- Skips email if no appointments tomorrow
+- Configurable via DAILY_SUMMARY_HOUR and DAILY_SUMMARY_MINUTE env vars
+
 ## EMAIL SYSTEM (mailer.js)
 
 ### Email Functions
+- `sendRegistrationEmail()` - Single appointment confirmation
 - `sendRegistrationEmail()` - Dual booking confirmation with iCal
 - `sendDualRegistrationEmail()` - Combined primary + follow-up iCal
 - `sendRescheduleEmail()` - Appointment change notification
 - `sendCancellationEmail()` - Booking cancellation
-- `sendAdminNotification()` - Notify admin of participant actions
+- `sendAdminNotification()` - Notify admin of participant actions (registration, reschedule, cancellation)
 - `sendTimeslotUpdateEmail()` - Timeslot changed (to affected participants)
 - `sendTimeslotDeletionEmail()` - Timeslot deleted (to affected participants)
 - `sendCustomEmail()` - Custom message from admin
 - `sendReminderEmail()` - **NEW** Automatic reminder emails (7 days & 1 day before appointment)
+- `sendDailySummaryEmail()` - **NEW** Daily summary of tomorrow's appointments to admin
 
 ### Email Configuration (env vars)
 - `MAIL_ENABLED` - Enable/disable email sending
@@ -163,6 +185,8 @@
 - `MAIL_PASS` - SMTP password
 - `MAIL_FROM` - Sender address
 - `ADMIN_EMAIL` - Admin notification recipient
+- `DAILY_SUMMARY_HOUR` - Hour to send daily summary (default: 18)
+- `DAILY_SUMMARY_MINUTE` - Minute to send daily summary (default: 0)
 
 ### iCal Integration
 - Generates RFC 5545 compliant iCalendar events
@@ -257,7 +281,7 @@
 - Unique token in confirmation email
 - Access via `manage.html?token=...`
 - Can view appointments, cancel, or reschedule
-- All changes trigger email notifications
+- All changes trigger email notifications to participant AND admin
 
 ## DATABASE OPERATIONS
 

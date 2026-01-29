@@ -7,6 +7,7 @@ const db = require("./database");
 const bcrypt = require("bcrypt");
 const { Logger } = require("./src/middleware/logging");
 const reminderScheduler = require("./src/services/reminderScheduler");
+const dailySummaryScheduler = require("./src/services/dailySummaryScheduler");
 
 // Validate environment configuration
 try {
@@ -32,9 +33,7 @@ async function createDefaultAdmin() {
       db.createAdmin("admin", hashedPassword);
       Logger.info("Default admin created", { username: "admin" });
       if (!config.ADMIN_PASSWORD) {
-         Logger.warn(
-            "⚠️  Using default password. Please change it or set ADMIN_PASSWORD environment variable!",
-         );
+         Logger.warn("⚠️  Using default password. Please change it or set ADMIN_PASSWORD environment variable!");
       }
    }
 }
@@ -50,9 +49,11 @@ async function startServer() {
 
       // Start reminder scheduler
       reminderScheduler.start();
-      Logger.info(
-         "Reminder scheduler started - checking every hour for reminders",
-      );
+      Logger.info("Reminder scheduler started - checking every hour for reminders");
+
+      // Start daily summary scheduler
+      dailySummaryScheduler.start();
+      Logger.info("Daily summary scheduler started");
 
       // Start listening
       const server = app.listen(config.PORT, () => {
@@ -61,13 +62,10 @@ async function startServer() {
          console.log("=".repeat(60));
          console.log(`📡 Port: ${config.PORT}`);
          console.log(`🌐 Base Path: ${config.BASE_PATH || "(root)"}`);
-         console.log(
-            `🔗 URL: http://localhost:${config.PORT}${config.BASE_PATH}`,
-         );
-         console.log(
-            `👤 Admin URL: http://localhost:${config.PORT}${config.BASE_PATH}/admin.html`,
-         );
+         console.log(`🔗 URL: http://localhost:${config.PORT}${config.BASE_PATH}`);
+         console.log(`👤 Admin URL: http://localhost:${config.PORT}${config.BASE_PATH}/admin.html`);
          console.log("⏰ Reminder system: Active (checking hourly)");
+         console.log("📧 Daily summary: Active (sent each evening)");
          console.log("=".repeat(60) + "\n");
       });
 
@@ -78,6 +76,10 @@ async function startServer() {
          // Stop reminder scheduler
          reminderScheduler.stop();
          Logger.info("Reminder scheduler stopped");
+
+         // Stop daily summary scheduler
+         dailySummaryScheduler.stop();
+         Logger.info("Daily summary scheduler stopped");
 
          server.close(() => {
             Logger.info("HTTP server closed");

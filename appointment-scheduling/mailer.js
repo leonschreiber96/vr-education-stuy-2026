@@ -57,35 +57,24 @@ function initializeTransporter() {
    console.log("SMTP Port:", EMAIL_CONFIG.port);
    console.log("SMTP Secure:", EMAIL_CONFIG.secure);
    console.log("SMTP User:", EMAIL_CONFIG.auth.user ? "✓ Set" : "✗ Not set");
-   console.log(
-      "SMTP Pass:",
-      EMAIL_CONFIG.auth.pass ? "✓ Set (hidden)" : "✗ Not set",
-   );
+   console.log("SMTP Pass:", EMAIL_CONFIG.auth.pass ? "✓ Set (hidden)" : "✗ Not set");
    console.log("From Email:", FROM_EMAIL);
    console.log("Admin Email:", ADMIN_EMAIL);
 
    // Provide helpful configuration hints
    if (EMAIL_CONFIG.port === 587 && EMAIL_CONFIG.secure) {
-      console.warn(
-         "⚠ WARNING: Port 587 typically uses STARTTLS (secure: false), not direct SSL.",
-      );
+      console.warn("⚠ WARNING: Port 587 typically uses STARTTLS (secure: false), not direct SSL.");
       console.warn("   Consider setting SMTP_SECURE=false in your .env file.");
    } else if (EMAIL_CONFIG.port === 465 && !EMAIL_CONFIG.secure) {
-      console.warn(
-         "⚠ WARNING: Port 465 typically uses direct SSL (secure: true).",
-      );
+      console.warn("⚠ WARNING: Port 465 typically uses direct SSL (secure: true).");
       console.warn("   Consider setting SMTP_SECURE=true in your .env file.");
    }
 
    console.log("===========================\n");
 
    if (!EMAIL_CONFIG.auth.user || !EMAIL_CONFIG.auth.pass) {
-      console.warn(
-         "⚠ Email credentials not configured. Email notifications will be logged to console only.",
-      );
-      console.warn(
-         "⚠ Please set SMTP_USER and SMTP_PASS in your .env file to enable email sending.",
-      );
+      console.warn("⚠ Email credentials not configured. Email notifications will be logged to console only.");
+      console.warn("⚠ Please set SMTP_USER and SMTP_PASS in your .env file to enable email sending.");
       return null;
    }
 
@@ -126,15 +115,10 @@ function generateICalEvent(appointment, participantName, isForAdmin = false) {
    const start = new Date(appointment.start_time);
    const end = new Date(appointment.end_time);
    const location = appointment.location || "TBD";
-   const type =
-      appointment.appointment_type === "primary"
-         ? "Haupttermin"
-         : "Folgetermin";
+   const type = appointment.appointment_type === "primary" ? "Haupttermin" : "Folgetermin";
 
    // Different summary based on recipient
-   const summary = isForAdmin
-      ? `${type} [${participantName}]`
-      : `Studie (${ORGANIZER_NAME}) - Teilnahme ${type}`;
+   const summary = isForAdmin ? `${type} [${participantName}]` : `Studie (${ORGANIZER_NAME}) - Teilnahme ${type}`;
 
    // Format dates for iCal in UTC format (YYYYMMDDTHHMMSSZ)
    // Using UTC ensures consistent timezone handling across all calendar clients
@@ -274,11 +258,7 @@ async function sendRegistrationEmail(participant, timeslot) {
 }
 
 // Send dual registration confirmation email (primary + followup)
-async function sendDualRegistrationEmail(
-   participant,
-   primaryTimeslot,
-   followupTimeslot,
-) {
+async function sendDualRegistrationEmail(participant, primaryTimeslot, followupTimeslot) {
    const subject = "Terminbestätigung - Studie Teilnahme (2 Termine)";
    const managementUrl = `${buildUrl("manage.html")}?token=${participant.confirmationToken}`;
 
@@ -314,11 +294,7 @@ async function sendDualRegistrationEmail(
   `;
 
    // Generate iCal for primary appointment
-   const primaryIcal = generateICalEvent(
-      { ...primaryTimeslot, appointment_type: "primary" },
-      participant.name,
-      false,
-   );
+   const primaryIcal = generateICalEvent({ ...primaryTimeslot, appointment_type: "primary" }, participant.name, false);
    const followupIcal = generateICalEvent(
       { ...followupTimeslot, appointment_type: "followup" },
       participant.name,
@@ -331,25 +307,13 @@ async function sendDualRegistrationEmail(
    const followupLines = followupIcal.split("\r\n");
 
    // Find VEVENT sections
-   const primaryEventStart = primaryLines.findIndex(
-      (line) => line === "BEGIN:VEVENT",
-   );
-   const primaryEventEnd = primaryLines.findIndex(
-      (line) => line === "END:VEVENT",
-   );
-   const followupEventStart = followupLines.findIndex(
-      (line) => line === "BEGIN:VEVENT",
-   );
-   const followupEventEnd = followupLines.findIndex(
-      (line) => line === "END:VEVENT",
-   );
+   const primaryEventStart = primaryLines.findIndex((line) => line === "BEGIN:VEVENT");
+   const primaryEventEnd = primaryLines.findIndex((line) => line === "END:VEVENT");
+   const followupEventStart = followupLines.findIndex((line) => line === "BEGIN:VEVENT");
+   const followupEventEnd = followupLines.findIndex((line) => line === "END:VEVENT");
 
-   const primaryEvent = primaryLines
-      .slice(primaryEventStart, primaryEventEnd + 1)
-      .join("\r\n");
-   const followupEvent = followupLines
-      .slice(followupEventStart, followupEventEnd + 1)
-      .join("\r\n");
+   const primaryEvent = primaryLines.slice(primaryEventStart, primaryEventEnd + 1).join("\r\n");
+   const followupEvent = followupLines.slice(followupEventStart, followupEventEnd + 1).join("\r\n");
 
    const combinedIcal = [
       "BEGIN:VCALENDAR",
@@ -405,11 +369,7 @@ async function sendRescheduleEmail(booking, oldTimeslot, newTimeslot) {
 }
 
 // Send cancellation confirmation email
-async function sendCancellationEmail(
-   participant,
-   primaryTimeslot,
-   followupTimeslot,
-) {
+async function sendCancellationEmail(participant, primaryTimeslot, followupTimeslot) {
    const subject = "Terminabsage bestätigt";
 
    const html = `
@@ -496,18 +456,10 @@ async function sendAdminNotification(type, participant, timeslots) {
             const adminPrimaryLines = adminPrimaryIcal.split("\r\n");
             const adminFollowupLines = adminFollowupIcal.split("\r\n");
 
-            const adminPrimaryEventStart = adminPrimaryLines.findIndex(
-               (line) => line === "BEGIN:VEVENT",
-            );
-            const adminPrimaryEventEnd = adminPrimaryLines.findIndex(
-               (line) => line === "END:VEVENT",
-            );
-            const adminFollowupEventStart = adminFollowupLines.findIndex(
-               (line) => line === "BEGIN:VEVENT",
-            );
-            const adminFollowupEventEnd = adminFollowupLines.findIndex(
-               (line) => line === "END:VEVENT",
-            );
+            const adminPrimaryEventStart = adminPrimaryLines.findIndex((line) => line === "BEGIN:VEVENT");
+            const adminPrimaryEventEnd = adminPrimaryLines.findIndex((line) => line === "END:VEVENT");
+            const adminFollowupEventStart = adminFollowupLines.findIndex((line) => line === "BEGIN:VEVENT");
+            const adminFollowupEventEnd = adminFollowupLines.findIndex((line) => line === "END:VEVENT");
 
             const adminPrimaryEvent = adminPrimaryLines
                .slice(adminPrimaryEventStart, adminPrimaryEventEnd + 1)
@@ -544,11 +496,7 @@ async function sendAdminNotification(type, participant, timeslots) {
         `;
 
             // Generate iCal for single appointment
-            const adminIcalContent = generateICalEvent(
-               timeslots,
-               participant.name,
-               true,
-            );
+            const adminIcalContent = generateICalEvent(timeslots, participant.name, true);
             icalAttachment = {
                filename: "termin.ics",
                content: adminIcalContent,
@@ -590,9 +538,7 @@ async function sendAdminNotification(type, participant, timeslots) {
          } else if (timeslots.primary || timeslots.followup) {
             // Handle case where only one timeslot exists
             const timeslot = timeslots.primary || timeslots.followup;
-            const appointmentType = timeslots.primary
-               ? "Ersttermin"
-               : "Folgetermin";
+            const appointmentType = timeslots.primary ? "Ersttermin" : "Folgetermin";
             html = `
           <h2>Teilnehmer hat ${appointmentType} abgesagt</h2>
           <ul>
@@ -623,12 +569,7 @@ async function sendAdminNotification(type, participant, timeslots) {
 }
 
 // Send timeslot update notification to participant
-async function sendTimeslotUpdateEmail(
-   participant,
-   oldTimeslot,
-   newTimeslot,
-   isFollowup = false,
-) {
+async function sendTimeslotUpdateEmail(participant, oldTimeslot, newTimeslot, isFollowup = false) {
    const subject = "Terminänderung durch Studienleitung";
    const managementUrl = `${buildUrl("manage.html")}?token=${participant.confirmation_token}`;
    const appointmentType = isFollowup ? "Folgetermin" : "Ersttermin";
@@ -663,11 +604,7 @@ async function sendTimeslotUpdateEmail(
 }
 
 // Send timeslot deletion notification to participant
-async function sendTimeslotDeletionEmail(
-   participant,
-   deletedTimeslot,
-   isFollowup = false,
-) {
+async function sendTimeslotDeletionEmail(participant, deletedTimeslot, isFollowup = false) {
    const subject = "Terminabsage durch Studienleitung";
    const appointmentType = isFollowup ? "Folgetermin" : "Ersttermin";
 
@@ -720,14 +657,7 @@ async function sendCustomEmail(email, name, subject, message) {
  * @param {boolean} isFollowup - Whether this is a followup appointment
  * @returns {Promise<Object>} Email send result
  */
-async function sendReminderEmail(
-   email,
-   name,
-   timeslot,
-   daysUntil,
-   confirmationToken,
-   isFollowup = false,
-) {
+async function sendReminderEmail(email, name, timeslot, daysUntil, confirmationToken, isFollowup = false) {
    const reminderText = daysUntil === 7 ? "in einer Woche" : "morgen";
    const subject = `Erinnerung: Ihr ${isFollowup ? "Nachfolge-" : ""}Termin ${reminderText}`;
    const managementUrl = buildUrl(`/manage.html?token=${confirmationToken}`);
@@ -771,12 +701,7 @@ async function sendReminderEmail(
     <p style="color: #666; font-size: 0.9em;">Bei Fragen wenden Sie sich bitte an: ${ADMIN_EMAIL}</p>
   `;
 
-   const icalContent = generateICalEvent(
-      timeslot.start_time,
-      timeslot.end_time,
-      timeslot.location,
-      appointmentType,
-   );
+   const icalContent = generateICalEvent(timeslot.start_time, timeslot.end_time, timeslot.location, appointmentType);
 
    const icalAttachment = {
       filename: "termin.ics",
@@ -787,8 +712,7 @@ async function sendReminderEmail(
 }
 
 /**
- * Generic function to send an email (used by notification service)
- * @param {string} to - Recipient email address
+ * @param {string} to - Recipient email
  * @param {string} subject - Email subject
  * @param {string} text - Plain text content
  * @param {string} html - HTML content
@@ -796,6 +720,133 @@ async function sendReminderEmail(
  */
 async function sendMail(to, subject, text, html) {
    return await sendEmail(to, subject, html);
+}
+
+/**
+ * Send daily summary email to admin with tomorrow's appointments
+ * @param {Array} appointments - Array of appointment objects for tomorrow
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendDailySummaryEmail(appointments) {
+   if (!appointments || appointments.length === 0) {
+      // Don't send email if there are no appointments tomorrow
+      return { skipped: true, reason: "No appointments tomorrow" };
+   }
+
+   const tomorrow = new Date();
+   tomorrow.setDate(tomorrow.getDate() + 1);
+   const tomorrowDate = tomorrow.toLocaleDateString("de-DE", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+   });
+
+   const subject = `Termine für morgen (${tomorrowDate})`;
+
+   // Group appointments by type
+   const primaryAppointments = appointments.filter((a) => !a.is_followup);
+   const followupAppointments = appointments.filter((a) => a.is_followup);
+
+   // Build HTML content
+   let html = `
+    <h2>Termine für morgen</h2>
+    <p><strong>Datum:</strong> ${tomorrowDate}</p>
+    <p><strong>Anzahl Termine:</strong> ${appointments.length} (${primaryAppointments.length} Ersttermine, ${followupAppointments.length} Folgetermine)</p>
+  `;
+
+   if (primaryAppointments.length > 0) {
+      html += `
+      <h3>Ersttermine (${primaryAppointments.length})</h3>
+      <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #f0f0f0;">
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Zeit</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Teilnehmer</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">E-Mail</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Ort</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+      primaryAppointments
+         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+         .forEach((apt) => {
+            const startTime = new Date(apt.start_time).toLocaleTimeString("de-DE", {
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            const endTime = new Date(apt.end_time).toLocaleTimeString("de-DE", {
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            html += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${startTime} - ${endTime}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${apt.participant_name}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${apt.participant_email}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${apt.location || "—"}</td>
+          </tr>
+        `;
+         });
+
+      html += `
+        </tbody>
+      </table>
+    `;
+   }
+
+   if (followupAppointments.length > 0) {
+      html += `
+      <h3>Folgetermine (${followupAppointments.length})</h3>
+      <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #f0f0f0;">
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Zeit</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Teilnehmer</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">E-Mail</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Ort</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+      followupAppointments
+         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+         .forEach((apt) => {
+            const startTime = new Date(apt.start_time).toLocaleTimeString("de-DE", {
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            const endTime = new Date(apt.end_time).toLocaleTimeString("de-DE", {
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+            html += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${startTime} - ${endTime}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${apt.participant_name}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${apt.participant_email}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${apt.location || "—"}</td>
+          </tr>
+        `;
+         });
+
+      html += `
+        </tbody>
+      </table>
+    `;
+   }
+
+   html += `
+    <hr style="margin-top: 30px; border: none; border-top: 1px solid #ddd;">
+    <p style="font-size: 12px; color: #666;">
+      Diese E-Mail wurde automatisch vom Terminfindungssystem generiert.
+    </p>
+  `;
+
+   return sendEmail(ADMIN_EMAIL, subject, html);
 }
 
 module.exports = {
@@ -809,4 +860,5 @@ module.exports = {
    sendTimeslotDeletionEmail,
    sendCustomEmail,
    sendMail,
+   sendDailySummaryEmail,
 };
