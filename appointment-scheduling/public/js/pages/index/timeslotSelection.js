@@ -1,22 +1,12 @@
 // Timeslot selection and display logic for registration page
 
-import {
-   formatDate,
-   formatTimeRange,
-   daysBetween,
-   parseISODate,
-} from "../../utils/dateFormatter.js";
+import { formatDate, formatTimeRange, daysBetween, parseISODate } from "../../utils/dateFormatter.js";
 import {
    state,
    selectPrimaryTimeslot as selectPrimaryInState,
    selectFollowupTimeslot as selectFollowupInState,
 } from "./state.js";
-import {
-   disable,
-   enable,
-   querySelectorAll,
-   getElementById,
-} from "../../utils/dom.js";
+import { disable, enable, querySelectorAll, getElementById } from "../../utils/dom.js";
 import { API_BASE } from "../../config.js";
 
 /**
@@ -203,7 +193,7 @@ export function handlePrimaryTimeslotSelection(timeslotId) {
    }
 
    // Enable continue button
-   enable("continueToStep3Btn");
+   enable("continueToStep2Btn");
 }
 
 /**
@@ -219,9 +209,9 @@ export function handleFeaturedTimeslotSelection(timeslotId) {
       radioButton.checked = true;
    }
 
-   // Directly proceed to step 3 (followup selection)
-   if (window.continueToStep3) {
-      window.continueToStep3();
+   // Directly proceed to step 2 (followup selection)
+   if (window.continueToStep2) {
+      window.continueToStep2();
    }
 }
 
@@ -249,8 +239,8 @@ export function handleFollowupTimeslotSelection(timeslotId) {
       radioButton.checked = true;
    }
 
-   // Enable submit button
-   enable("submitRegistrationBtn");
+   // Enable continue button to go to questionnaire
+   enable("continueToStep3Btn");
 }
 
 /**

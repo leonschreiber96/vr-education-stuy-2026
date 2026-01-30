@@ -4,7 +4,7 @@
  * Application state for the registration workflow
  */
 export const state = {
-   // Current step in the registration process (1, 2, or 3)
+   // Current step in the registration process (0=study info, 1=primary appointment, 2=followup appointment, 3=questionnaire)
    currentStep: 1,
 
    // Participant information
@@ -94,9 +94,7 @@ export function setFollowupTimeslots(timeslots) {
  */
 export function selectPrimaryTimeslot(timeslotId) {
    state.selectedPrimaryTimeslotId = timeslotId;
-   state.selectedPrimaryTimeslot = state.primaryTimeslots.find(
-      (slot) => slot.id === timeslotId,
-   );
+   state.selectedPrimaryTimeslot = state.primaryTimeslots.find((slot) => slot.id === timeslotId);
 }
 
 /**
@@ -105,17 +103,15 @@ export function selectPrimaryTimeslot(timeslotId) {
  */
 export function selectFollowupTimeslot(timeslotId) {
    state.selectedFollowupTimeslotId = timeslotId;
-   state.selectedFollowupTimeslot = state.followupTimeslots.find(
-      (slot) => slot.id === timeslotId,
-   );
+   state.selectedFollowupTimeslot = state.followupTimeslots.find((slot) => slot.id === timeslotId);
 }
 
 /**
  * Set current step
- * @param {number} step - Step number (1, 2, or 3)
+ * @param {number} step - Step number (0=study info, 1=primary, 2=followup, 3=questionnaire)
  */
 export function setStep(step) {
-   if (step >= 1 && step <= 3) {
+   if (step >= 0 && step <= 3) {
       state.currentStep = step;
    }
 }
@@ -149,9 +145,7 @@ export function hasPrimaryTimeslot() {
  * @returns {boolean} True if followup timeslot is selected
  */
 export function hasFollowupTimeslot() {
-   return !!(
-      state.selectedFollowupTimeslotId && state.selectedFollowupTimeslot
-   );
+   return !!(state.selectedFollowupTimeslotId && state.selectedFollowupTimeslot);
 }
 
 /**

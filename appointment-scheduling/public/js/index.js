@@ -18,27 +18,12 @@ import {
    handleFollowupTimeslotSelection,
    handleFeaturedTimeslotSelection,
 } from "./pages/index/timeslotSelection.js";
-import {
-   fetchPrimaryTimeslots,
-   fetchFollowupTimeslots,
-} from "./services/timeslotService.js";
+import { fetchPrimaryTimeslots, fetchFollowupTimeslots } from "./services/timeslotService.js";
 import { registerParticipant } from "./services/bookingService.js";
 import { showAlert, showWarning, showError } from "./utils/alerts.js";
 import { validateName, validateEmail } from "./utils/validation.js";
-import {
-   hide,
-   show,
-   getValue,
-   setText,
-   disable,
-   scrollToTop,
-} from "./utils/dom.js";
-import {
-   formatDate,
-   formatTimeRange,
-   parseISODate,
-   toISODateString,
-} from "./utils/dateFormatter.js";
+import { hide, show, getValue, setText, disable, scrollToTop } from "./utils/dom.js";
+import { formatDate, formatTimeRange, parseISODate, toISODateString } from "./utils/dateFormatter.js";
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
@@ -47,13 +32,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Expose functions to global scope for onclick handlers
-window.proceedToRegistration = proceedToRegistration;
+window.proceedToStep1 = proceedToStep1;
 window.handlePrimaryTimeslotClick = handlePrimaryTimeslotSelection;
 window.handleFollowupTimeslotClick = handleFollowupTimeslotSelection;
 window.handleFeaturedTimeslotClick = handleFeaturedTimeslotSelection;
 window.continueToStep2 = continueToStep2;
 window.continueToStep3 = continueToStep3;
 window.submitRegistration = submitRegistration;
+window.backToStep0 = backToStep0;
 window.backToStep1 = backToStep1;
 window.backToStep2 = backToStep2;
 
@@ -70,30 +56,165 @@ async function loadPrimaryTimeslots() {
       await displayFeaturedTimeslot();
    } catch (error) {
       console.error("Error loading primary timeslots:", error);
-      showError(
-         "Fehler beim Laden der Termine. Bitte versuchen Sie es später erneut.",
-      );
+      showError("Fehler beim Laden der Termine. Bitte versuchen Sie es später erneut.");
    }
 }
 
 /**
- * Step 0 → Step 1: Proceed from study description to registration
+ * Step 0 → Step 1: Proceed from study description to primary appointment selection
  */
-function proceedToRegistration() {
+function proceedToStep1() {
+   setStep(1);
+
    hide("studyDescriptionSection");
-   show("personalInfoSection");
+   show("primaryAppointmentSection");
 
    // Update step indicator
    document.getElementById("step0").classList.remove("active");
    document.getElementById("step1").classList.add("active");
 
+   // Display primary timeslots
+   displayPrimaryTimeslots();
+
+   // Setup scroll prevention
+   setTimeout(() => preventPageScrollOnContainer(), 100);
+
    scrollToTop();
 }
 
 /**
- * Step 1 → Step 2: Continue to primary appointment selection
+ * Step 1 → Step 2: Continue from primary appointment to follow-up appointment selection
  */
-function continueToStep2() {
+async function continueToStep2() {
+   if (!hasPrimaryTimeslot()) {
+      showWarning("Bitte wählen Sie einen Haupttermin aus.");
+      return;
+   }
+
+   setStep(2);
+
+   // Update UI
+   hide("primaryAppointmentSection");
+   show("followupAppointmentSection");
+   updateStepIndicator();
+
+   // Display selected primary appointment info
+   displaySelectedPrimaryInfo();
+
+   // Load and display follow-up timeslots
+   await loadFollowupTimeslots();
+
+   scrollToTop();
+}
+
+/**
+ * Step 2 → Step 3: Continue from follow-up appointment to personal data & questionnaire
+ */
+function continueToStep3() {
+   if (!state.selectedFollowupTimeslotId) {
+      showWarning("Bitte wählen Sie einen Folgetermin aus.");
+      return;
+   }
+
+   setStep(3);
+
+   // Update UI
+   hide("followupAppointmentSection");
+   show("personalInfoSection");
+   updateStepIndicator();
+
+   // Setup form validation to enable submit button
+   setupFormValidation();
+
+   scrollToTop();
+}
+
+/**
+ * Setup form validation to enable/disable submit button based on form completion
+ */
+function setupFormValidation() {
+   const submitBtn = document.getElementById("submitRegistrationBtn");
+   if (!submitBtn) return;
+
+   // Get all form inputs
+   const nameInput = document.getElementById("name");
+   const emailInput = document.getElementById("email");
+   const visionCorrectionInput = document.getElementById("visionCorrection");
+   const studySubjectInput = document.getElementById("studySubject");
+
+   // Function to check if form is complete
+   const checkFormComplete = () => {
+      const name = nameInput?.value.trim();
+      const email = emailInput?.value.trim();
+      const visionCorrection = visionCorrectionInput?.value;
+      const studySubject = studySubjectInput?.value.trim();
+      const vrExperience = document.querySelector('input[name="vrExperience"]:checked');
+      const motionSickness = document.querySelector('input[name="motionSickness"]:checked');
+
+      // Enable button if all fields are filled
+      const isComplete = name && email && visionCorrection && studySubject && vrExperience && motionSickness;
+
+      if (isComplete) {
+         submitBtn.disabled = false;
+      } else {
+         submitBtn.disabled = true;
+      }
+   };
+
+   // Add event listeners to all inputs
+   nameInput?.addEventListener("input", checkFormComplete);
+   emailInput?.addEventListener("input", checkFormComplete);
+   visionCorrectionInput?.addEventListener("change", checkFormComplete);
+   studySubjectInput?.addEventListener("input", checkFormComplete);
+
+   // Add listeners to radio buttons
+   document.querySelectorAll('input[name="vrExperience"]').forEach((input) => {
+      input.addEventListener("change", checkFormComplete);
+   });
+   document.querySelectorAll('input[name="motionSickness"]').forEach((input) => {
+      input.addEventListener("change", checkFormComplete);
+   });
+
+   // Check initial state
+   checkFormComplete();
+}
+
+/**
+ * Load follow-up timeslots in valid range (29-31 days after primary)
+ */
+async function loadFollowupTimeslots() {
+   const loading = document.getElementById("followupTimeslotsLoading");
+   const container = document.getElementById("followupTimeslotsContainer");
+
+   if (!loading || !container) return;
+
+   loading.classList.remove("hidden");
+   container.classList.add("hidden");
+
+   try {
+      const primaryDate = parseISODate(state.selectedPrimaryTimeslot.start_time);
+      const primaryDateStr = toISODateString(primaryDate);
+
+      const timeslots = await fetchFollowupTimeslots(primaryDateStr);
+      setFollowupTimeslots(timeslots);
+      console.log("Loaded follow-up timeslots:", timeslots.length);
+
+      displayFollowupTimeslots();
+
+      // Setup scroll prevention
+      setTimeout(() => preventPageScrollOnContainer(), 100);
+   } catch (error) {
+      console.error("Error loading follow-up timeslots:", error);
+      showError("Fehler beim Laden der Folgetermine. Bitte versuchen Sie es später erneut.");
+      loading.innerHTML = '<p style="color: #dc3545;">Folgetermine konnten nicht geladen werden.</p>';
+   }
+}
+
+/**
+ * Submit registration (with appointments already selected and personal data/questionnaire)
+ */
+async function submitRegistration() {
+   // Validate personal data
    const name = getValue("name").trim();
    const email = getValue("email").trim();
 
@@ -124,116 +245,21 @@ function continueToStep2() {
       return;
    }
 
-   const vrExperience = document.querySelector(
-      'input[name="vrExperience"]:checked',
-   );
+   const vrExperience = document.querySelector('input[name="vrExperience"]:checked');
    if (!vrExperience) {
       showWarning("Bitte bewerten Sie Ihre VR-Erfahrung.");
       return;
    }
 
-   const motionSickness = document.querySelector(
-      'input[name="motionSickness"]:checked',
-   );
+   const motionSickness = document.querySelector('input[name="motionSickness"]:checked');
    if (!motionSickness) {
       showWarning("Bitte bewerten Sie Ihre Neigung zu Reiseübelkeit.");
       return;
    }
 
-   // Save participant info and questionnaire data to state
-   const questionnaireData = {
-      visionCorrection,
-      studySubject,
-      vrExperience: parseInt(vrExperience.value),
-      motionSickness: parseInt(motionSickness.value),
-   };
-
-   setParticipantInfo(name, email, questionnaireData);
-   setStep(2);
-
-   // Update UI
-   hide("personalInfoSection");
-   show("primaryAppointmentSection");
-   updateStepIndicator();
-
-   // Display primary timeslots
-   displayPrimaryTimeslots();
-
-   // Setup scroll prevention
-   setTimeout(() => preventPageScrollOnContainer(), 100);
-
-   scrollToTop();
-}
-
-/**
- * Step 2 → Step 3: Continue to follow-up appointment selection
- */
-async function continueToStep3() {
-   if (!hasPrimaryTimeslot()) {
-      showWarning("Bitte wählen Sie einen Haupttermin aus.");
-      return;
-   }
-
-   setStep(3);
-
-   // Update UI
-   hide("primaryAppointmentSection");
-   show("followupAppointmentSection");
-   updateStepIndicator();
-
-   // Display selected primary appointment info
-   displaySelectedPrimaryInfo();
-
-   // Load and display follow-up timeslots
-   await loadFollowupTimeslots();
-
-   scrollToTop();
-}
-
-/**
- * Load follow-up timeslots in valid range (29-31 days after primary)
- */
-async function loadFollowupTimeslots() {
-   const loading = document.getElementById("followupTimeslotsLoading");
-   const container = document.getElementById("followupTimeslotsContainer");
-
-   if (!loading || !container) return;
-
-   loading.classList.remove("hidden");
-   container.classList.add("hidden");
-
-   try {
-      const primaryDate = parseISODate(
-         state.selectedPrimaryTimeslot.start_time,
-      );
-      const primaryDateStr = toISODateString(primaryDate);
-
-      const timeslots = await fetchFollowupTimeslots(primaryDateStr);
-      setFollowupTimeslots(timeslots);
-      console.log("Loaded follow-up timeslots:", timeslots.length);
-
-      displayFollowupTimeslots();
-
-      // Setup scroll prevention
-      setTimeout(() => preventPageScrollOnContainer(), 100);
-   } catch (error) {
-      console.error("Error loading follow-up timeslots:", error);
-      showError(
-         "Fehler beim Laden der Folgetermine. Bitte versuchen Sie es später erneut.",
-      );
-      loading.innerHTML =
-         '<p style="color: #dc3545;">Folgetermine konnten nicht geladen werden.</p>';
-   }
-}
-
-/**
- * Submit registration (both primary and follow-up)
- */
-async function submitRegistration() {
+   // Ensure appointments are selected
    if (!state.selectedPrimaryTimeslotId || !state.selectedFollowupTimeslotId) {
-      showWarning(
-         "Bitte wählen Sie sowohl einen Haupttermin als auch einen Folgetermin aus.",
-      );
+      showWarning("Bitte wählen Sie sowohl einen Haupttermin als auch einen Folgetermin aus.");
       return;
    }
 
@@ -245,16 +271,24 @@ async function submitRegistration() {
    submitBtn.textContent = "Wird gesendet...";
 
    try {
+      // Prepare questionnaire data
+      const questionnaireData = {
+         visionCorrection,
+         studySubject,
+         vrExperience: parseInt(vrExperience.value),
+         motionSickness: parseInt(motionSickness.value),
+      };
+
       const data = await registerParticipant({
-         name: state.participantName,
-         email: state.participantEmail,
+         name: name,
+         email: email,
          primaryTimeslotId: state.selectedPrimaryTimeslotId,
          followupTimeslotId: state.selectedFollowupTimeslotId,
-         questionnaireData: state.questionnaireData,
+         questionnaireData: questionnaireData,
       });
 
       // Show success page
-      showSuccessPage(data);
+      showSuccessPage(data, name);
    } catch (error) {
       console.error("Registration error:", error);
       showError(error.message);
@@ -266,14 +300,11 @@ async function submitRegistration() {
 /**
  * Show success page after registration
  * @param {Object} data - Registration response data
+ * @param {string} name - Participant name
  */
-function showSuccessPage(data) {
-   const primarySlot = state.primaryTimeslots.find(
-      (s) => s.id === state.selectedPrimaryTimeslotId,
-   );
-   const followupSlot = state.followupTimeslots.find(
-      (s) => s.id === state.selectedFollowupTimeslotId,
-   );
+function showSuccessPage(data, name) {
+   const primarySlot = state.primaryTimeslots.find((s) => s.id === state.selectedPrimaryTimeslotId);
+   const followupSlot = state.followupTimeslots.find((s) => s.id === state.selectedFollowupTimeslotId);
 
    if (!primarySlot || !followupSlot) return;
 
@@ -281,6 +312,8 @@ function showSuccessPage(data) {
    const primaryEnd = parseISODate(primarySlot.end_time);
    const followupStart = parseISODate(followupSlot.start_time);
    const followupEnd = parseISODate(followupSlot.end_time);
+
+   const email = getValue("email").trim();
 
    // Calculate BASE_PATH from current URL to support subdirectory deployment
    const basePath = window.location.pathname.split("/").slice(0, -1).join("/");
@@ -291,7 +324,7 @@ function showSuccessPage(data) {
       mainContent.innerHTML = `
          <div class="success-message">
             <h2>✅ Anmeldung erfolgreich!</h2>
-            <p style="font-size: 1.1em;">Vielen Dank für Ihre Anmeldung, <strong>${state.participantName}</strong>!</p>
+            <p style="font-size: 1.1em;">Vielen Dank für Ihre Anmeldung, <strong>${name}</strong>!</p>
 
             <div class="appointment-card">
                <h4>📌 Haupttermin</h4>
@@ -308,7 +341,7 @@ function showSuccessPage(data) {
             </div>
 
             <div class="alert alert-info" style="margin-top: 30px; text-align: left;">
-               <strong>Wichtig:</strong> Eine Bestätigungsemail wurde an <strong>${state.participantEmail}</strong> gesendet.
+               <strong>Wichtig:</strong> Eine Bestätigungsemail wurde an <strong>${email}</strong> gesendet.
                Diese E-Mail enthält einen Link zum Verwalten Ihrer Termine.
             </div>
 
@@ -336,10 +369,10 @@ function showSuccessPage(data) {
 }
 
 /**
- * Navigation: Back to step 1
+ * Navigation: Back to step 0 (study info)
  */
-function backToStep1() {
-   setStep(1);
+function backToStep0() {
+   setStep(0);
    state.selectedPrimaryTimeslotId = null;
    state.selectedPrimaryTimeslot = null;
 
@@ -347,17 +380,20 @@ function backToStep1() {
    hide("primaryScrollHint");
 
    hide("primaryAppointmentSection");
-   show("personalInfoSection");
-   updateStepIndicator();
+   show("studyDescriptionSection");
+
+   // Update step indicator
+   document.getElementById("step1").classList.remove("active", "completed");
+   document.getElementById("step0").classList.add("active");
 
    scrollToTop();
 }
 
 /**
- * Navigation: Back to step 2
+ * Navigation: Back to step 1 (primary appointment)
  */
-function backToStep2() {
-   setStep(2);
+function backToStep1() {
+   setStep(1);
    state.selectedFollowupTimeslotId = null;
 
    // Hide scroll hints
@@ -365,6 +401,19 @@ function backToStep2() {
 
    hide("followupAppointmentSection");
    show("primaryAppointmentSection");
+   updateStepIndicator();
+
+   scrollToTop();
+}
+
+/**
+ * Navigation: Back to step 2 (follow-up appointment)
+ */
+function backToStep2() {
+   setStep(2);
+
+   hide("personalInfoSection");
+   show("followupAppointmentSection");
    updateStepIndicator();
 
    scrollToTop();
