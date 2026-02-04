@@ -138,7 +138,7 @@
 **Functionality**:
 - Runs hourly (configured via CHECK_INTERVAL constant)
 - Sends 7-day reminders (6-8 days before appointment)
-- Sends 1-day reminders (12 hours - 2 days before appointment)
+- Sends 1-day reminders (20-30 hours before appointment)
 - Tracks sent reminders in database to avoid duplicates
 - Logs all activities for monitoring
 - See `REMINDER_SYSTEM.md` for detailed documentation

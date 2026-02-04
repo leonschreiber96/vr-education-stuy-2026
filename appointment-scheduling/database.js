@@ -1222,8 +1222,8 @@ function getBookingsNeedingOneDayReminder() {
       WHERE b.status = 'active'
         AND b.reminder_1day_sent = 0
         AND datetime(t.start_time) > datetime('now')
-        AND datetime(t.start_time) <= datetime('now', '+2 days')
-        AND datetime(t.start_time) >= datetime('now', '+12 hours')
+        AND datetime(t.start_time) <= datetime('now', '+30 hours')
+        AND datetime(t.start_time) >= datetime('now', '+20 hours')
       ORDER BY t.start_time
    `);
    return stmt.all();
