@@ -24,12 +24,48 @@ import { showAlert, showWarning, showError } from "./utils/alerts.js";
 import { validateName, validateEmail } from "./utils/validation.js";
 import { hide, show, getValue, setText, disable, scrollToTop } from "./utils/dom.js";
 import { formatDate, formatTimeRange, parseISODate, toISODateString } from "./utils/dateFormatter.js";
+import { initI18n, setLanguage, t, updatePageTranslations } from "./i18n/i18n.js";
+import { showLanguageSelector, addLanguageToggleToHeader } from "./components/languageSelector.js";
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
-   loadPrimaryTimeslots();
-   setupScrollPrevention();
+   initializeApp();
 });
+
+/**
+ * Initialize the application with i18n support
+ */
+async function initializeApp() {
+   const shouldShowLanguageSelector = initI18n();
+
+   if (shouldShowLanguageSelector) {
+      // First-time visitor - show language selector
+      showLanguageSelector((selectedLanguage) => {
+         // After language selection, load the app
+         loadApp();
+      });
+   } else {
+      // Returning visitor - load app directly
+      loadApp();
+   }
+}
+
+/**
+ * Load the main application
+ */
+function loadApp() {
+   // Update all translations on the page
+   updatePageTranslations();
+
+   // Add language toggle to header
+   addLanguageToggleToHeader();
+
+   // Load primary timeslots
+   loadPrimaryTimeslots();
+
+   // Setup scroll prevention
+   setupScrollPrevention();
+}
 
 // Expose functions to global scope for onclick handlers
 window.proceedToStep1 = proceedToStep1;
@@ -56,7 +92,7 @@ async function loadPrimaryTimeslots() {
       await displayFeaturedTimeslot();
    } catch (error) {
       console.error("Error loading primary timeslots:", error);
-      showError("Fehler beim Laden der Termine. Bitte versuchen Sie es später erneut.");
+      showError(t("alerts.loadingError"));
    }
 }
 
@@ -87,7 +123,7 @@ function proceedToStep1() {
  */
 async function continueToStep2() {
    if (!hasPrimaryTimeslot()) {
-      showWarning("Bitte wählen Sie einen Haupttermin aus.");
+      showWarning(t("primaryAppointment.noTimeslotWarning"));
       return;
    }
 
@@ -112,7 +148,7 @@ async function continueToStep2() {
  */
 function continueToStep3() {
    if (!state.selectedFollowupTimeslotId) {
-      showWarning("Bitte wählen Sie einen Folgetermin aus.");
+      showWarning(t("followupAppointment.noTimeslotWarning"));
       return;
    }
 

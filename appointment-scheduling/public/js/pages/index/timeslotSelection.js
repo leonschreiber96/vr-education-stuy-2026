@@ -1,6 +1,6 @@
 // Timeslot selection and display logic for registration page
 
-import { formatDate, formatTimeRange, daysBetween, parseISODate } from "../../utils/dateFormatter.js";
+import { daysBetween, parseISODate } from "../../utils/dateFormatter.js";
 import {
    state,
    selectPrimaryTimeslot as selectPrimaryInState,
@@ -8,6 +8,7 @@ import {
 } from "./state.js";
 import { disable, enable, querySelectorAll, getElementById } from "../../utils/dom.js";
 import { API_BASE } from "../../config.js";
+import { t, formatDate, formatTime } from "../../i18n/i18n.js";
 
 /**
  * Display featured timeslot prominently
@@ -33,7 +34,7 @@ export async function displayFeaturedTimeslot() {
             const startDate = parseISODate(featuredSlot.start_time);
             const endDate = parseISODate(featuredSlot.end_time);
             const dateStr = formatDate(startDate);
-            const timeStr = formatTimeRange(startDate, endDate);
+            const timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
 
             featuredCard.innerHTML = `
                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -50,7 +51,7 @@ export async function displayFeaturedTimeslot() {
                      class="btn btn-primary"
                      onclick="window.handleFeaturedTimeslotClick(${featuredSlot.id})"
                      style="white-space: nowrap;">
-                     Diesen Termin wählen
+                     ${t("primaryAppointment.selectButton")}
                   </button>
                </div>
             `;
@@ -81,8 +82,7 @@ export function displayPrimaryTimeslots() {
    container.classList.remove("hidden");
 
    if (state.primaryTimeslots.length === 0) {
-      container.innerHTML =
-         '<p style="text-align: center; color: #6c757d; padding: 40px;">Derzeit sind keine Haupttermine verfügbar. Bitte schauen Sie später noch einmal vorbei.</p>';
+      container.innerHTML = `<p style="text-align: center; color: #6c757d; padding: 40px;">${t("primaryAppointment.noTimeslotsAvailable") || "Derzeit sind keine Haupttermine verfügbar. Bitte schauen Sie später noch einmal vorbei."}</p>`;
       return;
    }
 
@@ -98,14 +98,14 @@ export function displayPrimaryTimeslots() {
          const endDate = parseISODate(slot.end_time);
 
          const dateStr = formatDate(startDate);
-         const timeStr = formatTimeRange(startDate, endDate);
+         const timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
 
          return `
             <div class="timeslot" onclick="window.handlePrimaryTimeslotClick(${slot.id})">
                 <input type="radio" name="primary-timeslot" value="${slot.id}" id="primary-slot-${slot.id}">
                 <div class="timeslot-header">
                     <div class="timeslot-date">${dateStr}</div>
-                    <div class="timeslot-type-badge badge-primary-type">Haupttermin</div>
+                    <div class="timeslot-type-badge badge-primary-type">${t("primaryAppointment.badge")}</div>
                 </div>
                 <div class="timeslot-time">🕐 ${timeStr}</div>
                 ${slot.location ? `<div class="timeslot-location">📍 ${slot.location}</div>` : ""}
@@ -128,8 +128,7 @@ export function displayFollowupTimeslots() {
    container.classList.remove("hidden");
 
    if (state.followupTimeslots.length === 0) {
-      container.innerHTML =
-         '<div class="alert alert-warning">Leider sind keine passenden Folgetermine (29-31 Tage nach dem Haupttermin) verfügbar. Bitte wählen Sie einen anderen Haupttermin.</div>';
+      container.innerHTML = `<div class="alert alert-warning">${t("followupAppointment.noTimeslotsAvailable") || "Leider sind keine passenden Folgetermine (29-31 Tage nach dem Haupttermin) verfügbar. Bitte wählen Sie einen anderen Haupttermin."}</div>`;
       return;
    }
 
@@ -147,7 +146,7 @@ export function displayFollowupTimeslots() {
          const endDate = parseISODate(slot.end_time);
 
          const dateStr = formatDate(startDate);
-         const timeStr = formatTimeRange(startDate, endDate);
+         const timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
 
          // Calculate days after primary
          const daysAfter = daysBetween(primaryDate, startDate);
@@ -157,11 +156,11 @@ export function displayFollowupTimeslots() {
                 <input type="radio" name="followup-timeslot" value="${slot.id}" id="followup-slot-${slot.id}">
                 <div class="timeslot-header">
                     <div class="timeslot-date">${dateStr}</div>
-                    <div class="timeslot-type-badge badge-followup-type">Folgetermin</div>
+                    <div class="timeslot-type-badge badge-followup-type">${t("followupAppointment.badge")}</div>
                 </div>
                 <div class="timeslot-time">🕐 ${timeStr}</div>
                 ${slot.location ? `<div class="timeslot-location">📍 ${slot.location}</div>` : ""}
-                <div class="timeslot-days-after">✓ ${daysAfter} Tage nach dem Haupttermin</div>
+                <div class="timeslot-days-after">✓ ${t("followupAppointment.daysAfter", { days: daysAfter })}</div>
             </div>
          `;
       })
@@ -253,7 +252,7 @@ export function displaySelectedPrimaryInfo() {
    const endDate = parseISODate(state.selectedPrimaryTimeslot.end_time);
 
    const dateStr = formatDate(startDate);
-   const timeStr = formatTimeRange(startDate, endDate);
+   const timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
 
    const infoElement = getElementById("selectedPrimaryInfo");
    if (infoElement) {

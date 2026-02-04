@@ -10,8 +10,8 @@
    <body>
       <div class="container">
          <div class="header">
-            <h1>Studienteilnahme – Lernerfolg in Multimedia-Settings</h1>
-            <p>💰 20 € Vergütung bei vollständiger Teilnahme</p>
+            <h1 data-i18n="header.title">Studienteilnahme – Lernerfolg in Multimedia-Settings</h1>
+            <p data-i18n="header.compensation">💰 20 € Vergütung bei vollständiger Teilnahme</p>
          </div>
 
          <div class="content" id="mainContent">
@@ -19,22 +19,22 @@
             <div class="step-indicator">
                <div class="step active" id="step0">
                   <div class="step-number">ℹ️</div>
-                  <div class="step-label">Studieninfo</div>
+                  <div class="step-label" data-i18n="steps.info">Studieninfo</div>
                </div>
                <div class="step-arrow">→</div>
                <div class="step" id="step1">
                   <div class="step-number">1</div>
-                  <div class="step-label">Haupttermin</div>
+                  <div class="step-label" data-i18n="steps.primary">Haupttermin</div>
                </div>
                <div class="step-arrow">→</div>
                <div class="step" id="step2">
                   <div class="step-number">2</div>
-                  <div class="step-label">Folgetermin</div>
+                  <div class="step-label" data-i18n="steps.followup">Folgetermin</div>
                </div>
                <div class="step-arrow">→</div>
                <div class="step" id="step3">
                   <div class="step-number">3</div>
-                  <div class="step-label">Daten eingeben</div>
+                  <div class="step-label" data-i18n="steps.data">Daten eingeben</div>
                </div>
             </div>
 
@@ -42,38 +42,47 @@
 
             <!-- Step 0: Study Description -->
             <div id="studyDescriptionSection" class="section">
-               <h2>🎓 Über die Studie</h2>
+               <h2 data-i18n="studyDescription.title">🎓 Über die Studie</h2>
 
                <div class="info-box" style="background: #f0f9ff; border-left-color: #667eea; margin-bottom: 20px">
-                  <h4>💰 Vergütung: 20 €</h4>
-                  <p style="margin: 0">Bei vollständiger Teilnahme an beiden Terminen</p>
+                  <h4 data-i18n="studyDescription.compensationBox.title">💰 Vergütung: 20 €</h4>
+                  <p style="margin: 0" data-i18n="studyDescription.compensationBox.text">
+                     Bei vollständiger Teilnahme an beiden Terminen
+                  </p>
                </div>
 
                <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 20px">
-                  <h3 style="color: #667eea; margin-top: 0; margin-bottom: 15px">Kurz & Knapp (TL;DR)</h3>
+                  <h3
+                     style="color: #667eea; margin-top: 0; margin-bottom: 15px"
+                     data-i18n="studyDescription.tldr.title"
+                  >
+                     Kurz & Knapp (TL;DR)
+                  </h3>
                   <ul style="margin-left: 20px; line-height: 1.8">
-                     <li>
+                     <li data-i18n="studyDescription.tldr.items[0]">
                         Studie zum
                         <strong>Lernerfolg in Multimedia-Settings</strong>
                      </li>
-                     <li><strong>💰 20 € Vergütung</strong> bei vollständiger Teilnahme</li>
+                     <li data-i18n="studyDescription.tldr.items[1]">
+                        <strong>💰 20 € Vergütung</strong> bei vollständiger Teilnahme
+                     </li>
                      <li>
-                        <strong>Zwei zeitlich versetzte Termine:</strong>
+                        <strong data-i18n="studyDescription.tldr.items[2]">Zwei zeitlich versetzte Termine:</strong>
                         <ul style="margin-left: 20px; margin-top: 8px">
-                           <li>
+                           <li data-i18n="studyDescription.tldr.items[3]">
                               <strong>1. Termin:</strong> Englische Vorlesung + kurzer Wissenstest<br />
                               Dauer: ca. <strong>60 Minuten</strong>
                            </li>
-                           <li>
+                           <li data-i18n="studyDescription.tldr.items[4]">
                               <strong>2. Termin:</strong> kurzer Wissenstest<br />
                               Dauer: ca. <strong>15 Minuten</strong>
                            </li>
                         </ul>
                      </li>
-                     <li>
+                     <li data-i18n="studyDescription.tldr.items[5]">
                         <strong>Ort:</strong> MAR-Gebäude der TU Berlin (Marchstraße 23), sofern nicht anders angegeben
                      </li>
-                     <li>
+                     <li data-i18n="studyDescription.tldr.items[6]">
                         Bitte
                         <strong>5 Minuten vor dem Termin erscheinen</strong>
                      </li>
@@ -81,15 +90,17 @@
                </div>
 
                <div style="margin-bottom: 20px">
-                  <h3 style="color: #667eea; margin-bottom: 15px">📋 Beschreibung des Experiments</h3>
-                  <p>
+                  <h3 style="color: #667eea; margin-bottom: 15px" data-i18n="studyDescription.description.title">
+                     📋 Beschreibung des Experiments
+                  </h3>
+                  <p data-i18n="studyDescription.description.text1">
                      In dieser Studie untersuchen wir den Lernerfolg und die Gedächtnisleistung beim Konsum von
                      Vorlesungsinhalten über unterschiedliche Medienformate. Die TeilnehmerInnen sehen eine kurze
                      Vorlesung in englischer Sprache und bearbeiten zwei zeitlich versetzte Wissenstests zu den
                      vermittelten Inhalten. Während des ersten Termins werden außerdem physiologische Messungen (EKG
                      mittels EKG-Gurt) durchgeführt.
                   </p>
-                  <p>
+                  <p data-i18n="studyDescription.description.text2">
                      Für die vollständige Teilnahme an
                      <strong>beiden Terminen</strong> erhalten die TeilnehmerInnen eine
                      <strong>Aufwandsentschädigung von 20 €</strong>.
@@ -97,22 +108,34 @@
                </div>
 
                <div style="margin-bottom: 20px">
-                  <h3 style="color: #667eea; margin-bottom: 15px">📅 Ablauf</h3>
-                  <p>
+                  <h3 style="color: #667eea; margin-bottom: 15px" data-i18n="studyDescription.procedure.title">
+                     📅 Ablauf
+                  </h3>
+                  <p data-i18n="studyDescription.procedure.intro">
                      Das Experiment besteht aus <strong>zwei Terminen</strong>, die zeitlich voneinander getrennt
                      stattfinden:
                   </p>
                   <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0">
-                     <h4 style="color: #667eea; margin-top: 0; margin-bottom: 10px">Erster Termin:</h4>
-                     <p style="margin: 0">
+                     <h4
+                        style="color: #667eea; margin-top: 0; margin-bottom: 10px"
+                        data-i18n="studyDescription.procedure.first.title"
+                     >
+                        Erster Termin:
+                     </h4>
+                     <p style="margin: 0" data-i18n="studyDescription.procedure.first.text">
                         Ansehen einer englischsprachigen Vorlesung und anschließender kurzer Wissenstest. Während der
                         Vorlesung werden physiologische Messungen (EKG) mittels eines EKG-Gurts durchgeführt.<br />
                         Gesamtdauer: ca. <strong>60 Minuten</strong>.
                      </p>
                   </div>
                   <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0">
-                     <h4 style="color: #28a745; margin-top: 0; margin-bottom: 10px">Zweiter Termin:</h4>
-                     <p style="margin: 0">
+                     <h4
+                        style="color: #28a745; margin-top: 0; margin-bottom: 10px"
+                        data-i18n="studyDescription.procedure.second.title"
+                     >
+                        Zweiter Termin:
+                     </h4>
+                     <p style="margin: 0" data-i18n="studyDescription.procedure.second.text">
                         Durchführung eines weiteren kurzen Wissenstests zur Erfassung des längerfristigen
                         Lernerfolgs.<br />
                         Dauer: ca. <strong>15 Minuten</strong>.
@@ -121,29 +144,37 @@
                </div>
 
                <div style="margin-bottom: 20px">
-                  <h3 style="color: #667eea; margin-bottom: 15px">📍 Ort</h3>
+                  <h3 style="color: #667eea; margin-bottom: 15px" data-i18n="studyDescription.location.title">
+                     📍 Ort
+                  </h3>
                   <div style="background: #f9fafb; padding: 15px; border-radius: 8px">
-                     <p style="margin: 0; font-weight: 500">MAR-Gebäude der TU Berlin</p>
-                     <p style="margin: 5px 0 0 0">
+                     <p style="margin: 0; font-weight: 500" data-i18n="studyDescription.location.name">
+                        MAR-Gebäude der TU Berlin
+                     </p>
+                     <p style="margin: 5px 0 0 0" data-i18n="studyDescription.location.address">
                         <strong>Marchstraße 23, 10587 Berlin</strong><br />
-                        <span style="color: #666; font-size: 0.9em">(Sofern nicht anders angegegen)</span>
+                        <span style="color: #666; font-size: 0.9em" data-i18n="studyDescription.location.note"
+                           >(Sofern nicht anders angegegen)</span
+                        >
                      </p>
                   </div>
                </div>
 
                <div class="info-box" style="background: #fffbeb; border-left-color: #f59e0b">
-                  <h4>✅ Anforderungen an TeilnehmerInnen</h4>
+                  <h4 data-i18n="studyDescription.requirements.title">✅ Anforderungen an TeilnehmerInnen</h4>
                   <ul style="margin-left: 20px; line-height: 1.8; margin-bottom: 0">
-                     <li>
+                     <li data-i18n="studyDescription.requirements.items[0]">
                         Aktuelle Einschreibung an einer Hochschule oder Hochschulabschluss bzw. Einschreibung innerhalb
                         der letzten <strong>drei Jahre</strong>
                      </li>
-                     <li>Ausreichende <strong>englische Sprachkenntnisse</strong></li>
-                     <li>
+                     <li data-i18n="studyDescription.requirements.items[1]">
+                        Ausreichende <strong>englische Sprachkenntnisse</strong>
+                     </li>
+                     <li data-i18n="studyDescription.requirements.items[2]">
                         Zuverlässige Teilnahme an
                         <strong>beiden Terminen</strong>
                      </li>
-                     <li>
+                     <li data-i18n="studyDescription.requirements.items[3]">
                         Pünktliches Erscheinen (bitte ca.
                         <strong>5 Minuten vor Terminbeginn</strong>)
                      </li>
@@ -156,6 +187,7 @@
                      class="btn btn-primary"
                      style="font-size: 1.1em; padding: 15px 40px"
                      onclick="proceedToStep1()"
+                     data-i18n="studyDescription.continueButton"
                   >
                      Zur Terminauswahl
                   </button>
@@ -164,30 +196,43 @@
 
             <!-- Step 3: Personal Information and Questionnaire -->
             <div id="personalInfoSection" class="section hidden">
-               <h2>Ihre Daten & Vorabfragen</h2>
+               <h2 data-i18n="personalInfo.title">Ihre Daten & Vorabfragen</h2>
 
                <div class="form-group">
-                  <label for="name">Name *</label>
+                  <label for="name" data-i18n="personalInfo.name.label">Name *</label>
                   <input type="text" id="name" name="name" required />
                </div>
                <div class="form-group">
-                  <label for="email">E-Mail *</label>
+                  <label for="email" data-i18n="personalInfo.email.label">E-Mail *</label>
                   <input type="email" id="email" name="email" required />
                </div>
 
                <div style="border-top: 2px solid #e0e0e0; margin: 30px 0 20px 0; padding-top: 20px">
-                  <h3 style="color: #667eea; margin-bottom: 20px">📋 Vorabfragen zur Studie</h3>
+                  <h3 style="color: #667eea; margin-bottom: 20px" data-i18n="personalInfo.questionnaire.title">
+                     📋 Vorabfragen zur Studie
+                  </h3>
 
                   <!-- Vision Correction -->
                   <div class="form-group">
-                     <label for="visionCorrection">Sehkorrektur *</label>
+                     <label for="visionCorrection" data-i18n="personalInfo.visionCorrection.label"
+                        >Sehkorrektur *</label
+                     >
                      <select id="visionCorrection" name="visionCorrection" required>
-                        <option value="">Bitte wählen...</option>
-                        <option value="none">Keine Sehhilfe erforderlich</option>
-                        <option value="glasses">Brille</option>
-                        <option value="contacts">Kontaktlinsen</option>
+                        <option value="" data-i18n="personalInfo.visionCorrection.placeholder">Bitte wählen...</option>
+                        <option value="none" data-i18n="personalInfo.visionCorrection.options.none">
+                           Keine Sehhilfe erforderlich
+                        </option>
+                        <option value="glasses" data-i18n="personalInfo.visionCorrection.options.glasses">
+                           Brille
+                        </option>
+                        <option value="contacts" data-i18n="personalInfo.visionCorrection.options.contacts">
+                           Kontaktlinsen
+                        </option>
                      </select>
-                     <small style="display: block; margin-top: 8px; color: #666; line-height: 1.5">
+                     <small
+                        style="display: block; margin-top: 8px; color: #666; line-height: 1.5"
+                        data-i18n="personalInfo.visionCorrection.hint"
+                     >
                         <strong>Hinweis:</strong> Falls Sie normalerweise keine Kontaktlinsen tragen, aber bereit wären,
                         diese für die Studie zu verwenden, wählen Sie bitte "Kontaktlinsen". Dies wäre von Vorteil, ist
                         aber keine Voraussetzung für die Teilnahme.
@@ -196,22 +241,29 @@
 
                   <!-- Study Subject -->
                   <div class="form-group">
-                     <label for="studySubject">Studienfach (aktuell oder in der Vergangenheit) *</label>
+                     <label for="studySubject" data-i18n="personalInfo.studySubject.label"
+                        >Studienfach (aktuell oder in der Vergangenheit) *</label
+                     >
                      <input
                         type="text"
                         id="studySubject"
                         name="studySubject"
-                        placeholder="z.B. Informatik, Psychologie, Maschinenbau..."
+                        data-i18n-placeholder="personalInfo.studySubject.placeholder"
                         required
                      />
-                     <small style="display: block; margin-top: 8px; color: #666">
+                     <small
+                        style="display: block; margin-top: 8px; color: #666"
+                        data-i18n="personalInfo.studySubject.hint"
+                     >
                         Bitte geben Sie Ihr Hauptstudienfach an, auch wenn Sie bereits abgeschlossen haben.
                      </small>
                   </div>
 
                   <!-- VR Experience -->
                   <div class="form-group">
-                     <label for="vrExperience">Vorerfahrung mit Virtual Reality (VR) *</label>
+                     <label for="vrExperience" data-i18n="personalInfo.vrExperience.label"
+                        >Vorerfahrung mit Virtual Reality (VR) *</label
+                     >
                      <div style="margin-top: 10px">
                         <div
                            style="
@@ -222,8 +274,8 @@
                               color: #666;
                            "
                         >
-                           <span>Keine Erfahrung</span>
-                           <span>Sehr viel Erfahrung</span>
+                           <span data-i18n="personalInfo.vrExperience.min">Keine Erfahrung</span>
+                           <span data-i18n="personalInfo.vrExperience.max">Sehr viel Erfahrung</span>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center">
                            <label style="flex: 1; text-align: center; cursor: pointer">
@@ -282,7 +334,9 @@
 
                   <!-- Motion Sickness -->
                   <div class="form-group">
-                     <label for="motionSickness">Neigung zu Reiseübelkeit / Motion Sickness *</label>
+                     <label for="motionSickness" data-i18n="personalInfo.motionSickness.label"
+                        >Neigung zu Reiseübelkeit / Motion Sickness *</label
+                     >
                      <div style="margin-top: 10px">
                         <div
                            style="
@@ -293,8 +347,8 @@
                               color: #666;
                            "
                         >
-                           <span>Gar nicht anfällig</span>
-                           <span>Sehr anfällig</span>
+                           <span data-i18n="personalInfo.motionSickness.min">Gar nicht anfällig</span>
+                           <span data-i18n="personalInfo.motionSickness.max">Sehr anfällig</span>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center">
                            <label style="flex: 1; text-align: center; cursor: pointer">
@@ -349,7 +403,10 @@
                            </label>
                         </div>
                      </div>
-                     <small style="display: block; margin-top: 8px; color: #666">
+                     <small
+                        style="display: block; margin-top: 8px; color: #666"
+                        data-i18n="personalInfo.motionSickness.hint"
+                     >
                         Haben Sie in der Vergangenheit Übelkeit bei Autofahrten, auf Schiffen, in VR oder bei anderen
                         Bewegungen verspürt?
                      </small>
@@ -362,6 +419,7 @@
                   id="submitRegistrationBtn"
                   onclick="submitRegistration()"
                   disabled
+                  data-i18n="personalInfo.submitButton"
                >
                   Anmeldung abschließen
                </button>
@@ -370,13 +428,15 @@
             <!-- Step 1: Primary Appointment Selection -->
             <div id="primaryAppointmentSection" class="section hidden">
                <h2>
-                  <span>Haupttermin auswählen</span>
-                  <span class="badge badge-primary">HAUPTTERMIN</span>
+                  <span data-i18n="primaryAppointment.title">Haupttermin auswählen</span>
+                  <span class="badge badge-primary" data-i18n="primaryAppointment.badge">HAUPTTERMIN</span>
                </h2>
                <div class="info-box">
-                  <h4>📌 Wichtiger Hinweis</h4>
-                  <p>Sie müssen sowohl einen Haupttermin als auch einen Folgetermin buchen.</p>
-                  <p>
+                  <h4 data-i18n="primaryAppointment.infoBox.title">📌 Wichtiger Hinweis</h4>
+                  <p data-i18n="primaryAppointment.infoBox.text1">
+                     Sie müssen sowohl einen Haupttermin als auch einen Folgetermin buchen.
+                  </p>
+                  <p data-i18n="primaryAppointment.infoBox.text2">
                      <strong>Der Folgetermin muss zwischen 28 und 32 Tagen nach dem Haupttermin liegen.</strong>
                   </p>
                </div>
@@ -393,9 +453,14 @@
                   >
                      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
                         <span style="font-size: 24px">⭐</span>
-                        <h3 style="margin: 0; font-size: 1.3em">Empfohlener Termin (Sehr wichtig!)</h3>
+                        <h3 style="margin: 0; font-size: 1.3em" data-i18n="primaryAppointment.featured.title">
+                           Empfohlener Termin (Sehr wichtig!)
+                        </h3>
                      </div>
-                     <p style="margin: 10px 0; opacity: 0.95; font-size: 0.95em">
+                     <p
+                        style="margin: 10px 0; opacity: 0.95; font-size: 0.95em"
+                        data-i18n="primaryAppointment.featured.description"
+                     >
                         Dieser erste Termin legt das Fundament für die Studie und ist daher besonders wichtig. Aktuell
                         sind nicht alle nötigen Plätze gefüllt. Bitte überlegen Sie deshalb, ob Sie diesen Termin über
                         eine eventuelle andere Wahl priorisieren können, da es wirklich sehr wichtig ist, dass genug
@@ -418,22 +483,35 @@
                         <!-- Featured timeslot content will be inserted here -->
                      </div>
                   </div>
-                  <div style="text-align: center; margin: 15px 0; color: #666; font-weight: 500">
+                  <div
+                     style="text-align: center; margin: 15px 0; color: #666; font-weight: 500"
+                     data-i18n="primaryAppointment.featured.orChoose"
+                  >
                      oder wählen Sie einen anderen Termin unten
                   </div>
                </div>
                <div id="primaryTimeslotsLoading" class="loading">
                   <div class="loading-spinner"></div>
-                  <p>Termine werden geladen...</p>
+                  <p data-i18n="primaryAppointment.loading">Termine werden geladen...</p>
                </div>
-               <p id="primaryScrollHint" class="hidden" style="color: #666; font-size: 0.9em; margin-bottom: 5px">
+               <p
+                  id="primaryScrollHint"
+                  class="hidden"
+                  style="color: #666; font-size: 0.9em; margin-bottom: 5px"
+                  data-i18n="primaryAppointment.scrollHint"
+               >
                   ↓ Scrollen Sie nach unten, um alle verfügbaren Termine zu sehen
                </p>
                <div id="primaryScrollWrapper" class="timeslots-scroll-wrapper">
                   <div id="primaryTimeslotsContainer" class="timeslots-container hidden"></div>
                </div>
                <div style="margin-top: 20px">
-                  <button type="button" class="btn btn-secondary" onclick="backToStep0()">
+                  <button
+                     type="button"
+                     class="btn btn-secondary"
+                     onclick="backToStep0()"
+                     data-i18n="primaryAppointment.backButton"
+                  >
                      ← Zurück zur Studieninfo
                   </button>
                   <button
@@ -442,6 +520,7 @@
                      id="continueToStep2Btn"
                      onclick="continueToStep2()"
                      disabled
+                     data-i18n="primaryAppointment.continueButton"
                   >
                      Weiter zum Folgetermin →
                   </button>
@@ -451,33 +530,43 @@
             <!-- Step 2: Follow-up Appointment Selection -->
             <div id="followupAppointmentSection" class="section hidden">
                <h2>
-                  <span>Folgetermin auswählen</span>
-                  <span class="badge badge-followup">FOLGETERMIN</span>
+                  <span data-i18n="followupAppointment.title">Folgetermin auswählen</span>
+                  <span class="badge badge-followup" data-i18n="followupAppointment.badge">FOLGETERMIN</span>
                </h2>
                <div class="alert alert-info">
-                  <strong>Ihr gewählter Haupttermin:</strong>
+                  <strong data-i18n="followupAppointment.selectedPrimary">Ihr gewählter Haupttermin:</strong>
                   <div id="selectedPrimaryInfo" style="margin-top: 10px"></div>
                </div>
                <div class="info-box" style="background: #f0f9f4; border-left-color: #28a745">
-                  <h4>✅ Folgetermin wählen</h4>
-                  <p>
+                  <h4 data-i18n="followupAppointment.infoBox.title">✅ Folgetermin wählen</h4>
+                  <p data-i18n="followupAppointment.infoBox.text1">
                      Bitte wählen Sie einen Folgetermin, der
                      <strong>29-31 Tage</strong> nach Ihrem Haupttermin liegt.
                   </p>
-                  <p>Es werden nur passende Termine angezeigt.</p>
+                  <p data-i18n="followupAppointment.infoBox.text2">Es werden nur passende Termine angezeigt.</p>
                </div>
                <div id="followupTimeslotsLoading" class="loading">
                   <div class="loading-spinner"></div>
-                  <p>Verfügbare Folgetermine werden geladen...</p>
+                  <p data-i18n="followupAppointment.loading">Verfügbare Folgetermine werden geladen...</p>
                </div>
-               <p id="followupScrollHint" class="hidden" style="color: #666; font-size: 0.9em; margin-bottom: 5px">
+               <p
+                  id="followupScrollHint"
+                  class="hidden"
+                  style="color: #666; font-size: 0.9em; margin-bottom: 5px"
+                  data-i18n="followupAppointment.scrollHint"
+               >
                   ↓ Scrollen Sie nach unten, um alle verfügbaren Termine zu sehen
                </p>
                <div id="followupScrollWrapper" class="timeslots-scroll-wrapper">
                   <div id="followupTimeslotsContainer" class="timeslots-container hidden"></div>
                </div>
                <div style="margin-top: 20px">
-                  <button type="button" class="btn btn-secondary" onclick="backToStep1()">
+                  <button
+                     type="button"
+                     class="btn btn-secondary"
+                     onclick="backToStep1()"
+                     data-i18n="followupAppointment.backButton"
+                  >
                      ← Zurück zum Haupttermin
                   </button>
                   <button
@@ -486,6 +575,7 @@
                      id="continueToStep3Btn"
                      onclick="continueToStep3()"
                      disabled
+                     data-i18n="followupAppointment.continueButton"
                   >
                      Weiter zur Datenerfassung →
                   </button>
@@ -495,9 +585,9 @@
 
          <div class="footer">
             <p>
-               Bereits angemeldet?
-               <a href="manage.html">Termin verwalten</a> |
-               <a href="admin.html">Admin Login</a>
+               <span data-i18n="footer.registered">Bereits angemeldet?</span>
+               <a href="manage.html" data-i18n="footer.manage">Termin verwalten</a> |
+               <a href="admin.html" data-i18n="footer.admin">Admin Login</a>
             </p>
          </div>
       </div>
