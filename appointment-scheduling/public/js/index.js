@@ -25,7 +25,7 @@ import { validateName, validateEmail } from "./utils/validation.js";
 import { hide, show, getValue, setText, disable, scrollToTop } from "./utils/dom.js";
 import { formatDate, formatTimeRange, parseISODate, toISODateString } from "./utils/dateFormatter.js";
 import { initI18n, setLanguage, t, updatePageTranslations } from "./i18n/i18n.js";
-import { showLanguageSelector, addLanguageToggleToHeader } from "./components/languageSelector.js";
+import { showLanguageSelector } from "./components/languageSelector.js";
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
@@ -56,9 +56,6 @@ async function initializeApp() {
 function loadApp() {
    // Update all translations on the page
    updatePageTranslations();
-
-   // Add language toggle to header
-   addLanguageToggleToHeader();
 
    // Load primary timeslots
    loadPrimaryTimeslots();
