@@ -142,8 +142,7 @@ async function checkAndSendReminders() {
       Logger.info("1-day reminders processed", oneDayResults);
 
       const totalSent = sevenDayResults.sentCount + oneDayResults.sentCount;
-      const totalFailed =
-         sevenDayResults.failedCount + oneDayResults.failedCount;
+      const totalFailed = sevenDayResults.failedCount + oneDayResults.failedCount;
 
       Logger.info("Reminder check completed", {
          totalSent,
@@ -171,10 +170,10 @@ function start() {
       checkInterval: `${CHECK_INTERVAL / 1000 / 60} minutes`,
    });
 
-   // Run immediately on start
-   checkAndSendReminders();
+   // Run immediately on start (commented out to prevent emails on server restart)
+   // checkAndSendReminders();
 
-   // Then run periodically
+   // Run periodically (first check will be after CHECK_INTERVAL)
    schedulerInterval = setInterval(checkAndSendReminders, CHECK_INTERVAL);
 
    Logger.info("Reminder scheduler started");

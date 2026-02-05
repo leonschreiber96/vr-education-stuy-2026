@@ -1191,8 +1191,8 @@ function getBookingsNeedingSevenpDayReminder() {
       WHERE b.status = 'active'
         AND b.reminder_7day_sent = 0
         AND datetime(t.start_time) > datetime('now')
-        AND datetime(t.start_time) <= datetime('now', '+8 days')
-        AND datetime(t.start_time) >= datetime('now', '+6 days')
+        AND datetime(t.start_time) <= datetime('now', '+7 days', '+12 hours')
+        AND datetime(t.start_time) >= datetime('now', '+7 days', '-12 hours')
       ORDER BY t.start_time
    `);
    return stmt.all();
