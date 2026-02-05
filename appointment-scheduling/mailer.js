@@ -662,17 +662,39 @@ async function sendReminderEmail(email, name, timeslot, daysUntil, confirmationT
    const subject = `Erinnerung: Ihr ${isFollowup ? "Nachfolge-" : ""}Termin ${reminderText}`;
    const managementUrl = buildUrl(`/manage.html?token=${confirmationToken}`);
 
-   const { hour, minute } = formatDateTime(timeslot.start_time);
    const appointmentType = isFollowup ? "Nachfolgetermin" : "Ersttermin";
+   const date = new Date(timeslot.start_time);
+   const timeStr = date.toLocaleString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+   });
+
+   const reminderTextEn = daysUntil === 7 ? "in one week" : "tomorrow";
+   const appointmentTypeEn = isFollowup ? "Follow-up Appointment" : "Initial Appointment";
+   const dateStrEn = date.toLocaleString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+   });
+   const timeStrEn = date.toLocaleString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+   });
 
    const html = `
+    <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
+      <p style="margin: 5px 0; font-weight: bold;">🇩🇪 Deutsche Version | 🇬🇧 English version below</p>
+    </div>
+
     <h2>Terminerinnerung</h2>
     <p>Hallo ${name},</p>
     <p>dies ist eine freundliche Erinnerung an Ihren bevorstehenden ${appointmentType} ${reminderText}:</p>
 
     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
       <p><strong>📅 Datum:</strong> ${formatDateTime(timeslot.start_time)}</p>
-      <p><strong>🕒 Uhrzeit:</strong> ${hour}:${minute} Uhr</p>
+      <p><strong>🕒 Uhrzeit:</strong> ${timeStr} Uhr</p>
       <p><strong>📍 Ort:</strong> ${timeslot.location || "Wird noch bekannt gegeben"}</p>
       <p><strong>📝 Typ:</strong> ${appointmentType}</p>
     </div>
@@ -697,8 +719,48 @@ async function sendReminderEmail(email, name, timeslot, daysUntil, confirmationT
 
     <p>Wir freuen uns auf Ihre Teilnahme!</p>
 
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
+
+    <p style="text-align: center; color: #666; font-style: italic; margin: 30px 0;">
+      📋 English version below / Englische Version unten
+    </p>
+
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
+
+    <h2>Appointment Reminder</h2>
+    <p>Hello ${name},</p>
+    <p>This is a friendly reminder of your upcoming ${appointmentTypeEn} ${reminderTextEn}:</p>
+
+    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <p><strong>📅 Date:</strong> ${dateStrEn}</p>
+      <p><strong>🕒 Time:</strong> ${timeStrEn}</p>
+      <p><strong>📍 Location:</strong> ${timeslot.location || "To be announced"}</p>
+      <p><strong>📝 Type:</strong> ${appointmentTypeEn}</p>
+    </div>
+
+    ${
+       daysUntil === 1
+          ? `
+    <p style="background-color: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; margin: 15px 0;">
+      <strong>⚠️ Important:</strong> Your appointment is tomorrow! Please arrive on time.
+    </p>
+    `
+          : ""
+    }
+
+    <p>If you cannot attend the appointment, please cancel it in advance:</p>
+    <p style="text-align: center; margin: 25px 0;">
+      <a href="${managementUrl}"
+         style="display: inline-block; padding: 12px 30px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        Manage Appointment
+      </a>
+    </p>
+
+    <p>We look forward to your participation!</p>
+
     <hr>
     <p style="color: #666; font-size: 0.9em;">Bei Fragen wenden Sie sich bitte an: ${ADMIN_EMAIL}</p>
+    <p style="color: #666; font-size: 0.9em;">For questions, please contact: ${ADMIN_EMAIL}</p>
   `;
 
    const icalContent = generateICalEvent(timeslot.start_time, timeslot.end_time, timeslot.location, appointmentType);
