@@ -411,6 +411,39 @@
                         Bewegungen verspürt?
                      </small>
                   </div>
+
+                  <!-- TU Berlin Employee -->
+                  <div class="form-group">
+                     <label for="tuBerlinEmployee" data-i18n="personalInfo.tuBerlinEmployee.label"
+                        >Sind Sie Mitarbeiter*in der TU Berlin? *</label
+                     >
+                     <select
+                        id="tuBerlinEmployee"
+                        name="tuBerlinEmployee"
+                        required
+                        onchange="handleTuBerlinEmployeeChange()"
+                     >
+                        <option value="" data-i18n="personalInfo.tuBerlinEmployee.placeholder">Bitte wählen...</option>
+                        <option value="yes" data-i18n="personalInfo.tuBerlinEmployee.options.yes">Ja</option>
+                        <option value="no" data-i18n="personalInfo.tuBerlinEmployee.options.no">Nein</option>
+                     </select>
+                     <div
+                        id="tuBerlinEmployeeWarning"
+                        class="alert alert-warning"
+                        style="display: none; margin-top: 12px"
+                     >
+                        <strong data-i18n="personalInfo.tuBerlinEmployee.warningTitle"
+                           >⚠️ Wichtiger Hinweis für TU Berlin Mitarbeiter*innen:</strong
+                        >
+                        <p
+                           data-i18n="personalInfo.tuBerlinEmployee.warningText"
+                           style="margin-top: 8px; margin-bottom: 0"
+                        >
+                           Aus rechtlichen Gründen können TU Berlin Mitarbeiter*innen keine monetäre Vergütung für die
+                           Teilnahme an dieser Studie erhalten.
+                        </p>
+                     </div>
+                  </div>
                </div>
 
                <button

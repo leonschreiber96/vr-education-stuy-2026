@@ -75,6 +75,7 @@ window.submitRegistration = submitRegistration;
 window.backToStep0 = backToStep0;
 window.backToStep1 = backToStep1;
 window.backToStep2 = backToStep2;
+window.handleTuBerlinEmployeeChange = handleTuBerlinEmployeeChange;
 
 /**
  * Load primary appointment timeslots
@@ -244,6 +245,25 @@ async function loadFollowupTimeslots() {
 }
 
 /**
+ * Handle TU Berlin employee dropdown change
+ * Shows warning if employee is selected
+ */
+function handleTuBerlinEmployeeChange() {
+   const tuBerlinEmployeeSelect = document.getElementById("tuBerlinEmployee");
+   const warningDiv = document.getElementById("tuBerlinEmployeeWarning");
+
+   if (!tuBerlinEmployeeSelect || !warningDiv) return;
+
+   const value = tuBerlinEmployeeSelect.value;
+
+   if (value === "yes") {
+      warningDiv.style.display = "block";
+   } else {
+      warningDiv.style.display = "none";
+   }
+}
+
+/**
  * Submit registration (with appointments already selected and personal data/questionnaire)
  */
 async function submitRegistration() {
@@ -290,6 +310,12 @@ async function submitRegistration() {
       return;
    }
 
+   const tuBerlinEmployee = getValue("tuBerlinEmployee");
+   if (!tuBerlinEmployee) {
+      showWarning("Bitte geben Sie an, ob Sie Mitarbeiter*in der TU Berlin sind.");
+      return;
+   }
+
    // Ensure appointments are selected
    if (!state.selectedPrimaryTimeslotId || !state.selectedFollowupTimeslotId) {
       showWarning("Bitte wählen Sie sowohl einen Haupttermin als auch einen Folgetermin aus.");
@@ -310,6 +336,7 @@ async function submitRegistration() {
          studySubject,
          vrExperience: parseInt(vrExperience.value),
          motionSickness: parseInt(motionSickness.value),
+         tuBerlinEmployee: tuBerlinEmployee || null,
       };
 
       const data = await registerParticipant({

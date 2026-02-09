@@ -20,20 +20,10 @@
             <!-- Token Input Section -->
             <div id="tokenInputSection">
                <div class="token-input-container">
-                  <h2 style="color: #667eea; margin-bottom: 20px">
-                     Bitte geben Sie Ihren Bestätigungscode ein
-                  </h2>
-                  <p style="color: #666; margin-bottom: 20px">
-                     Dieser Code wurde Ihnen per E-Mail zugeschickt.
-                  </p>
-                  <input
-                     type="text"
-                     id="tokenInput"
-                     placeholder="Bestätigungscode eingeben"
-                  />
-                  <button class="btn btn-primary" onclick="loadBookings()">
-                     Termine laden
-                  </button>
+                  <h2 style="color: #667eea; margin-bottom: 20px">Bitte geben Sie Ihren Bestätigungscode ein</h2>
+                  <p style="color: #666; margin-bottom: 20px">Dieser Code wurde Ihnen per E-Mail zugeschickt.</p>
+                  <input type="text" id="tokenInput" placeholder="Bestätigungscode eingeben" />
+                  <button class="btn btn-primary" onclick="loadBookings()">Termine laden</button>
                </div>
             </div>
 
@@ -60,14 +50,95 @@
                   </div>
                </div>
 
+               <!-- Prescreen Questionnaire -->
+               <div class="section">
+                  <h2>Fragebogen-Daten</h2>
+                  <p style="color: #666; margin-bottom: 15px">
+                     Sie können Ihre Angaben aus dem Fragebogen hier aktualisieren.
+                  </p>
+                  <div class="info-card">
+                     <div class="form-group">
+                        <label for="visionCorrection">Sehkorrektur</label>
+                        <select id="visionCorrection" name="visionCorrection">
+                           <option value="">Bitte wählen</option>
+                           <option value="none">Keine Sehhilfe</option>
+                           <option value="glasses">Brille</option>
+                           <option value="contacts">Kontaktlinsen</option>
+                        </select>
+                     </div>
+                     <div class="form-group">
+                        <label for="studySubject">Studienfach</label>
+                        <input type="text" id="studySubject" name="studySubject" placeholder="z.B. Informatik" />
+                     </div>
+                     <div class="form-group">
+                        <label for="vrExperience">VR-Erfahrung (1 = keine, 5 = sehr erfahren)</label>
+                        <select id="vrExperience" name="vrExperience">
+                           <option value="">Bitte wählen</option>
+                           <option value="1">1 - Keine Erfahrung</option>
+                           <option value="2">2 - Wenig Erfahrung</option>
+                           <option value="3">3 - Etwas Erfahrung</option>
+                           <option value="4">4 - Viel Erfahrung</option>
+                           <option value="5">5 - Sehr erfahren</option>
+                        </select>
+                     </div>
+                     <div class="form-group">
+                        <label for="motionSickness"
+                           >Anfälligkeit für Reiseübelkeit (1 = nicht anfällig, 5 = sehr anfällig)</label
+                        >
+                        <select id="motionSickness" name="motionSickness">
+                           <option value="">Bitte wählen</option>
+                           <option value="1">1 - Nicht anfällig</option>
+                           <option value="2">2 - Wenig anfällig</option>
+                           <option value="3">3 - Etwas anfällig</option>
+                           <option value="4">4 - Ziemlich anfällig</option>
+                           <option value="5">5 - Sehr anfällig</option>
+                        </select>
+                     </div>
+                     <div class="form-group">
+                        <label for="tuBerlinEmployee">Sind Sie Mitarbeiter*in der TU Berlin? *</label>
+                        <select
+                           id="tuBerlinEmployee"
+                           name="tuBerlinEmployee"
+                           required
+                           onchange="handleTuBerlinEmployeeChangeManage()"
+                        >
+                           <option value="">Bitte wählen</option>
+                           <option value="yes">Ja</option>
+                           <option value="no">Nein</option>
+                        </select>
+                        <div
+                           id="tuBerlinEmployeeWarningManage"
+                           class="alert alert-warning"
+                           style="
+                              display: none;
+                              margin-top: 12px;
+                              padding: 12px;
+                              background: #fff3cd;
+                              border: 1px solid #ffc107;
+                              border-radius: 4px;
+                           "
+                        >
+                           <strong style="color: #856404">⚠️ Wichtiger Hinweis für TU Berlin Mitarbeiter*innen:</strong>
+                           <p style="margin-top: 8px; margin-bottom: 0; color: #856404">
+                              Aus rechtlichen Gründen können TU Berlin Mitarbeiter*innen keine monetäre Vergütung für
+                              die Teilnahme an dieser Studie erhalten.
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="btn-group" style="margin-top: 15px">
+                     <button class="btn btn-primary" onclick="updatePrescreenData()">
+                        Fragebogen-Daten aktualisieren
+                     </button>
+                  </div>
+               </div>
+
                <!-- Primary Appointment -->
                <div class="section">
                   <h2>Haupttermin</h2>
                   <div class="appointment-card">
                      <h3>
-                        <span class="appointment-badge badge-primary-type"
-                           >Haupttermin</span
-                        >
+                        <span class="appointment-badge badge-primary-type">Haupttermin</span>
                      </h3>
                      <div class="info-row">
                         <span class="info-label">📅 Datum:</span>
@@ -77,20 +148,13 @@
                         <span class="info-label">🕐 Uhrzeit:</span>
                         <span class="info-value" id="primaryTime"></span>
                      </div>
-                     <div
-                        class="info-row"
-                        id="primaryLocationRow"
-                        style="display: none"
-                     >
+                     <div class="info-row" id="primaryLocationRow" style="display: none">
                         <span class="info-label">📍 Ort:</span>
                         <span class="info-value" id="primaryLocation"></span>
                      </div>
                   </div>
                   <div class="btn-group" style="margin-top: 15px">
-                     <button
-                        class="btn btn-primary"
-                        onclick="showRescheduleModal('primary')"
-                     >
+                     <button class="btn btn-primary" onclick="showRescheduleModal('primary')">
                         Haupttermin ändern
                      </button>
                   </div>
@@ -101,9 +165,7 @@
                   <h2>Folgetermin</h2>
                   <div class="appointment-card followup-card">
                      <h3>
-                        <span class="appointment-badge badge-followup-type"
-                           >Folgetermin</span
-                        >
+                        <span class="appointment-badge badge-followup-type">Folgetermin</span>
                      </h3>
                      <div class="info-row">
                         <span class="info-label">📅 Datum:</span>
@@ -113,11 +175,7 @@
                         <span class="info-label">🕐 Uhrzeit:</span>
                         <span class="info-value" id="followupTime"></span>
                      </div>
-                     <div
-                        class="info-row"
-                        id="followupLocationRow"
-                        style="display: none"
-                     >
+                     <div class="info-row" id="followupLocationRow" style="display: none">
                         <span class="info-label">📍 Ort:</span>
                         <span class="info-value" id="followupLocation"></span>
                      </div>
@@ -127,10 +185,7 @@
                      </div>
                   </div>
                   <div class="btn-group" style="margin-top: 15px">
-                     <button
-                        class="btn btn-primary"
-                        onclick="showRescheduleModal('followup')"
-                     >
+                     <button class="btn btn-primary" onclick="showRescheduleModal('followup')">
                         Folgetermin ändern
                      </button>
                   </div>
@@ -140,14 +195,11 @@
                <div class="section">
                   <h2>Aktionen</h2>
                   <div class="alert alert-warning">
-                     <strong>Achtung:</strong> Wenn Sie Ihre Teilnahme absagen,
-                     werden <strong>beide Termine</strong> storniert. Dies kann
-                     nicht rückgängig gemacht werden!
+                     <strong>Achtung:</strong> Wenn Sie Ihre Teilnahme absagen, werden
+                     <strong>beide Termine</strong> storniert. Dies kann nicht rückgängig gemacht werden!
                   </div>
                   <div class="btn-group">
-                     <button class="btn btn-danger" onclick="showCancelModal()">
-                        Beide Termine absagen
-                     </button>
+                     <button class="btn btn-danger" onclick="showCancelModal()">Beide Termine absagen</button>
                   </div>
                </div>
             </div>
@@ -162,19 +214,9 @@
       </div>
 
       <!-- Reschedule Modal -->
-      <div
-         id="rescheduleModal"
-         class="modal"
-         onclick="handleModalBackdropClick(event, 'rescheduleModal')"
-      >
+      <div id="rescheduleModal" class="modal" onclick="handleModalBackdropClick(event, 'rescheduleModal')">
          <div class="modal-content" onclick="event.stopPropagation()">
-            <button
-               class="modal-close"
-               onclick="closeRescheduleModal()"
-               aria-label="Close"
-            >
-               &times;
-            </button>
+            <button class="modal-close" onclick="closeRescheduleModal()" aria-label="Close">&times;</button>
             <div class="modal-header">
                <h3 id="rescheduleModalTitle">Termin ändern</h3>
             </div>
@@ -188,25 +230,11 @@
                   <div class="loading-spinner"></div>
                   <p>Verfügbare Termine werden geladen...</p>
                </div>
-               <div
-                  id="rescheduleTimeslotsContainer"
-                  class="timeslots-container"
-                  style="display: none"
-               ></div>
+               <div id="rescheduleTimeslotsContainer" class="timeslots-container" style="display: none"></div>
             </div>
             <div class="modal-footer">
-               <button
-                  class="btn btn-secondary"
-                  onclick="closeRescheduleModal()"
-               >
-                  Abbrechen
-               </button>
-               <button
-                  class="btn btn-primary"
-                  id="confirmRescheduleBtn"
-                  onclick="confirmReschedule()"
-                  disabled
-               >
+               <button class="btn btn-secondary" onclick="closeRescheduleModal()">Abbrechen</button>
+               <button class="btn btn-primary" id="confirmRescheduleBtn" onclick="confirmReschedule()" disabled>
                   Änderung bestätigen
                </button>
             </div>
@@ -214,41 +242,23 @@
       </div>
 
       <!-- Cancel Modal -->
-      <div
-         id="cancelModal"
-         class="modal"
-         onclick="handleModalBackdropClick(event, 'cancelModal')"
-      >
+      <div id="cancelModal" class="modal" onclick="handleModalBackdropClick(event, 'cancelModal')">
          <div class="modal-content" onclick="event.stopPropagation()">
-            <button
-               class="modal-close"
-               onclick="closeCancelModal()"
-               aria-label="Close"
-            >
-               &times;
-            </button>
+            <button class="modal-close" onclick="closeCancelModal()" aria-label="Close">&times;</button>
             <div class="modal-header">
                <h3>Termine absagen</h3>
             </div>
             <div class="modal-body">
                <div class="alert alert-warning">
-                  <strong>Achtung:</strong> Sie sind dabei, Ihre Teilnahme
-                  vollständig abzusagen.
+                  <strong>Achtung:</strong> Sie sind dabei, Ihre Teilnahme vollständig abzusagen.
                </div>
                <p>Folgende Termine werden storniert:</p>
                <div class="appointment-card" style="margin-top: 15px">
-                  <h4 style="color: #667eea; margin-bottom: 10px">
-                     Haupttermin
-                  </h4>
+                  <h4 style="color: #667eea; margin-bottom: 10px">Haupttermin</h4>
                   <p id="cancelPrimaryInfo"></p>
                </div>
-               <div
-                  class="appointment-card followup-card"
-                  style="margin-top: 15px"
-               >
-                  <h4 style="color: #28a745; margin-bottom: 10px">
-                     Folgetermin
-                  </h4>
+               <div class="appointment-card followup-card" style="margin-top: 15px">
+                  <h4 style="color: #28a745; margin-bottom: 10px">Folgetermin</h4>
                   <p id="cancelFollowupInfo"></p>
                </div>
                <p style="margin-top: 20px; font-weight: 600">
@@ -256,16 +266,8 @@
                </p>
             </div>
             <div class="modal-footer">
-               <button class="btn btn-secondary" onclick="closeCancelModal()">
-                  Abbrechen
-               </button>
-               <button
-                  class="btn btn-danger"
-                  id="confirmCancelBtn"
-                  onclick="confirmCancel()"
-               >
-                  Termine absagen
-               </button>
+               <button class="btn btn-secondary" onclick="closeCancelModal()">Abbrechen</button>
+               <button class="btn btn-danger" id="confirmCancelBtn" onclick="confirmCancel()">Termine absagen</button>
             </div>
          </div>
       </div>

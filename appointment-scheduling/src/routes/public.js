@@ -435,4 +435,36 @@ router.post(
    }),
 );
 
+/**
+ * PUT /api/participant/prescreen
+ * Update participant prescreen/questionnaire data
+ */
+router.put(
+   "/api/participant/prescreen",
+   asyncHandler(async (req, res) => {
+      const { token, prescreenData } = req.body;
+
+      validateRequired(req.body, ["token", "prescreenData"]);
+
+      // Verify token exists and get bookings
+      const bookings = db.getAllBookingsByToken(token);
+
+      if (!bookings || bookings.length === 0) {
+         throw new ValidationError("Invalid token or no bookings found");
+      }
+
+      // Update participant prescreen data
+      db.updateParticipantPrescreen(token, prescreenData);
+
+      Logger.info("Participant prescreen data updated", {
+         token: token.substring(0, 8) + "...",
+      });
+
+      res.json({
+         success: true,
+         message: "Prescreen data updated successfully",
+      });
+   }),
+);
+
 module.exports = router;

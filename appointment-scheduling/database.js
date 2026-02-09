@@ -134,6 +134,11 @@ function initialize() {
          definition: "INTEGER",
       },
       {
+         table: "participants",
+         column: "tu_berlin_employee",
+         definition: "TEXT",
+      },
+      {
          table: "bookings",
          column: "reminder_7day_sent",
          definition: "INTEGER DEFAULT 0",
@@ -218,7 +223,7 @@ function getAdminByUsername(username) {
 function createParticipant(name, email, questionnaireData = {}) {
    const token = crypto.randomBytes(32).toString("hex");
    const stmt = db.prepare(
-      "INSERT INTO participants (name, email, confirmation_token, vision_correction, study_subject, vr_experience, motion_sickness) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO participants (name, email, confirmation_token, vision_correction, study_subject, vr_experience, motion_sickness, tu_berlin_employee) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
    );
    const result = stmt.run(
       name,
@@ -228,6 +233,7 @@ function createParticipant(name, email, questionnaireData = {}) {
       questionnaireData.studySubject || null,
       questionnaireData.vrExperience || null,
       questionnaireData.motionSickness || null,
+      questionnaireData.tuBerlinEmployee || null,
    );
    return {
       id: result.lastInsertRowid,
@@ -238,6 +244,7 @@ function createParticipant(name, email, questionnaireData = {}) {
       studySubject: questionnaireData.studySubject || null,
       vrExperience: questionnaireData.vrExperience || null,
       motionSickness: questionnaireData.motionSickness || null,
+      tuBerlinEmployee: questionnaireData.tuBerlinEmployee || null,
    };
 }
 
@@ -258,9 +265,37 @@ function getAllParticipants() {
     FROM participants p
     LEFT JOIN bookings b ON p.id = b.participant_id AND b.status = 'active'
     LEFT JOIN timeslots t ON b.timeslot_id = t.id
-    ORDER BY p.created_at DESC
   `);
    return stmt.all();
+}
+
+// Update participant prescreen data
+function updateParticipantPrescreen(token, prescreenData) {
+   const participant = db.prepare("SELECT id FROM participants WHERE confirmation_token = ?").get(token);
+   if (!participant) {
+      throw new Error("Participant not found");
+   }
+
+   const stmt = db.prepare(`
+      UPDATE participants
+      SET vision_correction = ?,
+          study_subject = ?,
+          vr_experience = ?,
+          motion_sickness = ?,
+          tu_berlin_employee = ?
+      WHERE id = ?
+   `);
+
+   stmt.run(
+      prescreenData.visionCorrection || null,
+      prescreenData.studySubject || null,
+      prescreenData.vrExperience || null,
+      prescreenData.motionSickness || null,
+      prescreenData.tuBerlinEmployee || null,
+      participant.id,
+   );
+
+   return { success: true };
 }
 
 function deleteParticipant(id) {
@@ -987,9 +1022,14 @@ function getAllBookingsByToken(token) {
       p.name as participant_name,
       p.email as participant_email,
       p.confirmation_token,
+      p.vision_correction,
+      p.study_subject,
+      p.vr_experience,
+      p.motion_sickness,
+      p.tu_berlin_employee,
       t.start_time as timeslot_start,
       t.end_time as timeslot_end,
-      t.location as timeslot_location,
+      t.location,
       t.appointment_type
     FROM bookings b
     JOIN participants p ON b.participant_id = p.id
@@ -1010,9 +1050,11 @@ function getAllBookings() {
       p.study_subject,
       p.vr_experience,
       p.motion_sickness,
+      p.tu_berlin_employee,
       t.start_time,
       t.end_time,
-      t.location
+      t.location,
+      t.appointment_type
     FROM bookings b
     JOIN participants p ON b.participant_id = p.id
     JOIN timeslots t ON b.timeslot_id = t.id
@@ -1297,6 +1339,7 @@ module.exports = {
    createParticipant,
    getParticipantById,
    getAllParticipants,
+   updateParticipantPrescreen,
    deleteParticipant,
    createTimeslot,
    getTimeslotById,

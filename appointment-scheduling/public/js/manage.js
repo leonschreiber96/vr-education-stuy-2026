@@ -1,6 +1,5 @@
 // Calculate BASE_PATH from current URL to support subdirectory deployment
-const BASE_PATH =
-   window.location.pathname.split("/").slice(0, -1).join("/") || "";
+const BASE_PATH = window.location.pathname.split("/").slice(0, -1).join("/") || "";
 const API_BASE = BASE_PATH + "/api";
 
 console.log("Manage page BASE_PATH:", BASE_PATH || "(root)");
@@ -35,6 +34,23 @@ function handleModalBackdropClick(event, modalId) {
       } else if (modalId === "cancelModal") {
          closeCancelModal();
       }
+   }
+}
+
+// Handle TU Berlin employee dropdown change in manage page
+// Shows warning if employee is selected
+function handleTuBerlinEmployeeChangeManage() {
+   const tuBerlinEmployeeSelect = document.getElementById("tuBerlinEmployee");
+   const warningDiv = document.getElementById("tuBerlinEmployeeWarningManage");
+
+   if (!tuBerlinEmployeeSelect || !warningDiv) return;
+
+   const value = tuBerlinEmployeeSelect.value;
+
+   if (value === "yes") {
+      warningDiv.style.display = "block";
+   } else {
+      warningDiv.style.display = "none";
    }
 }
 
@@ -90,10 +106,18 @@ async function loadBookings() {
 // Display bookings
 function displayBookings() {
    // Display participant info
-   document.getElementById("participantName").textContent =
-      primaryBooking.participant_name;
-   document.getElementById("participantEmail").textContent =
-      primaryBooking.participant_email;
+   document.getElementById("participantName").textContent = primaryBooking.participant_name;
+   document.getElementById("participantEmail").textContent = primaryBooking.participant_email;
+
+   // Populate prescreen/questionnaire data
+   document.getElementById("visionCorrection").value = primaryBooking.vision_correction || "";
+   document.getElementById("studySubject").value = primaryBooking.study_subject || "";
+   document.getElementById("vrExperience").value = primaryBooking.vr_experience || "";
+   document.getElementById("motionSickness").value = primaryBooking.motion_sickness || "";
+   document.getElementById("tuBerlinEmployee").value = primaryBooking.tu_berlin_employee || "";
+
+   // Trigger warning display if employee
+   handleTuBerlinEmployeeChangeManage();
 
    // Display primary appointment
    displayAppointment(primaryBooking, "primary");
@@ -104,11 +128,8 @@ function displayBookings() {
    // Calculate and display days between appointments
    const primaryDate = new Date(primaryBooking.timeslot_start);
    const followupDate = new Date(followupBooking.timeslot_start);
-   const daysAfter = Math.round(
-      (followupDate - primaryDate) / (1000 * 60 * 60 * 24),
-   );
-   document.getElementById("followupDaysAfter").textContent =
-      `${daysAfter} Tage nach Haupttermin`;
+   const daysAfter = Math.round((followupDate - primaryDate) / (1000 * 60 * 60 * 24));
+   document.getElementById("followupDaysAfter").textContent = `${daysAfter} Tage nach Haupttermin`;
 }
 
 // Display a single appointment
@@ -137,8 +158,7 @@ function displayAppointment(booking, type) {
    document.getElementById(`${prefix}Time`).textContent = timeStr;
 
    if (booking.timeslot_location) {
-      document.getElementById(`${prefix}Location`).textContent =
-         booking.timeslot_location;
+      document.getElementById(`${prefix}Location`).textContent = booking.timeslot_location;
       document.getElementById(`${prefix}LocationRow`).style.display = "flex";
    }
 }
@@ -156,8 +176,7 @@ async function showRescheduleModal(type) {
    const booking = type === "primary" ? primaryBooking : followupBooking;
 
    // Update modal title
-   const title =
-      type === "primary" ? "Haupttermin ändern" : "Folgetermin ändern";
+   const title = type === "primary" ? "Haupttermin ändern" : "Folgetermin ändern";
    document.getElementById("rescheduleModalTitle").textContent = title;
 
    // Update info box style
@@ -249,8 +268,7 @@ async function loadAvailableTimeslotsForReschedule(type) {
    } catch (error) {
       console.error("Error loading timeslots:", error);
       showAlert("Fehler beim Laden der verfügbaren Termine.", "error");
-      loading.innerHTML =
-         '<p style="color: #dc3545;">Termine konnten nicht geladen werden.</p>';
+      loading.innerHTML = '<p style="color: #dc3545;">Termine konnten nicht geladen werden.</p>';
    }
 }
 
@@ -269,8 +287,7 @@ function displayAvailableTimeslots(type) {
    }
 
    const isFollowup = type === "followup";
-   const primaryDate =
-      type === "followup" ? new Date(primaryBooking.timeslot_start) : null;
+   const primaryDate = type === "followup" ? new Date(primaryBooking.timeslot_start) : null;
 
    container.innerHTML = availableTimeslots
       .map((slot) => {
@@ -293,9 +310,7 @@ function displayAvailableTimeslots(type) {
          })}`;
 
          const slotClass = isFollowup ? "timeslot followup-slot" : "timeslot";
-         const badgeClass = isFollowup
-            ? "badge-followup-slot"
-            : "badge-primary-slot";
+         const badgeClass = isFollowup ? "badge-followup-slot" : "badge-primary-slot";
          const badgeText = isFollowup ? "Folgetermin" : "Haupttermin";
 
          return `
@@ -322,11 +337,9 @@ function selectNewTimeslot(id) {
    }
 
    // Update UI
-   document
-      .querySelectorAll("#rescheduleTimeslotsContainer .timeslot")
-      .forEach((slot) => {
-         slot.classList.remove("selected");
-      });
+   document.querySelectorAll("#rescheduleTimeslotsContainer .timeslot").forEach((slot) => {
+      slot.classList.remove("selected");
+   });
    event.currentTarget.classList.add("selected");
 
    // Check the radio button
@@ -344,11 +357,7 @@ async function confirmReschedule() {
    }
 
    // If rescheduling primary and in step 1, we need to check if followup needs rescheduling
-   if (
-      currentRescheduleType === "primary" &&
-      rescheduleStep === 1 &&
-      !needsFollowupReschedule
-   ) {
+   if (currentRescheduleType === "primary" && rescheduleStep === 1 && !needsFollowupReschedule) {
       const btn = document.getElementById("confirmRescheduleBtn");
       const originalText = btn.textContent;
 
@@ -381,13 +390,10 @@ async function confirmReschedule() {
                btn.textContent = originalText;
 
                // Store the selected new primary timeslot for step 2
-               selectedNewPrimaryTimeslot = availableTimeslots.find(
-                  (s) => s.id === selectedNewTimeslotId,
-               );
+               selectedNewPrimaryTimeslot = availableTimeslots.find((s) => s.id === selectedNewTimeslotId);
 
                // Show message and load followup slots
-               document.getElementById("rescheduleModalTitle").textContent =
-                  "Schritt 2: Neuen Folgetermin wählen";
+               document.getElementById("rescheduleModalTitle").textContent = "Schritt 2: Neuen Folgetermin wählen";
 
                const minDays = data.minDays || 29;
                const maxDays = data.maxDays || 31;
@@ -430,10 +436,7 @@ async function confirmReschedule() {
    btn.textContent = "Wird geändert...";
 
    try {
-      const bookingId =
-         currentRescheduleType === "primary"
-            ? primaryBooking.booking_id
-            : followupBooking.booking_id;
+      const bookingId = currentRescheduleType === "primary" ? primaryBooking.booking_id : followupBooking.booking_id;
 
       const requestBody = {
          token: currentToken,
@@ -510,6 +513,57 @@ function showCancelModal() {
 // Close cancel modal
 function closeCancelModal() {
    document.getElementById("cancelModal").classList.remove("active");
+}
+
+// Update prescreen data
+async function updatePrescreenData() {
+   if (!currentToken) {
+      showAlert("Keine gültige Sitzung gefunden.", "error");
+      return;
+   }
+
+   // Validate required field
+   const tuBerlinEmployee = document.getElementById("tuBerlinEmployee").value;
+   if (!tuBerlinEmployee) {
+      showAlert("Bitte geben Sie an, ob Sie Mitarbeiter*in der TU Berlin sind.", "warning");
+      return;
+   }
+
+   const prescreenData = {
+      visionCorrection: document.getElementById("visionCorrection").value || null,
+      studySubject: document.getElementById("studySubject").value.trim() || null,
+      vrExperience: document.getElementById("vrExperience").value
+         ? parseInt(document.getElementById("vrExperience").value)
+         : null,
+      motionSickness: document.getElementById("motionSickness").value
+         ? parseInt(document.getElementById("motionSickness").value)
+         : null,
+      tuBerlinEmployee: tuBerlinEmployee || null,
+   };
+
+   try {
+      const response = await fetch(`${API_BASE}/participant/prescreen`, {
+         method: "PUT",
+         headers: {
+            "Content-Type": "application/json",
+         },
+         body: JSON.stringify({
+            token: currentToken,
+            prescreenData: prescreenData,
+         }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+         throw new Error(data.error || "Fehler beim Aktualisieren der Daten");
+      }
+
+      showAlert("Fragebogen-Daten erfolgreich aktualisiert!", "success");
+   } catch (error) {
+      console.error("Error updating prescreen data:", error);
+      showAlert(error.message, "error");
+   }
 }
 
 // Confirm cancel (both appointments)
