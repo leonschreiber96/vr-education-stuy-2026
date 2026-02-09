@@ -171,6 +171,17 @@ export const en = {
          max: "Very susceptible",
          hint: "Have you experienced nausea during car rides, on ships, in VR, or during other motion in the past?",
       },
+      tuBerlinEmployee: {
+         label: "Are you a TU Berlin employee? *",
+         placeholder: "Please select...",
+         options: {
+            yes: "Yes",
+            no: "No",
+         },
+         warningTitle: "⚠️ Important Notice for TU Berlin Employees:",
+         warningText:
+            "For legal reasons, TU Berlin employees cannot receive monetary compensation for participation in this study.",
+      },
       submitButton: "Complete Registration",
       submitting: "Submitting registration...",
    },
@@ -223,5 +234,178 @@ export const en = {
       loadingError: "Error loading appointments. Please try again later.",
       registrationError: "Error during registration. Please try again.",
       registrationSuccess: "Registration successful! You will receive a confirmation email shortly.",
+   },
+
+   // Manage page
+   manage: {
+      title: "Manage Appointments",
+      subtitle: "Change or cancel your appointments",
+      tokenInput: {
+         title: "Please enter your confirmation code",
+         description: "This code was sent to you via email.",
+         placeholder: "Enter confirmation code",
+         button: "Load Appointments",
+      },
+      loading: "Loading appointments...",
+      participantInfo: {
+         title: "Your Information",
+         name: "Name:",
+         email: "Email:",
+      },
+      prescreen: {
+         title: "Questionnaire Data",
+         description: "You can update your questionnaire responses here.",
+         visionCorrection: {
+            label: "Vision Correction",
+            placeholder: "Please select",
+            options: {
+               none: "No vision aid",
+               glasses: "Glasses",
+               contacts: "Contact lenses",
+            },
+         },
+         studySubject: {
+            label: "Field of Study",
+            placeholder: "e.g., Computer Science",
+         },
+         vrExperience: {
+            label: "VR Experience (1 = none, 5 = very experienced)",
+            placeholder: "Please select",
+            options: {
+               1: "1 - No experience",
+               2: "2 - Little experience",
+               3: "3 - Some experience",
+               4: "4 - Much experience",
+               5: "5 - Very experienced",
+            },
+         },
+         motionSickness: {
+            label: "Susceptibility to Motion Sickness (1 = not susceptible, 5 = very susceptible)",
+            placeholder: "Please select",
+            options: {
+               1: "1 - Not susceptible",
+               2: "2 - Slightly susceptible",
+               3: "3 - Somewhat susceptible",
+               4: "4 - Quite susceptible",
+               5: "5 - Very susceptible",
+            },
+         },
+         tuBerlinEmployee: {
+            label: "Are you a TU Berlin employee? *",
+            placeholder: "No answer",
+            options: {
+               yes: "Yes",
+               no: "No",
+               none: "No answer",
+            },
+            warningTitle: "⚠️ Important Notice for TU Berlin Employees:",
+            warningText:
+               "For legal reasons, TU Berlin employees cannot receive monetary compensation for participation in this study.",
+         },
+         updateButton: "Update Questionnaire Data",
+         updateSuccess: "Questionnaire data successfully updated!",
+         updateError: "Error updating questionnaire data. Please try again.",
+      },
+      appointments: {
+         primary: {
+            title: "Main Appointment",
+            badge: "Main Appointment",
+            date: "📅 Date:",
+            time: "🕐 Time:",
+            location: "📍 Location:",
+            changeButton: "Change Main Appointment",
+         },
+         followup: {
+            title: "Follow-up Appointment",
+            badge: "Follow-up Appointment",
+            date: "📅 Date:",
+            time: "🕐 Time:",
+            location: "📍 Location:",
+            daysAfter: "⏱️ Time Difference:",
+            changeButton: "Change Follow-up Appointment",
+         },
+      },
+      actions: {
+         title: "Actions",
+         warning:
+            "<strong>Warning:</strong> If you cancel your participation, <strong>both appointments</strong> will be cancelled. This cannot be undone!",
+         cancelButton: "Cancel Both Appointments",
+      },
+      rescheduleModal: {
+         title: "Change Appointment",
+         currentAppointment: "Current Appointment",
+         loading: "Loading available appointments...",
+         cancelButton: "Cancel",
+         confirmButton: "Confirm Change",
+      },
+      cancelModal: {
+         title: "Cancel Appointments",
+         warning: "<strong>Warning:</strong> You are about to cancel your participation completely.",
+         description: "The following appointments will be cancelled:",
+         primaryTitle: "Main Appointment",
+         followupTitle: "Follow-up Appointment",
+         confirmation: "Are you sure you want to cancel both appointments?",
+         cancelButton: "Cancel",
+         confirmButton: "Cancel Appointments",
+      },
+      footer: {
+         home: "Back to Home",
+         admin: "Admin Login",
+      },
+   },
+
+   // Admin page
+   admin: {
+      login: {
+         title: "🔐 Admin Login",
+         username: "Username",
+         password: "Password",
+         button: "Sign In",
+         logout: "Sign Out",
+      },
+      header: {
+         title: "📊 Admin Dashboard",
+      },
+      tabs: {
+         overview: "Overview",
+         participants: "Participants",
+         timeslots: "Time Slots",
+         bookings: "Bookings",
+         calendar: "Calendar",
+         review: "Reviews",
+         logs: "Logs",
+      },
+      bulkEmail: {
+         button: "📧 Bulk Email to All Participants",
+         modalTitle: "Bulk Email to All Participants",
+         warning:
+            "⚠️ This email will be sent to <strong>all registered participants</strong>. Each email contains a personalized link to appointment management.",
+         subject: {
+            label: "Subject (German) *",
+            placeholder: "e.g., Important Information About the Study",
+         },
+         messageDE: {
+            label: "Message (German) *",
+            placeholder: "Your message in German to all participants...",
+            info: "This text will be displayed first in the email.",
+         },
+         messageEN: {
+            label: "Message (English) *",
+            placeholder: "Your message in English to all participants...",
+            info: "This text will be displayed after the German message.",
+         },
+         warning2:
+            "⚠️ <strong>Warning:</strong> Make sure both languages convey the same content. The emails will be sent immediately!",
+         confirmTitle: "Send Bulk Email",
+         confirmMessage: "Are you sure you want to send this email to {{count}} participants?",
+         cancelButton: "Cancel",
+         sendButton: "📧 Send to All Participants",
+         sending: "Sending emails...",
+         successTitle: "Emails Successfully Sent",
+         successMessage: "{{sent}} of {{total}} emails were successfully sent.",
+         errorTitle: "Error Sending Emails",
+         errorMessage: "There were problems sending some emails.",
+         partialSuccess: "{{sent}} successful, {{failed}} failed",
+      },
    },
 };

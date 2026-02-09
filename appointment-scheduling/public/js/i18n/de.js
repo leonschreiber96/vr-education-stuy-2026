@@ -171,6 +171,17 @@ export const de = {
          max: "Sehr anfällig",
          hint: "Haben Sie in der Vergangenheit Übelkeit bei Autofahrten, auf Schiffen, in VR oder bei anderen Bewegungen verspürt?",
       },
+      tuBerlinEmployee: {
+         label: "Sind Sie Mitarbeiter*in der TU Berlin? *",
+         placeholder: "Bitte wählen...",
+         options: {
+            yes: "Ja",
+            no: "Nein",
+         },
+         warningTitle: "⚠️ Wichtiger Hinweis für TU Berlin Mitarbeiter*innen:",
+         warningText:
+            "Aus rechtlichen Gründen können TU Berlin Mitarbeiter*innen keine monetäre Vergütung für die Teilnahme an dieser Studie erhalten.",
+      },
       submitButton: "Anmeldung abschließen",
       submitting: "Anmeldung läuft...",
    },
@@ -223,5 +234,178 @@ export const de = {
       loadingError: "Fehler beim Laden der Termine. Bitte versuchen Sie es später erneut.",
       registrationError: "Fehler bei der Anmeldung. Bitte versuchen Sie es erneut.",
       registrationSuccess: "Anmeldung erfolgreich! Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
+   },
+
+   // Manage page
+   manage: {
+      title: "Termine verwalten",
+      subtitle: "Ändern oder stornieren Sie Ihre Termine",
+      tokenInput: {
+         title: "Bitte geben Sie Ihren Bestätigungscode ein",
+         description: "Dieser Code wurde Ihnen per E-Mail zugeschickt.",
+         placeholder: "Bestätigungscode eingeben",
+         button: "Termine laden",
+      },
+      loading: "Termine werden geladen...",
+      participantInfo: {
+         title: "Ihre Daten",
+         name: "Name:",
+         email: "E-Mail:",
+      },
+      prescreen: {
+         title: "Fragebogen-Daten",
+         description: "Sie können Ihre Angaben aus dem Fragebogen hier aktualisieren.",
+         visionCorrection: {
+            label: "Sehkorrektur",
+            placeholder: "Bitte wählen",
+            options: {
+               none: "Keine Sehhilfe",
+               glasses: "Brille",
+               contacts: "Kontaktlinsen",
+            },
+         },
+         studySubject: {
+            label: "Studienfach",
+            placeholder: "z.B. Informatik",
+         },
+         vrExperience: {
+            label: "VR-Erfahrung (1 = keine, 5 = sehr erfahren)",
+            placeholder: "Bitte wählen",
+            options: {
+               1: "1 - Keine Erfahrung",
+               2: "2 - Wenig Erfahrung",
+               3: "3 - Etwas Erfahrung",
+               4: "4 - Viel Erfahrung",
+               5: "5 - Sehr erfahren",
+            },
+         },
+         motionSickness: {
+            label: "Anfälligkeit für Reiseübelkeit (1 = nicht anfällig, 5 = sehr anfällig)",
+            placeholder: "Bitte wählen",
+            options: {
+               1: "1 - Nicht anfällig",
+               2: "2 - Wenig anfällig",
+               3: "3 - Etwas anfällig",
+               4: "4 - Ziemlich anfällig",
+               5: "5 - Sehr anfällig",
+            },
+         },
+         tuBerlinEmployee: {
+            label: "Sind Sie Mitarbeiter*in der TU Berlin? *",
+            placeholder: "Keine Angabe",
+            options: {
+               yes: "Ja",
+               no: "Nein",
+               none: "Keine Angabe",
+            },
+            warningTitle: "⚠️ Wichtiger Hinweis für TU Berlin Mitarbeiter*innen:",
+            warningText:
+               "Aus rechtlichen Gründen können TU Berlin Mitarbeiter*innen keine monetäre Vergütung für die Teilnahme an dieser Studie erhalten.",
+         },
+         updateButton: "Fragebogen-Daten aktualisieren",
+         updateSuccess: "Fragebogen-Daten erfolgreich aktualisiert!",
+         updateError: "Fehler beim Aktualisieren der Fragebogen-Daten. Bitte versuchen Sie es erneut.",
+      },
+      appointments: {
+         primary: {
+            title: "Haupttermin",
+            badge: "Haupttermin",
+            date: "📅 Datum:",
+            time: "🕐 Uhrzeit:",
+            location: "📍 Ort:",
+            changeButton: "Haupttermin ändern",
+         },
+         followup: {
+            title: "Folgetermin",
+            badge: "Folgetermin",
+            date: "📅 Datum:",
+            time: "🕐 Uhrzeit:",
+            location: "📍 Ort:",
+            daysAfter: "⏱️ Abstand:",
+            changeButton: "Folgetermin ändern",
+         },
+      },
+      actions: {
+         title: "Aktionen",
+         warning:
+            "<strong>Achtung:</strong> Wenn Sie Ihre Teilnahme absagen, werden <strong>beide Termine</strong> storniert. Dies kann nicht rückgängig gemacht werden!",
+         cancelButton: "Beide Termine absagen",
+      },
+      rescheduleModal: {
+         title: "Termin ändern",
+         currentAppointment: "Aktueller Termin",
+         loading: "Verfügbare Termine werden geladen...",
+         cancelButton: "Abbrechen",
+         confirmButton: "Änderung bestätigen",
+      },
+      cancelModal: {
+         title: "Termine absagen",
+         warning: "<strong>Achtung:</strong> Sie sind dabei, Ihre Teilnahme vollständig abzusagen.",
+         description: "Folgende Termine werden storniert:",
+         primaryTitle: "Haupttermin",
+         followupTitle: "Folgetermin",
+         confirmation: "Sind Sie sicher, dass Sie beide Termine absagen möchten?",
+         cancelButton: "Abbrechen",
+         confirmButton: "Termine absagen",
+      },
+      footer: {
+         home: "Zur Startseite",
+         admin: "Admin Login",
+      },
+   },
+
+   // Admin page
+   admin: {
+      login: {
+         title: "🔐 Admin Login",
+         username: "Benutzername",
+         password: "Passwort",
+         button: "Anmelden",
+         logout: "Abmelden",
+      },
+      header: {
+         title: "📊 Admin Dashboard",
+      },
+      tabs: {
+         overview: "Übersicht",
+         participants: "Teilnehmer",
+         timeslots: "Zeitslots",
+         bookings: "Buchungen",
+         calendar: "Kalender",
+         review: "Bewertungen",
+         logs: "Protokoll",
+      },
+      bulkEmail: {
+         button: "📧 Massenmail an alle Teilnehmer",
+         modalTitle: "Massenmail an alle Teilnehmer",
+         warning:
+            "⚠️ Diese E-Mail wird an <strong>alle registrierten Teilnehmer</strong> gesendet. Jede E-Mail enthält einen personalisierten Link zur Terminverwaltung.",
+         subject: {
+            label: "Betreff (Deutsch) *",
+            placeholder: "z.B. Wichtige Information zur Studie",
+         },
+         messageDE: {
+            label: "Nachricht (Deutsch) *",
+            placeholder: "Ihre Nachricht auf Deutsch an alle Teilnehmer...",
+            info: "Dieser Text wird zuerst in der E-Mail angezeigt.",
+         },
+         messageEN: {
+            label: "Nachricht (Englisch) *",
+            placeholder: "Your message in English to all participants...",
+            info: "Dieser Text wird nach der deutschen Nachricht angezeigt.",
+         },
+         warning2:
+            "⚠️ <strong>Warnung:</strong> Stellen Sie sicher, dass beide Sprachen den gleichen Inhalt vermitteln. Die E-Mails werden sofort versendet!",
+         confirmTitle: "Massenmail senden",
+         confirmMessage: "Sind Sie sicher, dass Sie diese E-Mail an {{count}} Teilnehmer senden möchten?",
+         cancelButton: "Abbrechen",
+         sendButton: "📧 An alle Teilnehmer senden",
+         sending: "E-Mails werden versendet...",
+         successTitle: "E-Mails erfolgreich versendet",
+         successMessage: "{{sent}} von {{total}} E-Mails wurden erfolgreich versendet.",
+         errorTitle: "Fehler beim Versenden",
+         errorMessage: "Es gab Probleme beim Versenden einiger E-Mails.",
+         partialSuccess: "{{sent}} erfolgreich, {{failed}} fehlgeschlagen",
+      },
    },
 };
