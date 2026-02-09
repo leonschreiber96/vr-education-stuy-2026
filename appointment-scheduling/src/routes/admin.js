@@ -994,6 +994,90 @@ router.post(
 );
 
 /**
+ * POST /send-bulk-email
+ * Send bulk email to all registered participants
+ */
+router.post(
+   "/send-bulk-email",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { subject, messageDE, messageEN } = req.body;
+
+      validateRequired(req.body, ["subject", "messageDE", "messageEN"]);
+
+      // Get all participants
+      const participants = db.getAllParticipants();
+
+      if (!participants || participants.length === 0) {
+         return res.json({
+            success: false,
+            message: "No participants found",
+            sent: 0,
+            failed: 0,
+         });
+      }
+
+      // Get unique participants (some might have multiple bookings)
+      const uniqueParticipants = [];
+      const seenEmails = new Set();
+
+      for (const participant of participants) {
+         if (!seenEmails.has(participant.email)) {
+            seenEmails.add(participant.email);
+            uniqueParticipants.push(participant);
+         }
+      }
+
+      Logger.info("Bulk email initiated by admin", {
+         subject,
+         recipientCount: uniqueParticipants.length,
+      });
+
+      // Send emails to all participants
+      let sentCount = 0;
+      let failedCount = 0;
+      const errors = [];
+
+      for (const participant of uniqueParticipants) {
+         try {
+            await mailer.sendBulkEmail(
+               participant.email,
+               participant.name,
+               participant.confirmation_token || participant.confirmationToken,
+               subject,
+               messageDE,
+               messageEN,
+            );
+            sentCount++;
+         } catch (error) {
+            failedCount++;
+            errors.push({
+               email: participant.email,
+               error: error.message,
+            });
+            Logger.error("Failed to send bulk email to participant", {
+               email: participant.email,
+               error: error.message,
+            });
+         }
+      }
+
+      Logger.info("Bulk email completed", {
+         sent: sentCount,
+         failed: failedCount,
+      });
+
+      res.json({
+         success: true,
+         message: `Bulk email sent to ${sentCount} participant(s)`,
+         sent: sentCount,
+         failed: failedCount,
+         errors: errors.length > 0 ? errors : undefined,
+      });
+   }),
+);
+
+/**
  * POST /trigger-reminders
  * Manually trigger reminder check (for testing/admin purposes)
  */

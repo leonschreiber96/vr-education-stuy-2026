@@ -648,6 +648,58 @@ async function sendCustomEmail(email, name, subject, message) {
 }
 
 /**
+ * Send bulk email to participant with German and English text
+ * @param {string} email - Participant email
+ * @param {string} name - Participant name
+ * @param {string} confirmationToken - Participant's unique token for managing appointments
+ * @param {string} subject - Email subject (German)
+ * @param {string} messageDE - Message in German
+ * @param {string} messageEN - Message in English
+ * @returns {Promise} sendEmail result
+ */
+async function sendBulkEmail(email, name, confirmationToken, subject, messageDE, messageEN) {
+   const managementUrl = `${buildUrl("manage.html")}?token=${confirmationToken}`;
+
+   const html = `
+    <h2>${subject}</h2>
+    <p>Hallo ${name},</p>
+    ${messageDE
+       .split("\n")
+       .map((line) => `<p>${line}</p>`)
+       .join("")}
+
+    <h3>Termin verwalten:</h3>
+    <p>Sie können Ihre Termine über den folgenden Link einsehen, ändern oder absagen:</p>
+    <p><a href="${managementUrl}">${managementUrl}</a></p>
+
+    <hr>
+    <p style="font-size: 0.9em; color: #666;">
+      Bei Fragen können Sie sich jederzeit per E-Mail an uns wenden.
+    </p>
+
+    <hr style="margin-top: 30px; margin-bottom: 20px; border: none; border-top: 2px solid #e0e0e0;">
+
+    <h2 style="color: #555;">English Version</h2>
+    <p>Hello ${name},</p>
+    ${messageEN
+       .split("\n")
+       .map((line) => `<p>${line}</p>`)
+       .join("")}
+
+    <h3>Manage Your Appointment:</h3>
+    <p>You can view, reschedule, or cancel your appointments using the following link:</p>
+    <p><a href="${managementUrl}">${managementUrl}</a></p>
+
+    <hr>
+    <p style="font-size: 0.9em; color: #666;">
+      If you have any questions, please feel free to contact us via email.
+    </p>
+  `;
+
+   return sendEmail(email, subject, html);
+}
+
+/**
  * Send reminder email for an upcoming appointment
  * @param {string} email - Participant email
  * @param {string} name - Participant name
@@ -921,6 +973,7 @@ module.exports = {
    sendTimeslotUpdateEmail,
    sendTimeslotDeletionEmail,
    sendCustomEmail,
+   sendBulkEmail,
    sendMail,
    sendDailySummaryEmail,
 };

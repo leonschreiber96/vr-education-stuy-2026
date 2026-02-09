@@ -9,8 +9,7 @@ let allData = {
 };
 
 // Base path for API calls (when app is served under a subpath)
-const BASE_PATH =
-   window.location.pathname.split("/").slice(0, -1).join("/") || "";
+const BASE_PATH = window.location.pathname.split("/").slice(0, -1).join("/") || "";
 console.log("Frontend BASE_PATH:", BASE_PATH);
 
 // Pagination state
@@ -94,125 +93,83 @@ window.addEventListener("DOMContentLoaded", async () => {
 
    // Add event listeners for appointment type changes
    const appointmentTypeSelect = document.getElementById("appointmentType");
-   const bulkAppointmentTypeSelect = document.getElementById(
-      "bulkAppointmentType",
-   );
+   const bulkAppointmentTypeSelect = document.getElementById("bulkAppointmentType");
 
    if (appointmentTypeSelect) {
-      appointmentTypeSelect.addEventListener(
-         "change",
-         toggleDualCapacityFields,
-      );
+      appointmentTypeSelect.addEventListener("change", toggleDualCapacityFields);
    }
 
    if (bulkAppointmentTypeSelect) {
-      bulkAppointmentTypeSelect.addEventListener(
-         "change",
-         toggleDualCapacityFields,
-      );
+      bulkAppointmentTypeSelect.addEventListener("change", toggleDualCapacityFields);
    }
 
    // Handle bulk create form submission
-   document
-      .getElementById("bulkCreateForm")
-      .addEventListener("submit", async (e) => {
-         e.preventDefault();
+   document.getElementById("bulkCreateForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-         const startDate = document.getElementById("bulkStartDate").value;
-         const endDate = document.getElementById("bulkEndDate").value;
-         const duration = parseInt(
-            document.getElementById("bulkDuration").value,
-         );
-         const breakTime = parseInt(document.getElementById("bulkBreak").value);
-         const appointmentType = document.getElementById(
-            "bulkAppointmentType",
-         ).value;
-         const capacityInput = document.getElementById("bulkCapacity").value;
-         const capacity = capacityInput ? parseInt(capacityInput) : null;
-         const primaryCapacityInput = document.getElementById(
-            "bulkPrimaryCapacity",
-         ).value;
-         const primaryCapacity = primaryCapacityInput
-            ? parseInt(primaryCapacityInput)
-            : null;
-         const followupCapacityInput = document.getElementById(
-            "bulkFollowupCapacity",
-         ).value;
-         const followupCapacity = followupCapacityInput
-            ? parseInt(followupCapacityInput)
-            : null;
-         const location = document.getElementById("bulkLocation").value;
-         const weekdays = getSelectedWeekdays();
-         const workingHours = getWorkingHours();
+      const startDate = document.getElementById("bulkStartDate").value;
+      const endDate = document.getElementById("bulkEndDate").value;
+      const duration = parseInt(document.getElementById("bulkDuration").value);
+      const breakTime = parseInt(document.getElementById("bulkBreak").value);
+      const appointmentType = document.getElementById("bulkAppointmentType").value;
+      const capacityInput = document.getElementById("bulkCapacity").value;
+      const capacity = capacityInput ? parseInt(capacityInput) : null;
+      const primaryCapacityInput = document.getElementById("bulkPrimaryCapacity").value;
+      const primaryCapacity = primaryCapacityInput ? parseInt(primaryCapacityInput) : null;
+      const followupCapacityInput = document.getElementById("bulkFollowupCapacity").value;
+      const followupCapacity = followupCapacityInput ? parseInt(followupCapacityInput) : null;
+      const location = document.getElementById("bulkLocation").value;
+      const weekdays = getSelectedWeekdays();
+      const workingHours = getWorkingHours();
 
-         if (
-            !startDate ||
-            !endDate ||
-            !duration ||
-            weekdays.length === 0 ||
-            workingHours.length === 0
-         ) {
-            showDashboardAlert(
-               "Bitte füllen Sie alle Pflichtfelder aus.",
-               "error",
-            );
+      if (!startDate || !endDate || !duration || weekdays.length === 0 || workingHours.length === 0) {
+         showDashboardAlert("Bitte füllen Sie alle Pflichtfelder aus.", "error");
+         return;
+      }
+
+      // Validate working hours
+      for (const hours of workingHours) {
+         if (hours.start >= hours.end) {
+            showDashboardAlert("Ungültige Arbeitszeiten: Die Endzeit muss nach der Startzeit liegen.", "error");
             return;
          }
+      }
 
-         // Validate working hours
-         for (const hours of workingHours) {
-            if (hours.start >= hours.end) {
-               showDashboardAlert(
-                  "Ungültige Arbeitszeiten: Die Endzeit muss nach der Startzeit liegen.",
-                  "error",
-               );
-               return;
-            }
+      const btn = document.getElementById("bulkCreateBtn");
+      btn.disabled = true;
+      btn.textContent = "Erstelle Zeitslots...";
+
+      try {
+         const response = await fetch(BASE_PATH + "/api/admin/bulk-timeslots", {
+            method: "POST",
+            headers: {
+               "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+               startDate,
+               endDate,
+               duration: parseInt(duration),
+               breakTime: parseInt(breakTime),
+               appointmentType,
+               capacity,
+               primaryCapacity,
+               followupCapacity,
+               location,
+               weekdays,
+               workingHours,
+            }),
+         });
+
+         const data = await response.json();
+
+         if (!response.ok) {
+            throw new Error(data.error || "Fehler beim Erstellen der Zeitslots");
          }
 
-         const btn = document.getElementById("bulkCreateBtn");
-         btn.disabled = true;
-         btn.textContent = "Erstelle Zeitslots...";
-
-         try {
-            const response = await fetch(
-               BASE_PATH + "/api/admin/bulk-timeslots",
-               {
-                  method: "POST",
-                  headers: {
-                     "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                     startDate,
-                     endDate,
-                     duration: parseInt(duration),
-                     breakTime: parseInt(breakTime),
-                     appointmentType,
-                     capacity,
-                     primaryCapacity,
-                     followupCapacity,
-                     location,
-                     weekdays,
-                     workingHours,
-                  }),
-               },
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-               throw new Error(
-                  data.error || "Fehler beim Erstellen der Zeitslots",
-               );
-            }
-
-            showDashboardAlert(
-               `${data.count} Zeitslots erfolgreich erstellt!`,
-               "success",
-            );
-            document.getElementById("bulkCreateForm").reset();
-            // Reset to default working hours
-            document.getElementById("workingHoursContainer").innerHTML = `
+         showDashboardAlert(`${data.count} Zeitslots erfolgreich erstellt!`, "success");
+         document.getElementById("bulkCreateForm").reset();
+         // Reset to default working hours
+         document.getElementById("workingHoursContainer").innerHTML = `
                <div class="working-hours-row" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                   <input type="time" class="working-hours-start" value="09:00" required style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
                   <span>bis</span>
@@ -220,28 +177,25 @@ window.addEventListener("DOMContentLoaded", async () => {
                   <button type="button" class="btn btn-danger btn-sm" onclick="removeWorkingHoursRow(this)" style="visibility: hidden;">Entfernen</button>
                </div>
             `;
-            // Reset weekday checkboxes to Monday-Friday
-            document
-               .querySelectorAll('input[name="weekday"]')
-               .forEach((cb, index) => {
-                  cb.checked =
-                     parseInt(cb.value) >= 1 && parseInt(cb.value) <= 5;
-               });
-            document.getElementById("bulkPreview").innerHTML = "";
-            // Reload all data and refresh displays
-            await loadBookings();
-            await loadTimeslots();
-            updateStatistics();
-            displayUpcomingAppointments();
-            closeBulkCreateModal();
-         } catch (error) {
-            console.error("Error creating bulk timeslots:", error);
-            showDashboardAlert(error.message, "error");
-         } finally {
-            btn.disabled = false;
-            btn.textContent = "Zeitslots erstellen";
-         }
-      });
+         // Reset weekday checkboxes to Monday-Friday
+         document.querySelectorAll('input[name="weekday"]').forEach((cb, index) => {
+            cb.checked = parseInt(cb.value) >= 1 && parseInt(cb.value) <= 5;
+         });
+         document.getElementById("bulkPreview").innerHTML = "";
+         // Reload all data and refresh displays
+         await loadBookings();
+         await loadTimeslots();
+         updateStatistics();
+         displayUpcomingAppointments();
+         closeBulkCreateModal();
+      } catch (error) {
+         console.error("Error creating bulk timeslots:", error);
+         showDashboardAlert(error.message, "error");
+      } finally {
+         btn.disabled = false;
+         btn.textContent = "Zeitslots erstellen";
+      }
+   });
 });
 
 // Check if user is authenticated
@@ -302,10 +256,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       }
    } catch (error) {
       console.error("Login error:", error);
-      showLoginAlert(
-         "Login fehlgeschlagen. Bitte versuchen Sie es erneut.",
-         "error",
-      );
+      showLoginAlert("Login fehlgeschlagen. Bitte versuchen Sie es erneut.", "error");
    }
 });
 
@@ -337,12 +288,7 @@ function showLoginAlert(message, type = "info") {
 // Show dashboard alert
 function showDashboardAlert(message, type = "info") {
    const container = document.getElementById("dashboardAlert");
-   const alertClass =
-      type === "error"
-         ? "alert-error"
-         : type === "success"
-           ? "alert-success"
-           : "alert-info";
+   const alertClass = type === "error" ? "alert-error" : type === "success" ? "alert-success" : "alert-info";
 
    container.innerHTML = `
        <div class="alert ${alertClass}">
@@ -392,9 +338,7 @@ function switchTab(tabName, buttonElement) {
 // Update review tab badge count
 async function updateReviewTabBadge() {
    try {
-      const response = await fetch(
-         BASE_PATH + "/api/admin/bookings/unreviewed",
-      );
+      const response = await fetch(BASE_PATH + "/api/admin/bookings/unreviewed");
       if (!response.ok) return;
 
       const appointments = await response.json();
@@ -524,9 +468,7 @@ function displayParticipants() {
                          let appointmentTimeDisplay = "-";
                          if (hasBookings) {
                             if (p.bookings.length === 1) {
-                               appointmentTimeDisplay = new Date(
-                                  p.bookings[0].start_time,
-                               ).toLocaleString("de-DE", {
+                               appointmentTimeDisplay = new Date(p.bookings[0].start_time).toLocaleString("de-DE", {
                                   day: "2-digit",
                                   month: "2-digit",
                                   year: "numeric",
@@ -537,16 +479,13 @@ function displayParticipants() {
                                // Multiple bookings - show them all
                                appointmentTimeDisplay = p.bookings
                                   .map((b) =>
-                                     new Date(b.start_time).toLocaleString(
-                                        "de-DE",
-                                        {
-                                           day: "2-digit",
-                                           month: "2-digit",
-                                           year: "numeric",
-                                           hour: "2-digit",
-                                           minute: "2-digit",
-                                        },
-                                     ),
+                                     new Date(b.start_time).toLocaleString("de-DE", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                     }),
                                   )
                                   .join("<br>");
                             }
@@ -559,18 +498,14 @@ function displayParticipants() {
                             contacts: "Kontaktlinsen",
                          };
                          const visionText = p.vision_correction
-                            ? visionMap[p.vision_correction] ||
-                              p.vision_correction
+                            ? visionMap[p.vision_correction] || p.vision_correction
                             : "n/a";
                          const studySubject = p.study_subject || "n/a";
                          const vrExp = p.vr_experience || "n/a";
                          const motionSick = p.motion_sickness || "n/a";
 
                          const hasQuestionnaire =
-                            p.vision_correction ||
-                            p.study_subject ||
-                            p.vr_experience ||
-                            p.motion_sickness;
+                            p.vision_correction || p.study_subject || p.vr_experience || p.motion_sickness;
 
                          // Create detailed questionnaire info for modal
                          const questionnaireDetails = hasQuestionnaire
@@ -634,10 +569,7 @@ async function loadAllTimeslotsForStats() {
          allData.timeslotsForStats = data.timeslots || data;
       }
 
-      console.log(
-         "Loaded timeslots for stats:",
-         allData.timeslotsForStats.length,
-      );
+      console.log("Loaded timeslots for stats:", allData.timeslotsForStats.length);
    } catch (error) {
       console.error("Error loading timeslots for statistics:", error);
       allData.timeslotsForStats = []; // Ensure it's an empty array on error
@@ -695,30 +627,24 @@ function updateTimeslotsPaginationUI() {
    const start = (currentPage - 1) * pageSize + 1;
    const end = Math.min(currentPage * pageSize, timeslotsPagination.total);
 
-   document.getElementById("timeslotsRangeStart").textContent =
-      timeslotsPagination.total > 0 ? start : 0;
+   document.getElementById("timeslotsRangeStart").textContent = timeslotsPagination.total > 0 ? start : 0;
    document.getElementById("timeslotsRangeEnd").textContent = end;
-   document.getElementById("timeslotsTotal").textContent =
-      timeslotsPagination.total;
+   document.getElementById("timeslotsTotal").textContent = timeslotsPagination.total;
    document.getElementById("timeslotsCurrentPage").textContent = currentPage;
    document.getElementById("timeslotsTotalPages").textContent = totalPages;
 
    // Enable/disable buttons
    document.getElementById("timeslotsFirstBtn").disabled = currentPage === 1;
    document.getElementById("timeslotsPrevBtn").disabled = currentPage === 1;
-   document.getElementById("timeslotsNextBtn").disabled =
-      currentPage >= totalPages;
-   document.getElementById("timeslotsLastBtn").disabled =
-      currentPage >= totalPages;
+   document.getElementById("timeslotsNextBtn").disabled = currentPage >= totalPages;
+   document.getElementById("timeslotsLastBtn").disabled = currentPage >= totalPages;
 
    document.getElementById("timeslotsPagination").style.display = "block";
 }
 
 // Navigate timeslots pages
 function goToTimeslotsPage(action) {
-   const totalPages = Math.ceil(
-      timeslotsPagination.total / timeslotsPagination.pageSize,
-   );
+   const totalPages = Math.ceil(timeslotsPagination.total / timeslotsPagination.pageSize);
 
    switch (action) {
       case "first":
@@ -745,8 +671,7 @@ function goToTimeslotsPage(action) {
 // Change timeslots page size
 function changeTimeslotsPageSize() {
    const select = document.getElementById("timeslotsPageSize");
-   timeslotsPagination.pageSize =
-      select.value === "all" ? "all" : parseInt(select.value);
+   timeslotsPagination.pageSize = select.value === "all" ? "all" : parseInt(select.value);
    timeslotsPagination.currentPage = 1;
    loadTimeslots();
 }
@@ -839,125 +764,80 @@ function displayTimeslots() {
                             month: "2-digit",
                             year: "numeric",
                          });
-                         const timeStr = `${startDate.toLocaleTimeString(
-                            "de-DE",
-                            {
-                               hour: "2-digit",
-                               minute: "2-digit",
-                            },
-                         )} - ${endDate.toLocaleTimeString("de-DE", {
+                         const timeStr = `${startDate.toLocaleTimeString("de-DE", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                         })} - ${endDate.toLocaleTimeString("de-DE", {
                             hour: "2-digit",
                             minute: "2-digit",
                          })}`;
 
-                         const activeBookingsForThisSlot =
-                            allData.bookings.filter(
-                               (b) =>
-                                  b.timeslot_id === slot.id &&
-                                  b.status === "active",
-                            );
-                         const hasActiveBookings =
-                            activeBookingsForThisSlot.length > 0;
+                         const activeBookingsForThisSlot = allData.bookings.filter(
+                            (b) => b.timeslot_id === slot.id && b.status === "active",
+                         );
+                         const hasActiveBookings = activeBookingsForThisSlot.length > 0;
 
                          // Determine status based on capacity
-                         let statusBadge =
-                            '<span class="badge badge-success">Verfügbar</span>';
+                         let statusBadge = '<span class="badge badge-success">Verfügbar</span>';
                          let totalCapacity = slot.capacity;
 
                          // Check if timeslot has variant capacities and what type it currently is
-                         const hasVariantCapacities =
-                            slot.primary_capacity !== null ||
-                            slot.followup_capacity !== null;
+                         const hasVariantCapacities = slot.primary_capacity !== null || slot.followup_capacity !== null;
 
                          if (hasVariantCapacities) {
-                            const primaryBookings =
-                               activeBookingsForThisSlot.filter(
-                                  (b) => !b.is_followup,
-                               ).length;
-                            const followupBookings =
-                               activeBookingsForThisSlot.filter(
-                                  (b) => b.is_followup,
-                               ).length;
-                            const primaryCap =
-                               slot.primary_capacity !== null
-                                  ? slot.primary_capacity
-                                  : Infinity;
-                            const followupCap =
-                               slot.followup_capacity !== null
-                                  ? slot.followup_capacity
-                                  : Infinity;
+                            const primaryBookings = activeBookingsForThisSlot.filter((b) => !b.is_followup).length;
+                            const followupBookings = activeBookingsForThisSlot.filter((b) => b.is_followup).length;
+                            const primaryCap = slot.primary_capacity !== null ? slot.primary_capacity : Infinity;
+                            const followupCap = slot.followup_capacity !== null ? slot.followup_capacity : Infinity;
 
                             // Check status based on current appointment_type
                             if (slot.appointment_type === "primary") {
                                // Only consider primary capacity
                                if (primaryBookings >= primaryCap) {
-                                  statusBadge =
-                                     '<span class="badge badge-danger">Ausgebucht</span>';
+                                  statusBadge = '<span class="badge badge-danger">Ausgebucht</span>';
                                } else if (primaryBookings > 0) {
-                                  statusBadge =
-                                     '<span class="badge badge-warning">Teilweise gebucht</span>';
+                                  statusBadge = '<span class="badge badge-warning">Teilweise gebucht</span>';
                                }
                             } else if (slot.appointment_type === "followup") {
                                // Only consider followup capacity
                                if (followupBookings >= followupCap) {
-                                  statusBadge =
-                                     '<span class="badge badge-danger">Ausgebucht</span>';
+                                  statusBadge = '<span class="badge badge-danger">Ausgebucht</span>';
                                } else if (followupBookings > 0) {
-                                  statusBadge =
-                                     '<span class="badge badge-warning">Teilweise gebucht</span>';
+                                  statusBadge = '<span class="badge badge-warning">Teilweise gebucht</span>';
                                }
                             } else {
                                // Still dual - check both capacities
-                               if (
-                                  primaryBookings >= primaryCap &&
-                                  followupBookings >= followupCap
-                               ) {
-                                  statusBadge =
-                                     '<span class="badge badge-danger">Ausgebucht</span>';
-                               } else if (
-                                  primaryBookings > 0 ||
-                                  followupBookings > 0
-                               ) {
-                                  statusBadge =
-                                     '<span class="badge badge-warning">Teilweise gebucht</span>';
+                               if (primaryBookings >= primaryCap && followupBookings >= followupCap) {
+                                  statusBadge = '<span class="badge badge-danger">Ausgebucht</span>';
+                               } else if (primaryBookings > 0 || followupBookings > 0) {
+                                  statusBadge = '<span class="badge badge-warning">Teilweise gebucht</span>';
                                }
                             }
                          } else if (totalCapacity) {
                             // Singular capacity
-                            if (
-                               activeBookingsForThisSlot.length >= totalCapacity
-                            ) {
-                               statusBadge =
-                                  '<span class="badge badge-danger">Ausgebucht</span>';
+                            if (activeBookingsForThisSlot.length >= totalCapacity) {
+                               statusBadge = '<span class="badge badge-danger">Ausgebucht</span>';
                             } else if (activeBookingsForThisSlot.length > 0) {
-                               statusBadge =
-                                  '<span class="badge badge-warning">Teilweise gebucht</span>';
+                               statusBadge = '<span class="badge badge-warning">Teilweise gebucht</span>';
                             }
                          } else {
                             // No capacity limit
                             if (hasActiveBookings) {
-                               statusBadge =
-                                  '<span class="badge badge-info">Gebucht</span>';
+                               statusBadge = '<span class="badge badge-info">Gebucht</span>';
                             }
                          }
 
                          let typeBadge = "";
                          if (slot.appointment_type === "primary") {
-                            typeBadge =
-                               '<span class="badge badge-info">Haupttermin</span>';
+                            typeBadge = '<span class="badge badge-info">Haupttermin</span>';
                          } else if (slot.appointment_type === "followup") {
-                            typeBadge =
-                               '<span class="badge badge-success">Folgetermin</span>';
+                            typeBadge = '<span class="badge badge-success">Folgetermin</span>';
                          } else if (slot.appointment_type === "dual") {
-                            typeBadge =
-                               '<span class="badge badge-warning">Dual</span>';
+                            typeBadge = '<span class="badge badge-warning">Dual</span>';
                          }
 
                          // Show original type if it's different (e.g., was dual, now primary)
-                         if (
-                            slot.original_type &&
-                            slot.original_type !== slot.appointment_type
-                         ) {
+                         if (slot.original_type && slot.original_type !== slot.appointment_type) {
                             typeBadge +=
                                ' <span class="badge badge-secondary" style="font-size: 0.85em;">war: ' +
                                (slot.original_type === "dual"
@@ -969,35 +849,20 @@ function displayTimeslots() {
                          }
 
                          const activeBookingsForSlot = allData.bookings.filter(
-                            (b) =>
-                               b.timeslot_id === slot.id &&
-                               b.status === "active",
+                            (b) => b.timeslot_id === slot.id && b.status === "active",
                          );
 
                          // Show capacity - handle dual appointments with variant capacities
                          let capacityStr;
                          const hasVariantCapacitiesForDisplay =
-                            slot.primary_capacity !== null ||
-                            slot.followup_capacity !== null;
+                            slot.primary_capacity !== null || slot.followup_capacity !== null;
 
                          if (hasVariantCapacitiesForDisplay) {
-                            const primaryBookings =
-                               activeBookingsForSlot.filter(
-                                  (b) => !b.is_followup,
-                               ).length;
-                            const followupBookings =
-                               activeBookingsForSlot.filter(
-                                  (b) => b.is_followup,
-                               ).length;
+                            const primaryBookings = activeBookingsForSlot.filter((b) => !b.is_followup).length;
+                            const followupBookings = activeBookingsForSlot.filter((b) => b.is_followup).length;
 
-                            const primaryCap =
-                               slot.primary_capacity !== null
-                                  ? slot.primary_capacity
-                                  : "∞";
-                            const followupCap =
-                               slot.followup_capacity !== null
-                                  ? slot.followup_capacity
-                                  : "∞";
+                            const primaryCap = slot.primary_capacity !== null ? slot.primary_capacity : "∞";
+                            const followupCap = slot.followup_capacity !== null ? slot.followup_capacity : "∞";
 
                             // Show capacity based on current appointment_type
                             if (slot.appointment_type === "primary") {
@@ -1027,9 +892,7 @@ function displayTimeslots() {
                          if (activeBookingsForSlot.length > 0) {
                             if (activeBookingsForSlot.length <= 2) {
                                // Show names directly if 2 or fewer
-                               participantsList = activeBookingsForSlot
-                                  .map((b) => `${b.name}`)
-                                  .join(", ");
+                               participantsList = activeBookingsForSlot.map((b) => `${b.name}`).join(", ");
                             } else {
                                // Show link to modal if more than 2
                                participantsList = `<a href="#" onclick="showTimeslotParticipantsModal(${slot.id}); return false;" style="color: #667eea; text-decoration: underline;">
@@ -1152,9 +1015,7 @@ function displayBookings() {
                             hour: "2-digit",
                             minute: "2-digit",
                          });
-                         const createdDate = new Date(
-                            booking.created_at,
-                         ).toLocaleDateString("de-DE");
+                         const createdDate = new Date(booking.created_at).toLocaleDateString("de-DE");
 
                          const statusBadge =
                             booking.status === "active"
@@ -1187,8 +1048,7 @@ function displayBookings() {
 // Load logs
 async function loadLogs(page = null) {
    const container = document.getElementById("logsContainer");
-   container.innerHTML =
-      '<div class="loading"><div class="loading-spinner"></div><p>Lade Protokoll...</p></div>';
+   container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Lade Protokoll...</p></div>';
 
    try {
       if (page !== null) {
@@ -1220,8 +1080,7 @@ async function loadLogs(page = null) {
       updateLogsPaginationUI();
    } catch (error) {
       console.error("Error loading logs:", error);
-      container.innerHTML =
-         '<p style="color: #dc3545; text-align: center;">Fehler beim Laden des Protokolls.</p>';
+      container.innerHTML = '<p style="color: #dc3545; text-align: center;">Fehler beim Laden des Protokolls.</p>';
    }
 }
 
@@ -1238,8 +1097,7 @@ function updateLogsPaginationUI() {
    const start = (currentPage - 1) * pageSize + 1;
    const end = Math.min(currentPage * pageSize, logsPagination.total);
 
-   document.getElementById("logsRangeStart").textContent =
-      logsPagination.total > 0 ? start : 0;
+   document.getElementById("logsRangeStart").textContent = logsPagination.total > 0 ? start : 0;
    document.getElementById("logsRangeEnd").textContent = end;
    document.getElementById("logsTotal").textContent = logsPagination.total;
    document.getElementById("logsCurrentPage").textContent = currentPage;
@@ -1283,8 +1141,7 @@ function goToLogsPage(action) {
 // Change logs page size
 function changeLogsPageSize() {
    const select = document.getElementById("logsPageSize");
-   logsPagination.pageSize =
-      select.value === "all" ? "all" : parseInt(select.value);
+   logsPagination.pageSize = select.value === "all" ? "all" : parseInt(select.value);
    logsPagination.currentPage = 1;
    loadLogs();
 }
@@ -1321,23 +1178,18 @@ function updateStatistics() {
 
    // Update participant count (count unique participants)
    const uniqueParticipants = new Set(allData.participants.map((p) => p.id));
-   document.getElementById("participantCount").textContent =
-      uniqueParticipants.size;
+   document.getElementById("participantCount").textContent = uniqueParticipants.size;
 
    // Calculate timeslot statistics using all timeslots (not paginated)
    // Safeguard: ensure timeslotsForStats exists and is an array
-   const timeslotsForStats = Array.isArray(allData.timeslotsForStats)
-      ? allData.timeslotsForStats
-      : [];
+   const timeslotsForStats = Array.isArray(allData.timeslotsForStats) ? allData.timeslotsForStats : [];
 
    // Count unique timeslots (may have duplicates if multiple bookings per slot)
    const uniqueTimeslotIds = new Set(timeslotsForStats.map((t) => t.id));
    const totalSlots = uniqueTimeslotIds.size;
 
    // Count unique timeslots that have bookings
-   const timeslotsWithBookings = new Set(
-      timeslotsForStats.filter((t) => t.booking_id).map((t) => t.id),
-   );
+   const timeslotsWithBookings = new Set(timeslotsForStats.filter((t) => t.booking_id).map((t) => t.id));
    const bookedSlots = timeslotsWithBookings.size;
    const availableSlots = totalSlots - bookedSlots;
 
@@ -1348,8 +1200,7 @@ function updateStatistics() {
       timeslotsCount: timeslotsForStats.length,
    });
 
-   document.getElementById("slotsInfo").textContent =
-      `${bookedSlots} / ${totalSlots}`;
+   document.getElementById("slotsInfo").textContent = `${bookedSlots} / ${totalSlots}`;
    document.getElementById("availableInfo").textContent = availableSlots;
 
    // Calculate participant statistics with result status
@@ -1406,17 +1257,9 @@ function updateStatistics() {
             const followupResult = bookings.followup.resultStatus;
 
             // Both appointments finished
-            if (
-               primaryPast &&
-               followupPast &&
-               primaryResult &&
-               followupResult
-            ) {
+            if (primaryPast && followupPast && primaryResult && followupResult) {
                // Check for no-shows
-               if (
-                  primaryResult === "no_show" ||
-                  followupResult === "no_show"
-               ) {
+               if (primaryResult === "no_show" || followupResult === "no_show") {
                   // Exclude no-shows from "both finished"
                } else {
                   // Both finished (not no-shows)
@@ -1464,10 +1307,7 @@ function updateStatistics() {
                }
 
                // Check for data issues in primary
-               if (
-                  primaryResult === "unusable_data" ||
-                  primaryResult === "issues_arised"
-               ) {
+               if (primaryResult === "unusable_data" || primaryResult === "issues_arised") {
                   dataIssues++;
                   dataIssuesList.push({
                      name: participant.name,
@@ -1492,10 +1332,7 @@ function updateStatistics() {
                });
 
                // Check for data issues
-               if (
-                  primaryResult === "unusable_data" ||
-                  primaryResult === "issues_arised"
-               ) {
+               if (primaryResult === "unusable_data" || primaryResult === "issues_arised") {
                   dataIssues++;
                   dataIssuesList.push({
                      name: participant.name,
@@ -1520,18 +1357,10 @@ function updateStatistics() {
    document.getElementById("dataIssues").textContent = dataIssues;
 
    // Setup tooltips for status cards
-   setupStatusTooltips(
-      bothFinishedList,
-      waitingForSecondList,
-      noShowSecondList,
-      dataIssuesList,
-   );
+   setupStatusTooltips(bothFinishedList, waitingForSecondList, noShowSecondList, dataIssuesList);
 
    // Update progress bar - just show completed participants
-   const totalPercentage = Math.min(
-      100,
-      Math.round((totalCompleted / participantGoal) * 100),
-   );
+   const totalPercentage = Math.min(100, Math.round((totalCompleted / participantGoal) * 100));
 
    const progressBar = document.getElementById("progressBarFillSuccess");
    const progressText = document.getElementById("progressPercentage");
@@ -1546,12 +1375,7 @@ function updateStatistics() {
 }
 
 // Function to setup tooltips for status cards
-function setupStatusTooltips(
-   bothFinishedList,
-   waitingForSecondList,
-   noShowSecondList,
-   dataIssuesList,
-) {
+function setupStatusTooltips(bothFinishedList, waitingForSecondList, noShowSecondList, dataIssuesList) {
    // Helper to create uniform tooltip
    function createTooltip(cardId, content) {
       const card = document.getElementById(cardId);
@@ -1606,12 +1430,7 @@ function setupStatusTooltips(
          tooltip.style.display = "none";
       });
 
-      console.log(
-         "Created tooltip for:",
-         cardId,
-         "with content length:",
-         content.length,
-      );
+      console.log("Created tooltip for:", cardId, "with content length:", content.length);
    }
 
    // Helper to get compact status badge
@@ -1684,9 +1503,7 @@ function setupStatusTooltips(
 
       let content = '<div style="font-size:11px;">';
       uniqueList.forEach((p, idx) => {
-         if (idx > 0)
-            content +=
-               '<hr style="margin:4px 0;border:none;border-top:1px solid #e5e7eb;">';
+         if (idx > 0) content += '<hr style="margin:4px 0;border:none;border-top:1px solid #e5e7eb;">';
          content += `<div style="margin-bottom:2px;display:flex;gap:6px;align-items:center;">
                <span style="font-weight:600;color:#111827;">${p.name}</span>
                ${getCompactBadge(p.primaryStatus, p.primaryPast)}
@@ -1702,15 +1519,12 @@ function setupStatusTooltips(
 function displayUpcomingAppointments() {
    const container = document.getElementById("upcomingAppointments");
    const upcoming = allData.bookings
-      .filter(
-         (b) => b.status === "active" && new Date(b.start_time) > new Date(),
-      )
+      .filter((b) => b.status === "active" && new Date(b.start_time) > new Date())
       .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
       .slice(0, 5);
 
    if (upcoming.length === 0) {
-      container.innerHTML =
-         '<p style="text-align: center; color: #666;">Keine bevorstehenden Termine.</p>';
+      container.innerHTML = '<p style="text-align: center; color: #666;">Keine bevorstehenden Termine.</p>';
       return;
    }
 
@@ -1728,9 +1542,7 @@ function displayUpcomingAppointments() {
                <tbody>
                    ${upcoming
                       .map((booking) => {
-                         const dateTimeStr = new Date(
-                            booking.start_time,
-                         ).toLocaleString("de-DE", {
+                         const dateTimeStr = new Date(booking.start_time).toLocaleString("de-DE", {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
@@ -1770,8 +1582,7 @@ function editTimeslot(id) {
    const slot = allData.timeslots.find((s) => s.id === id);
    if (!slot) return;
 
-   document.getElementById("timeslotModalTitle").textContent =
-      "Zeitslot bearbeiten";
+   document.getElementById("timeslotModalTitle").textContent = "Zeitslot bearbeiten";
    document.getElementById("timeslotId").value = slot.id;
 
    // Format datetime for input (datetime-local expects local time, not UTC)
@@ -1794,13 +1605,10 @@ function editTimeslot(id) {
    document.getElementById("startTime").value = startTime;
    document.getElementById("endTime").value = endTime;
    document.getElementById("location").value = slot.location || "";
-   document.getElementById("appointmentType").value =
-      slot.appointment_type || "dual";
+   document.getElementById("appointmentType").value = slot.appointment_type || "dual";
    document.getElementById("capacity").value = slot.capacity || "";
-   document.getElementById("primaryCapacity").value =
-      slot.primary_capacity || "";
-   document.getElementById("followupCapacity").value =
-      slot.followup_capacity || "";
+   document.getElementById("primaryCapacity").value = slot.primary_capacity || "";
+   document.getElementById("followupCapacity").value = slot.followup_capacity || "";
 
    // Show/hide dual capacity fields based on appointment type
    toggleDualCapacityFields();
@@ -1812,9 +1620,7 @@ function editTimeslot(id) {
 function toggleDualCapacityFields() {
    const appointmentType = document.getElementById("appointmentType").value;
    const dualFields = document.getElementById("dualCapacityFields");
-   const bulkAppointmentType = document.getElementById(
-      "bulkAppointmentType",
-   )?.value;
+   const bulkAppointmentType = document.getElementById("bulkAppointmentType")?.value;
    const bulkDualFields = document.getElementById("bulkDualCapacityFields");
 
    if (dualFields) {
@@ -1822,8 +1628,7 @@ function toggleDualCapacityFields() {
    }
 
    if (bulkDualFields && bulkAppointmentType) {
-      bulkDualFields.style.display =
-         bulkAppointmentType === "dual" ? "block" : "none";
+      bulkDualFields.style.display = bulkAppointmentType === "dual" ? "block" : "none";
    }
 }
 
@@ -1861,16 +1666,10 @@ async function saveTimeslot() {
    const appointmentType = document.getElementById("appointmentType").value;
    const capacityInput = document.getElementById("capacity").value;
    const capacity = capacityInput ? parseInt(capacityInput) : null;
-   const primaryCapacityInput =
-      document.getElementById("primaryCapacity").value;
-   const primaryCapacity = primaryCapacityInput
-      ? parseInt(primaryCapacityInput)
-      : null;
-   const followupCapacityInput =
-      document.getElementById("followupCapacity").value;
-   const followupCapacity = followupCapacityInput
-      ? parseInt(followupCapacityInput)
-      : null;
+   const primaryCapacityInput = document.getElementById("primaryCapacity").value;
+   const primaryCapacity = primaryCapacityInput ? parseInt(primaryCapacityInput) : null;
+   const followupCapacityInput = document.getElementById("followupCapacity").value;
+   const followupCapacity = followupCapacityInput ? parseInt(followupCapacityInput) : null;
 
    if (!startTime || !endTime) {
       showDashboardAlert("Bitte füllen Sie alle Pflichtfelder aus.", "error");
@@ -1882,9 +1681,7 @@ async function saveTimeslot() {
    btn.textContent = "Wird gespeichert...";
 
    try {
-      const url = id
-         ? BASE_PATH + `/api/admin/timeslots/${id}`
-         : BASE_PATH + "/api/admin/timeslots";
+      const url = id ? BASE_PATH + `/api/admin/timeslots/${id}` : BASE_PATH + "/api/admin/timeslots";
       const method = id ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -1911,9 +1708,7 @@ async function saveTimeslot() {
 
       closeTimeslotModal();
 
-      let message = id
-         ? "Zeitslot erfolgreich aktualisiert"
-         : "Zeitslot erfolgreich erstellt";
+      let message = id ? "Zeitslot erfolgreich aktualisiert" : "Zeitslot erfolgreich erstellt";
 
       if (id && data.notifiedParticipants > 0) {
          message += ` (${data.notifiedParticipants} Teilnehmer über Änderungen benachrichtigt)`;
@@ -1937,9 +1732,7 @@ async function saveTimeslot() {
 // Cancel all bookings for a timeslot
 async function cancelBookingsForTimeslot(id) {
    const slot = allData.timeslots.find((s) => s.id === id);
-   const affectedBookings = allData.bookings.filter(
-      (b) => b.timeslot_id === id && b.status === "active",
-   );
+   const affectedBookings = allData.bookings.filter((b) => b.timeslot_id === id && b.status === "active");
 
    const confirmMessage = `Möchten Sie alle ${affectedBookings.length} Buchung(en) für diesen Zeitslot stornieren?\n\nDie Teilnehmer werden per E-Mail benachrichtigt und der Zeitslot wird wieder verfügbar.`;
 
@@ -1948,12 +1741,9 @@ async function cancelBookingsForTimeslot(id) {
    }
 
    try {
-      const response = await fetch(
-         BASE_PATH + `/api/admin/timeslots/${id}/cancel-bookings`,
-         {
-            method: "POST",
-         },
-      );
+      const response = await fetch(BASE_PATH + `/api/admin/timeslots/${id}/cancel-bookings`, {
+         method: "POST",
+      });
 
       const data = await response.json();
 
@@ -1981,12 +1771,9 @@ async function cancelBookingsForTimeslot(id) {
 // Toggle featured status for a timeslot
 async function toggleFeaturedTimeslot(id) {
    try {
-      const response = await fetch(
-         BASE_PATH + `/api/admin/timeslots/${id}/toggle-featured`,
-         {
-            method: "POST",
-         },
-      );
+      const response = await fetch(BASE_PATH + `/api/admin/timeslots/${id}/toggle-featured`, {
+         method: "POST",
+      });
 
       const data = await response.json();
 
@@ -2034,16 +1821,12 @@ async function deleteTimeslot(id) {
 // Show bulk edit modal
 function showBulkEditModal() {
    if (selectedTimeslots.size === 0) {
-      showDashboardAlert(
-         "Bitte wählen Sie mindestens einen Zeitslot aus.",
-         "warning",
-      );
+      showDashboardAlert("Bitte wählen Sie mindestens einen Zeitslot aus.", "warning");
       return;
    }
 
    // Update count in modal
-   document.getElementById("bulkEditCount").textContent =
-      selectedTimeslots.size;
+   document.getElementById("bulkEditCount").textContent = selectedTimeslots.size;
 
    // Reset form
    document.getElementById("bulkEditForm").reset();
@@ -2060,26 +1843,18 @@ function closeBulkEditModal() {
 // Apply bulk edit changes
 async function applyBulkEdit() {
    if (selectedTimeslots.size === 0) {
-      showDashboardAlert(
-         "Bitte wählen Sie mindestens einen Zeitslot aus.",
-         "warning",
-      );
+      showDashboardAlert("Bitte wählen Sie mindestens einen Zeitslot aus.", "warning");
       return;
    }
 
    const location = document.getElementById("bulkEditLocation").value.trim();
-   const appointmentType = document.getElementById(
-      "bulkEditAppointmentType",
-   ).value;
+   const appointmentType = document.getElementById("bulkEditAppointmentType").value;
    const capacityInput = document.getElementById("bulkEditCapacity").value;
    const capacity = capacityInput ? parseInt(capacityInput) : null;
 
    // Check if at least one field is being updated
    if (!location && !appointmentType && capacity === null) {
-      showDashboardAlert(
-         "Bitte geben Sie mindestens ein Feld zum Aktualisieren an.",
-         "warning",
-      );
+      showDashboardAlert("Bitte geben Sie mindestens ein Feld zum Aktualisieren an.", "warning");
       return;
    }
 
@@ -2101,19 +1876,16 @@ async function applyBulkEdit() {
    btn.innerHTML = "Wird aktualisiert...";
 
    try {
-      const response = await fetch(
-         BASE_PATH + "/api/admin/timeslots/bulk-edit",
-         {
-            method: "PUT",
-            headers: {
-               "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-               ids: Array.from(selectedTimeslots),
-               updates: updates,
-            }),
+      const response = await fetch(BASE_PATH + "/api/admin/timeslots/bulk-edit", {
+         method: "PUT",
+         headers: {
+            "Content-Type": "application/json",
          },
-      );
+         body: JSON.stringify({
+            ids: Array.from(selectedTimeslots),
+            updates: updates,
+         }),
+      });
 
       const data = await response.json();
 
@@ -2155,10 +1927,7 @@ async function applyBulkEdit() {
 // Bulk delete selected timeslots
 async function bulkDeleteSelectedTimeslots() {
    if (selectedTimeslots.size === 0) {
-      showDashboardAlert(
-         "Bitte wählen Sie mindestens einen Zeitslot aus.",
-         "warning",
-      );
+      showDashboardAlert("Bitte wählen Sie mindestens einen Zeitslot aus.", "warning");
       return;
    }
 
@@ -2221,8 +1990,7 @@ function addWorkingHoursRow() {
    const container = document.getElementById("workingHoursContainer");
    const row = document.createElement("div");
    row.className = "working-hours-row";
-   row.style.cssText =
-      "display: flex; gap: 10px; align-items: center; margin-bottom: 10px;";
+   row.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 10px;";
    row.innerHTML = `
       <input type="time" class="working-hours-start" value="09:00" required style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
       <span>bis</span>
@@ -2265,9 +2033,7 @@ function getWorkingHours() {
 }
 
 function getSelectedWeekdays() {
-   const checkboxes = document.querySelectorAll(
-      'input[name="weekday"]:checked',
-   );
+   const checkboxes = document.querySelectorAll('input[name="weekday"]:checked');
    return Array.from(checkboxes).map((cb) => parseInt(cb.value));
 }
 
@@ -2279,13 +2045,7 @@ function previewBulkCreate() {
    const weekdays = getSelectedWeekdays();
    const workingHours = getWorkingHours();
 
-   if (
-      !startDate ||
-      !endDate ||
-      !duration ||
-      weekdays.length === 0 ||
-      workingHours.length === 0
-   ) {
+   if (!startDate || !endDate || !duration || weekdays.length === 0 || workingHours.length === 0) {
       showDashboardAlert("Bitte füllen Sie alle Pflichtfelder aus.", "warning");
       return;
    }
@@ -2293,10 +2053,7 @@ function previewBulkCreate() {
    // Validate working hours
    for (const hours of workingHours) {
       if (hours.start >= hours.end) {
-         showDashboardAlert(
-            "Ungültige Arbeitszeiten: Die Endzeit muss nach der Startzeit liegen.",
-            "warning",
-         );
+         showDashboardAlert("Ungültige Arbeitszeiten: Die Endzeit muss nach der Startzeit liegen.", "warning");
          return;
       }
    }
@@ -2327,9 +2084,7 @@ function previewBulkCreate() {
 
             // Generate slots within this working period
             while (currentTime < workingEnd) {
-               const slotEnd = new Date(
-                  currentTime.getTime() + duration * 60000,
-               );
+               const slotEnd = new Date(currentTime.getTime() + duration * 60000);
 
                if (slotEnd <= workingEnd) {
                   slots.push({
@@ -2355,15 +2110,7 @@ function previewBulkCreate() {
       return;
    }
 
-   const weekdayNames = [
-      "Sonntag",
-      "Montag",
-      "Dienstag",
-      "Mittwoch",
-      "Donnerstag",
-      "Freitag",
-      "Samstag",
-   ];
+   const weekdayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
    const selectedWeekdayNames = weekdays.map((d) => weekdayNames[d]).join(", ");
 
    previewContainer.innerHTML = `
@@ -2424,8 +2171,7 @@ function showQuestionnaireModal(participantName, questionnaireDetails) {
       document.body.insertAdjacentHTML("beforeend", modalHtml);
    }
 
-   document.getElementById("questionnaireModalTitle").textContent =
-      `Fragebogen - ${participantName}`;
+   document.getElementById("questionnaireModalTitle").textContent = `Fragebogen - ${participantName}`;
    document.getElementById("questionnaireModalContent").innerHTML = `
       <div style="line-height: 1.8;">
          ${questionnaireDetails}
@@ -2447,9 +2193,7 @@ function showTimeslotParticipantsModal(timeslotId) {
    const slot = allData.timeslots.find((s) => s.id === timeslotId);
    if (!slot) return;
 
-   const bookings = allData.bookings.filter(
-      (b) => b.timeslot_id === timeslotId && b.status === "active",
-   );
+   const bookings = allData.bookings.filter((b) => b.timeslot_id === timeslotId && b.status === "active");
 
    if (bookings.length === 0) return;
 
@@ -2480,8 +2224,7 @@ function showTimeslotParticipantsModal(timeslotId) {
    });
    const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 
-   document.getElementById("timeslotParticipantsModalTitle").textContent =
-      `Teilnehmer - ${dateStr}, ${timeStr}`;
+   document.getElementById("timeslotParticipantsModalTitle").textContent = `Teilnehmer - ${dateStr}, ${timeStr}`;
 
    // Format questionnaire data
    const visionMap = {
@@ -2492,11 +2235,7 @@ function showTimeslotParticipantsModal(timeslotId) {
 
    const participantsHtml = bookings
       .map((b) => {
-         const hasQuestionnaire =
-            b.vision_correction ||
-            b.study_subject ||
-            b.vr_experience ||
-            b.motion_sickness;
+         const hasQuestionnaire = b.vision_correction || b.study_subject || b.vr_experience || b.motion_sickness;
          let questionnaireInfo = "";
 
          if (hasQuestionnaire) {
@@ -2524,8 +2263,7 @@ function showTimeslotParticipantsModal(timeslotId) {
       })
       .join("");
 
-   document.getElementById("timeslotParticipantsModalContent").innerHTML =
-      participantsHtml;
+   document.getElementById("timeslotParticipantsModalContent").innerHTML = participantsHtml;
    document.getElementById("timeslotParticipantsModal").classList.add("active");
 }
 
@@ -2546,12 +2284,9 @@ async function deleteParticipant(id, name) {
    }
 
    try {
-      const response = await fetch(
-         `${BASE_PATH}/api/admin/participants/${id}`,
-         {
-            method: "DELETE",
-         },
-      );
+      const response = await fetch(`${BASE_PATH}/api/admin/participants/${id}`, {
+         method: "DELETE",
+      });
 
       const data = await response.json();
 
@@ -2559,10 +2294,7 @@ async function deleteParticipant(id, name) {
          throw new Error(data.error || "Fehler beim Löschen");
       }
 
-      showDashboardAlert(
-         `Teilnehmer "${name}" erfolgreich gelöscht`,
-         "success",
-      );
+      showDashboardAlert(`Teilnehmer "${name}" erfolgreich gelöscht`, "success");
       // Reload all data and refresh displays
       await loadParticipants();
       await loadBookings();
@@ -2579,8 +2311,7 @@ async function deleteParticipant(id, name) {
 function showSendEmailModal(email, name) {
    document.getElementById("recipientEmail").value = email;
    document.getElementById("recipientName").value = name;
-   document.getElementById("recipientDisplay").textContent =
-      `${name} (${email})`;
+   document.getElementById("recipientDisplay").textContent = `${name} (${email})`;
    document.getElementById("emailSubject").value = "";
    document.getElementById("emailMessage").value = "";
    document.getElementById("sendEmailModal").style.display = "flex";
@@ -2647,9 +2378,8 @@ window.onclick = function (event) {
    const dayDetailsModal = document.getElementById("dayDetailsModal");
    const bulkCreateModal = document.getElementById("bulkCreateModal");
    const questionnaireModal = document.getElementById("questionnaireModal");
-   const timeslotParticipantsModal = document.getElementById(
-      "timeslotParticipantsModal",
-   );
+   const timeslotParticipantsModal = document.getElementById("timeslotParticipantsModal");
+   const bulkEmailModal = document.getElementById("bulkEmailModal");
 
    if (event.target === timeslotModal) {
       closeTimeslotModal();
@@ -2668,6 +2398,9 @@ window.onclick = function (event) {
    }
    if (event.target === timeslotParticipantsModal) {
       closeTimeslotParticipantsModal();
+   }
+   if (event.target === bulkEmailModal) {
+      closeBulkEmailModal();
    }
 };
 
@@ -2693,8 +2426,7 @@ function renderCalendar() {
       "November",
       "Dezember",
    ];
-   document.getElementById("calendarMonthYear").textContent =
-      `${monthNames[month]} ${year}`;
+   document.getElementById("calendarMonthYear").textContent = `${monthNames[month]} ${year}`;
 
    // Get first day of month and number of days
    const firstDay = new Date(year, month, 1);
@@ -2720,8 +2452,7 @@ function renderCalendar() {
 
    // Days of month
    const today = new Date();
-   const isCurrentMonth =
-      today.getFullYear() === year && today.getMonth() === month;
+   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
    for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
@@ -2732,45 +2463,27 @@ function renderCalendar() {
       // Filter timeslots for this day
       const dayTimeslots = allData.timeslots.filter((slot) => {
          const slotDate = new Date(slot.start_time);
-         return (
-            slotDate.getFullYear() === year &&
-            slotDate.getMonth() === month &&
-            slotDate.getDate() === day
-         );
+         return slotDate.getFullYear() === year && slotDate.getMonth() === month && slotDate.getDate() === day;
       });
 
       // Helper to check if a timeslot has active bookings
-      const hasBooking = (slotId) =>
-         allData.bookings.some(
-            (b) => b.timeslot_id === slotId && b.status === "active",
-         );
+      const hasBooking = (slotId) => allData.bookings.some((b) => b.timeslot_id === slotId && b.status === "active");
 
       // Count by type and status - check bookings from separate array
-      const availableDual = dayTimeslots.filter(
-         (s) => s.appointment_type === "dual" && !hasBooking(s.id),
-      ).length;
-      const availablePrimary = dayTimeslots.filter(
-         (s) => s.appointment_type === "primary" && !hasBooking(s.id),
-      ).length;
+      const availableDual = dayTimeslots.filter((s) => s.appointment_type === "dual" && !hasBooking(s.id)).length;
+      const availablePrimary = dayTimeslots.filter((s) => s.appointment_type === "primary" && !hasBooking(s.id)).length;
       const availableFollowup = dayTimeslots.filter(
          (s) => s.appointment_type === "followup" && !hasBooking(s.id),
       ).length;
 
       // Count booked by original type to show what was booked
       const bookedPrimary = dayTimeslots.filter(
-         (s) =>
-            hasBooking(s.id) &&
-            (s.original_type === "primary" || s.appointment_type === "primary"),
+         (s) => hasBooking(s.id) && (s.original_type === "primary" || s.appointment_type === "primary"),
       ).length;
       const bookedFollowup = dayTimeslots.filter(
-         (s) =>
-            hasBooking(s.id) &&
-            (s.original_type === "followup" ||
-               s.appointment_type === "followup"),
+         (s) => hasBooking(s.id) && (s.original_type === "followup" || s.appointment_type === "followup"),
       ).length;
-      const bookedDual = dayTimeslots.filter(
-         (s) => hasBooking(s.id) && s.original_type === "dual",
-      ).length;
+      const bookedDual = dayTimeslots.filter((s) => hasBooking(s.id) && s.original_type === "dual").length;
       const totalBooked = dayTimeslots.filter((s) => hasBooking(s.id)).length;
 
       const todayBorder = isToday ? "border: 3px solid #667eea;" : "";
@@ -2859,9 +2572,7 @@ function showDayDetails(dateStr) {
    const dayTimeslots = allData.timeslots.filter((slot) => {
       const slotDate = new Date(slot.start_time);
       const matches =
-         slotDate.getFullYear() === year &&
-         slotDate.getMonth() === month - 1 &&
-         slotDate.getDate() === day;
+         slotDate.getFullYear() === year && slotDate.getMonth() === month - 1 && slotDate.getDate() === day;
       if (matches) {
          console.log("Matched slot:", {
             id: slot.id,
@@ -2895,15 +2606,10 @@ function showDayDetails(dateStr) {
    // Separate booked and available timeslots by checking bookings data
    // Now that timeslots don't include booking data via JOIN, we check allData.bookings
    const bookedSlots = dayTimeslots.filter((slot) =>
-      allData.bookings.some(
-         (b) => b.timeslot_id === slot.id && b.status === "active",
-      ),
+      allData.bookings.some((b) => b.timeslot_id === slot.id && b.status === "active"),
    );
    const availableSlots = dayTimeslots.filter(
-      (slot) =>
-         !allData.bookings.some(
-            (b) => b.timeslot_id === slot.id && b.status === "active",
-         ),
+      (slot) => !allData.bookings.some((b) => b.timeslot_id === slot.id && b.status === "active"),
    );
 
    // Build list of timeslots
@@ -2921,9 +2627,7 @@ function showDayDetails(dateStr) {
             const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 
             // Get booking and participant info from separate bookings array
-            const bookings = allData.bookings.filter(
-               (b) => b.timeslot_id === slot.id && b.status === "active",
-            );
+            const bookings = allData.bookings.filter((b) => b.timeslot_id === slot.id && b.status === "active");
             const participants = bookings.map((b) => `${b.name}`).join(", ");
             const emails = bookings.map((b) => b.email).join(", ");
             const firstBooking = bookings[0] || {};
@@ -2936,12 +2640,7 @@ function showDayDetails(dateStr) {
             };
             const questionnaireInfo = bookings
                .map((b) => {
-                  if (
-                     !b.vision_correction &&
-                     !b.study_subject &&
-                     !b.vr_experience &&
-                     !b.motion_sickness
-                  ) {
+                  if (!b.vision_correction && !b.study_subject && !b.vr_experience && !b.motion_sickness) {
                      return `<div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; font-size: 13px;">
                         <strong>${b.name}:</strong> <span style="color: #999;">Keine Fragebogendaten</span>
                      </div>`;
@@ -2973,16 +2672,9 @@ function showDayDetails(dateStr) {
 
             // Show original type if different
             let originalInfo = "";
-            if (
-               slot.original_type &&
-               slot.original_type !== slot.appointment_type
-            ) {
+            if (slot.original_type && slot.original_type !== slot.appointment_type) {
                let originalLabel =
-                  slot.original_type === "dual"
-                     ? "Dual"
-                     : slot.original_type === "primary"
-                       ? "Haupt"
-                       : "Folge";
+                  slot.original_type === "dual" ? "Dual" : slot.original_type === "primary" ? "Haupt" : "Folge";
                originalInfo = ` <span style="color: #999; font-size: 12px;">(urspr. ${originalLabel})</span>`;
             }
 
@@ -3074,9 +2766,7 @@ function closeDayDetailsModal() {
 async function loadUnreviewedAppointments() {
    try {
       console.log("Loading unreviewed appointments...");
-      const response = await fetch(
-         BASE_PATH + "/api/admin/bookings/unreviewed",
-      );
+      const response = await fetch(BASE_PATH + "/api/admin/bookings/unreviewed");
       console.log("Response status:", response.status);
 
       if (!response.ok) {
@@ -3099,25 +2789,16 @@ async function loadUnreviewedAppointments() {
             <small>Bitte überprüfen Sie die Browser-Konsole (F12) für Details.</small>
          </div>
       `;
-      showDashboardAlert(
-         "Fehler beim Laden der unbewerteten Termine",
-         "danger",
-      );
+      showDashboardAlert("Fehler beim Laden der unbewerteten Termine", "danger");
    }
 }
 
 // Display unreviewed appointments
 function displayUnreviewedAppointments() {
    const container = document.getElementById("unreviewedContainer");
-   console.log(
-      "Displaying unreviewed appointments, count:",
-      allData.unreviewedAppointments.length,
-   );
+   console.log("Displaying unreviewed appointments, count:", allData.unreviewedAppointments.length);
 
-   if (
-      !allData.unreviewedAppointments ||
-      allData.unreviewedAppointments.length === 0
-   ) {
+   if (!allData.unreviewedAppointments || allData.unreviewedAppointments.length === 0) {
       container.innerHTML = `
          <div style="text-align: center; padding: 40px; color: #666;">
             <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
@@ -3199,14 +2880,11 @@ function displayUnreviewedAppointments() {
 // Mark appointment result
 async function markAppointmentResult(bookingId, resultStatus) {
    try {
-      const response = await fetch(
-         BASE_PATH + `/api/admin/bookings/${bookingId}/result-status`,
-         {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resultStatus }),
-         },
-      );
+      const response = await fetch(BASE_PATH + `/api/admin/bookings/${bookingId}/result-status`, {
+         method: "PATCH",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ resultStatus }),
+      });
 
       if (!response.ok) throw new Error("Failed to update result status");
 
@@ -3234,12 +2912,79 @@ async function markAppointmentResult(bookingId, resultStatus) {
          no_show: "als nicht erschienen",
       };
 
-      showDashboardAlert(
-         `Termin ${statusLabels[resultStatus]} markiert`,
-         "success",
-      );
+      showDashboardAlert(`Termin ${statusLabels[resultStatus]} markiert`, "success");
    } catch (error) {
       console.error("Error updating result status:", error);
       showDashboardAlert("Fehler beim Aktualisieren des Status", "danger");
+   }
+}
+
+// Show bulk email modal
+function showBulkEmailModal() {
+   document.getElementById("bulkEmailModal").style.display = "flex";
+   document.getElementById("bulkEmailForm").reset();
+}
+
+// Close bulk email modal
+function closeBulkEmailModal() {
+   document.getElementById("bulkEmailModal").style.display = "none";
+   document.getElementById("bulkEmailForm").reset();
+}
+
+// Send bulk email to all participants
+async function sendBulkEmail() {
+   const subject = document.getElementById("bulkEmailSubject").value.trim();
+   const messageDE = document.getElementById("bulkEmailMessageDE").value.trim();
+   const messageEN = document.getElementById("bulkEmailMessageEN").value.trim();
+
+   if (!subject || !messageDE || !messageEN) {
+      showDashboardAlert("Bitte füllen Sie alle Felder aus.", "warning");
+      return;
+   }
+
+   // Confirm before sending
+   const confirmMessage = `Möchten Sie diese Email wirklich an ALLE ${allData.participants.length} registrierten Teilnehmer senden?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`;
+   if (!confirm(confirmMessage)) {
+      return;
+   }
+
+   const btn = document.getElementById("sendBulkEmailBtn");
+   const originalText = btn.innerHTML;
+   btn.disabled = true;
+   btn.innerHTML = "Wird gesendet...";
+
+   try {
+      const response = await fetch(BASE_PATH + "/api/admin/send-bulk-email", {
+         method: "POST",
+         headers: {
+            "Content-Type": "application/json",
+         },
+         body: JSON.stringify({
+            subject,
+            messageDE,
+            messageEN,
+         }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+         throw new Error(data.error || "Fehler beim Senden der Massen-Email");
+      }
+
+      let message = `Massen-Email erfolgreich an ${data.sent} Teilnehmer gesendet`;
+      if (data.failed > 0) {
+         message += ` (${data.failed} fehlgeschlagen)`;
+         console.error("Failed emails:", data.errors);
+      }
+
+      showDashboardAlert(message, data.failed > 0 ? "warning" : "success");
+      closeBulkEmailModal();
+   } catch (error) {
+      console.error("Error sending bulk email:", error);
+      showDashboardAlert(error.message, "error");
+   } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
    }
 }
