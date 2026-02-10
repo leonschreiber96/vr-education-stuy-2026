@@ -452,6 +452,8 @@ function displayParticipants() {
       uniqueParticipants = uniqueParticipants.filter((p) => p.tu_berlin_employee === "yes");
    } else if (filterValue === "non-employee") {
       uniqueParticipants = uniqueParticipants.filter((p) => p.tu_berlin_employee === "no");
+   } else if (filterValue === "no-answer") {
+      uniqueParticipants = uniqueParticipants.filter((p) => !p.tu_berlin_employee || p.tu_berlin_employee === "");
    }
 
    container.innerHTML = `
