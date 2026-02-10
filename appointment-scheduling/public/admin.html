@@ -223,7 +223,18 @@
                <div class="card">
                   <h2>Teilnehmer</h2>
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
-                     <div></div>
+                     <div style="display: flex; gap: 15px; align-items: center">
+                        <label for="employeeFilter" style="font-weight: 600">Filter:</label>
+                        <select
+                           id="employeeFilter"
+                           onchange="filterParticipantsByEmployee()"
+                           style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ddd"
+                        >
+                           <option value="all">Alle Teilnehmer</option>
+                           <option value="employee">Nur TU Berlin Mitarbeiter</option>
+                           <option value="non-employee">Nur Nicht-Mitarbeiter</option>
+                        </select>
+                     </div>
                      <button class="btn btn-primary" onclick="showBulkEmailModal()">
                         📧 Massenmail an alle Teilnehmer
                      </button>

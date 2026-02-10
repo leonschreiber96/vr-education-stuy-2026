@@ -425,6 +425,7 @@ function displayParticipants() {
             study_subject: p.study_subject,
             vr_experience: p.vr_experience,
             motion_sickness: p.motion_sickness,
+            tu_berlin_employee: p.tu_berlin_employee,
             bookings: [],
          });
       }
@@ -441,9 +442,17 @@ function displayParticipants() {
    });
 
    // Convert map to array and sort by creation date (newest first)
-   const uniqueParticipants = Array.from(participantsMap.values()).sort(
+   let uniqueParticipants = Array.from(participantsMap.values()).sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at),
    );
+
+   // Apply employee filter if set
+   const filterValue = document.getElementById("employeeFilter")?.value || "all";
+   if (filterValue === "employee") {
+      uniqueParticipants = uniqueParticipants.filter((p) => p.tu_berlin_employee === "yes");
+   } else if (filterValue === "non-employee") {
+      uniqueParticipants = uniqueParticipants.filter((p) => p.tu_berlin_employee === "no");
+   }
 
    container.innerHTML = `
        <div class="table-container">
@@ -504,20 +513,38 @@ function displayParticipants() {
                          const vrExp = p.vr_experience || "n/a";
                          const motionSick = p.motion_sickness || "n/a";
 
+                         // TU Berlin employee status
+                         const tuEmployeeMap = {
+                            yes: "Ja",
+                            no: "Nein",
+                         };
+                         const tuEmployee = p.tu_berlin_employee
+                            ? tuEmployeeMap[p.tu_berlin_employee] || "Unbekannt"
+                            : "Keine Angabe";
+                         const isTUEmployee = p.tu_berlin_employee === "yes";
+
                          const hasQuestionnaire =
-                            p.vision_correction || p.study_subject || p.vr_experience || p.motion_sickness;
+                            p.vision_correction ||
+                            p.study_subject ||
+                            p.vr_experience ||
+                            p.motion_sickness ||
+                            p.tu_berlin_employee;
 
                          // Create detailed questionnaire info for modal
                          const questionnaireDetails = hasQuestionnaire
                             ? `<strong>Sehkorrektur:</strong> ${visionText}<br>
                                <strong>Studienfach:</strong> ${studySubject}<br>
                                <strong>VR-Erfahrung:</strong> ${vrExp}/5<br>
-                               <strong>Reiseübelkeit:</strong> ${motionSick}/5`
+                               <strong>Reiseübelkeit:</strong> ${motionSick}/5<br>
+                               <strong>TU Berlin Mitarbeiter:</strong> ${tuEmployee}`
                             : "Keine Fragebogendaten verfügbar";
 
                          return `
-                           <tr>
-                               <td>${p.name}</td>
+                           <tr${isTUEmployee ? ' style="background-color: #fff8e1; border-left: 4px solid #ffc107;"' : ""}>
+                               <td>
+                                   ${isTUEmployee ? '<span style="font-size: 1.1em; margin-right: 5px;" title="TU Berlin Mitarbeiter">🏛️</span>' : ""}
+                                   ${p.name}
+                               </td>
                                <td>${p.email}</td>
                                <td>${appointmentTimeDisplay}</td>
                                <td>
@@ -553,6 +580,11 @@ function displayParticipants() {
            </table>
        </div>
    `;
+}
+
+// Filter participants by TU Berlin employee status
+function filterParticipantsByEmployee() {
+   displayParticipants();
 }
 
 // Load all timeslots for statistics (no pagination)
