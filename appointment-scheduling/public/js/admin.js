@@ -2942,8 +2942,17 @@ async function sendBulkEmail() {
       return;
    }
 
+   // Count unique participants by email (participants appear once per booking)
+   const uniqueEmails = new Set();
+   allData.participants.forEach((p) => {
+      if (p.email) {
+         uniqueEmails.add(p.email);
+      }
+   });
+   const uniqueParticipantCount = uniqueEmails.size;
+
    // Confirm before sending
-   const confirmMessage = `Möchten Sie diese Email wirklich an ALLE ${allData.participants.length} registrierten Teilnehmer senden?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`;
+   const confirmMessage = `Möchten Sie diese Email wirklich an ALLE ${uniqueParticipantCount} registrierten Teilnehmer senden?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`;
    if (!confirm(confirmMessage)) {
       return;
    }
