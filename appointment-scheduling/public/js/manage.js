@@ -37,23 +37,6 @@ function handleModalBackdropClick(event, modalId) {
    }
 }
 
-// Handle TU Berlin employee dropdown change in manage page
-// Shows warning if employee is selected
-function handleTuBerlinEmployeeChangeManage() {
-   const tuBerlinEmployeeSelect = document.getElementById("tuBerlinEmployee");
-   const warningDiv = document.getElementById("tuBerlinEmployeeWarningManage");
-
-   if (!tuBerlinEmployeeSelect || !warningDiv) return;
-
-   const value = tuBerlinEmployeeSelect.value;
-
-   if (value === "yes") {
-      warningDiv.style.display = "block";
-   } else {
-      warningDiv.style.display = "none";
-   }
-}
-
 // Load bookings by token
 async function loadBookings() {
    const token = document.getElementById("tokenInput").value.trim();
@@ -115,9 +98,6 @@ function displayBookings() {
    document.getElementById("vrExperience").value = primaryBooking.vr_experience || "";
    document.getElementById("motionSickness").value = primaryBooking.motion_sickness || "";
    document.getElementById("tuBerlinEmployee").value = primaryBooking.tu_berlin_employee || "";
-
-   // Trigger warning display if employee
-   handleTuBerlinEmployeeChangeManage();
 
    // Display primary appointment
    displayAppointment(primaryBooking, "primary");
