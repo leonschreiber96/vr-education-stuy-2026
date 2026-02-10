@@ -666,20 +666,34 @@ async function sendBulkEmail(email, name, confirmationToken, subject, messageDE,
     </div>
 
     <h2>${subject}</h2>
-    <p>Hallo ${name},</p>
-    ${messageDE
-       .split("\n")
-       .map((line) => `<p>${line}</p>`)
-       .join("")}
 
-    <h3>Termine verwalten:</h3>
-    <p>Sie können Ihre Termine über den folgenden Link einsehen, ändern oder absagen:</p>
-    <p style="text-align: center; margin: 25px 0;">
-      <a href="${managementUrl}"
-         style="display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-        Termine verwalten
-      </a>
-    </p>
+    <!-- Generated Greeting -->
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 20px 0; border-radius: 4px;">
+      <p style="margin: 0; color: #495057;">Hallo ${name},</p>
+    </div>
+
+    <!-- Custom Content -->
+    <div style="background-color: #fff; padding: 20px; border: 2px solid #667eea; border-radius: 8px; margin: 20px 0;">
+      <div style="background-color: #f0f4ff; padding: 8px 12px; border-radius: 4px; margin-bottom: 15px; display: inline-block;">
+        <strong style="color: #667eea; font-size: 0.9em;">📝 NACHRICHT VON DER STUDIENLEITUNG:</strong>
+      </div>
+      ${messageDE
+         .split("\n")
+         .map((line) => `<p style="margin: 10px 0; color: #212529;">${line}</p>`)
+         .join("")}
+    </div>
+
+    <!-- Generated Closing -->
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 20px 0; border-radius: 4px;">
+      <h3 style="margin-top: 0; color: #495057;">Termine verwalten:</h3>
+      <p style="color: #495057;">Sie können Ihre Termine über den folgenden Link einsehen, ändern oder absagen:</p>
+      <p style="text-align: center; margin: 20px 0;">
+        <a href="${managementUrl}"
+           style="display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          Termine verwalten
+        </a>
+      </p>
+    </div>
 
     <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
 
@@ -690,20 +704,34 @@ async function sendBulkEmail(email, name, confirmationToken, subject, messageDE,
     <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
 
     <h2>${subject}</h2>
-    <p>Hello ${name},</p>
-    ${messageEN
-       .split("\n")
-       .map((line) => `<p>${line}</p>`)
-       .join("")}
 
-    <h3>Manage Your Appointments:</h3>
-    <p>You can view, reschedule, or cancel your appointments using the following link:</p>
-    <p style="text-align: center; margin: 25px 0;">
-      <a href="${managementUrl}"
-         style="display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-        Manage Appointments
-      </a>
-    </p>
+    <!-- Generated Greeting -->
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 20px 0; border-radius: 4px;">
+      <p style="margin: 0; color: #495057;">Hello ${name},</p>
+    </div>
+
+    <!-- Custom Content -->
+    <div style="background-color: #fff; padding: 20px; border: 2px solid #667eea; border-radius: 8px; margin: 20px 0;">
+      <div style="background-color: #f0f4ff; padding: 8px 12px; border-radius: 4px; margin-bottom: 15px; display: inline-block;">
+        <strong style="color: #667eea; font-size: 0.9em;">📝 MESSAGE FROM THE STUDY COORDINATORS:</strong>
+      </div>
+      ${messageEN
+         .split("\n")
+         .map((line) => `<p style="margin: 10px 0; color: #212529;">${line}</p>`)
+         .join("")}
+    </div>
+
+    <!-- Generated Closing -->
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 20px 0; border-radius: 4px;">
+      <h3 style="margin-top: 0; color: #495057;">Manage Your Appointments:</h3>
+      <p style="color: #495057;">You can view, reschedule, or cancel your appointments using the following link:</p>
+      <p style="text-align: center; margin: 20px 0;">
+        <a href="${managementUrl}"
+           style="display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          Manage Appointments
+        </a>
+      </p>
+    </div>
 
     <hr style="margin: 40px 0; border: none; border-top: 1px solid #e0e0e0;">
     <p style="font-size: 0.9em; color: #666; text-align: center;">
