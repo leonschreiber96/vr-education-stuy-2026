@@ -661,6 +661,10 @@ async function sendBulkEmail(email, name, confirmationToken, subject, messageDE,
    const managementUrl = `${buildUrl("manage.html")}?token=${confirmationToken}`;
 
    const html = `
+    <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
+      <p style="margin: 5px 0; font-weight: bold;">🇩🇪 Deutsche Version | 🇬🇧 English version below</p>
+    </div>
+
     <h2>${subject}</h2>
     <p>Hallo ${name},</p>
     ${messageDE
@@ -668,31 +672,42 @@ async function sendBulkEmail(email, name, confirmationToken, subject, messageDE,
        .map((line) => `<p>${line}</p>`)
        .join("")}
 
-    <h3>Termin verwalten:</h3>
+    <h3>Termine verwalten:</h3>
     <p>Sie können Ihre Termine über den folgenden Link einsehen, ändern oder absagen:</p>
-    <p><a href="${managementUrl}">${managementUrl}</a></p>
-
-    <hr>
-    <p style="font-size: 0.9em; color: #666;">
-      Bei Fragen können Sie sich jederzeit per E-Mail an uns wenden.
+    <p style="text-align: center; margin: 25px 0;">
+      <a href="${managementUrl}"
+         style="display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        Termine verwalten
+      </a>
     </p>
 
-    <hr style="margin-top: 30px; margin-bottom: 20px; border: none; border-top: 2px solid #e0e0e0;">
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
 
-    <h2 style="color: #555;">English Version</h2>
+    <p style="text-align: center; color: #666; font-style: italic; margin: 30px 0;">
+      📋 English version below / Englische Version unten
+    </p>
+
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
+
+    <h2>${subject}</h2>
     <p>Hello ${name},</p>
     ${messageEN
        .split("\n")
        .map((line) => `<p>${line}</p>`)
        .join("")}
 
-    <h3>Manage Your Appointment:</h3>
+    <h3>Manage Your Appointments:</h3>
     <p>You can view, reschedule, or cancel your appointments using the following link:</p>
-    <p><a href="${managementUrl}">${managementUrl}</a></p>
+    <p style="text-align: center; margin: 25px 0;">
+      <a href="${managementUrl}"
+         style="display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        Manage Appointments
+      </a>
+    </p>
 
-    <hr>
-    <p style="font-size: 0.9em; color: #666;">
-      If you have any questions, please feel free to contact us via email.
+    <hr style="margin: 40px 0; border: none; border-top: 1px solid #e0e0e0;">
+    <p style="font-size: 0.9em; color: #666; text-align: center;">
+      Bei Fragen können Sie sich jederzeit per E-Mail an uns wenden. / If you have any questions, please feel free to contact us via email.
     </p>
   `;
 
