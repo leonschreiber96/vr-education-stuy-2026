@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Directions to Study Location</title>
+      <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+      <link rel="stylesheet" href="css/anfahrt.css" />
+   </head>
+   <body>
+      <!-- Image Lightbox Modal -->
+      <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+         <span class="lightbox-close">&times;</span>
+         <img id="lightbox-img" class="lightbox-content" />
+         <div id="lightbox-caption" class="lightbox-caption"></div>
+      </div>
+      <div class="container">
+         <!-- Header -->
+         <div class="header">
+            <h1>🗺️ Directions to Study Location</h1>
+         </div>
+
+         <!-- Main Content -->
+         <div class="content">
+            <section class="language-section">
+               <p style="font-size: 1.2em; margin-bottom: 1em">
+                  <strong>Thank you</strong> for taking part in our study! This page will help you find the entrance to
+                  the lecture hall where the study takes place.
+               </p>
+               <p style="font-size: 1.2em; margin-bottom: 1em">
+                  Below you'll find detailed maps and photos to help you locate the entrance, as well as contact
+                  information.
+                  <strong>Please don't hesitate to call us</strong> if you're having trouble finding the location—time
+                  is limited, and we will need to close the room approximately 5 minutes after your scheduled
+                  appointment time.
+               </p>
+
+               <div class="address-box">
+                  <h3>📍 Address</h3>
+                  <p class="address">
+                     <strong>Einsteinufer 19, 10587 Berlin</strong><br />
+                     Room: <strong>E 020</strong>
+                  </p>
+                  <a
+                     href="https://www.google.com/maps/dir/?api=1&destination=52.51438010289365,13.326353303674912"
+                     target="_blank"
+                     class="map-button"
+                  >
+                     🗺️ Open in Google Maps
+                  </a>
+               </div>
+
+               <div class="important-box">
+                  <h3>⚠️ Important</h3>
+                  <p>
+                     Please plan to be at the location <strong>a few minutes in advance</strong>, since navigating the
+                     campus and finding the entrance can take longer than expected.
+                  </p>
+               </div>
+
+               <div class="transport-section">
+                  <h3>🚇 Public Transportation</h3>
+                  <p>The maps below show marked paths from all nearby public transit stations:</p>
+
+                  <div class="transport-options">
+                     <div class="transport-card">
+                        <div class="transport-icon">🚌</div>
+                        <div class="transport-info">
+                           <strong>Bus</strong>
+                           <p>Station: <strong>Marchbrücke</strong></p>
+                           <p class="transport-line" style="background-color: #90f; color: white">Line 245</p>
+                        </div>
+                     </div>
+
+                     <div class="transport-card">
+                        <div class="transport-icon">🚇</div>
+                        <div class="transport-info">
+                           <strong>Subway</strong>
+                           <p>Station: <strong>Ernst-Reuter-Platz</strong></p>
+                           <p class="transport-line" style="background-color: #f30; color: white">U2</p>
+                        </div>
+                     </div>
+
+                     <div class="transport-card">
+                        <div class="transport-icon">🚉</div>
+                        <div class="transport-info">
+                           <strong>S-Bahn</strong>
+                           <p>Station: <strong>Tiergarten</strong></p>
+                           <p class="transport-line" style="background-color: #337328; color: white">S3, S5, S7, S9</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </section>
+
+            <!-- Maps Section -->
+            <section class="maps-section">
+               <h2>🗺️ Route Maps</h2>
+
+               <div class="map-grid">
+                  <div
+                     class="map-card"
+                     onclick="
+                        openLightbox('images/SCR-20260211-pnwm.jpeg', 'From S Tiergarten or U Ernst-Reuter-Platz')
+                     "
+                  >
+                     <img
+                        src="images/SCR-20260211-pnwm.jpeg"
+                        alt="Aerial view from southeast showing way from S Tiergarten or U Ernst-Reuter-Platz"
+                        style="cursor: pointer"
+                     />
+                     <div class="map-caption">
+                        <strong>From S Tiergarten or U Ernst-Reuter-Platz</strong>
+                        <br /><small style="color: #999">Click to enlarge</small>
+                     </div>
+                  </div>
+
+                  <div
+                     class="map-card"
+                     onclick="openLightbox('images/SCR-20260211-prdj.jpeg', 'From Bus Station Marchbrücke')"
+                  >
+                     <img
+                        src="images/SCR-20260211-prdj.jpeg"
+                        alt="Aerial view from northeast showing way from bus station Marchbrücke"
+                        style="cursor: pointer"
+                     />
+                     <div class="map-caption">
+                        <strong>From Bus Station Marchbrücke</strong>
+                        <br /><small style="color: #999">Click to enlarge</small>
+                     </div>
+                  </div>
+
+                  <div
+                     class="map-card full-width"
+                     onclick="openLightbox('images/SCR-20260211-prwt.jpeg', 'The Lecture Hall Entrance')"
+                  >
+                     <img
+                        src="images/SCR-20260211-prwt.jpeg"
+                        alt="Photo of the lecture hall entrance"
+                        style="cursor: pointer"
+                     />
+                     <div class="map-caption">
+                        <strong>🚪 The Lecture Hall Entrance</strong><br />
+                        <span>The entrance is a small, unremarkable door that can easily be missed.</span>
+                        <br /><small style="color: #999">Click to enlarge</small>
+                     </div>
+                  </div>
+               </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="footer">
+               <p>If you have questions or cannot find the way, please contact us:</p>
+               <p><strong>Email:</strong> <a href="mailto:admin@example.com">leon.schreiber@tu-berlin.de</a></p>
+               <p><strong>Phone:</strong> <a href="tel:+4915150204357">+49 151 50204357</a></p>
+            </div>
+         </div>
+      </div>
+
+      <script>
+         function openLightbox(src, caption) {
+            const lightbox = document.getElementById("lightbox");
+            const lightboxImg = document.getElementById("lightbox-img");
+            const lightboxCaption = document.getElementById("lightbox-caption");
+
+            lightbox.style.display = "flex";
+            lightboxImg.src = src;
+            lightboxCaption.textContent = caption;
+            document.body.style.overflow = "hidden";
+         }
+
+         function closeLightbox() {
+            const lightbox = document.getElementById("lightbox");
+            lightbox.style.display = "none";
+            document.body.style.overflow = "auto";
+         }
+
+         // Close lightbox on ESC key
+         document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+               closeLightbox();
+            }
+         });
+      </script>
+   </body>
+</html>
