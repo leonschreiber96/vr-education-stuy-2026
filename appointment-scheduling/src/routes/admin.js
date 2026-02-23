@@ -174,7 +174,8 @@ router.patch(
    requireAdmin,
    asyncHandler(async (req, res) => {
       const { id } = req.params;
-      const { condition } = req.body;
+      const { condition, force = false } = req.body;
+      const forceFlag = !!force;
 
       // Allow null/empty to clear the condition
       const allowed = ["Presence", "2D Screen", "2D VR", "Immersive VR", null, undefined];
@@ -191,7 +192,10 @@ router.patch(
 
       // Attempt update and convert backend block into a 403 response with a clear message
       try {
-         const result = db.updateParticipantCondition(id, condition || null);
+         // Pass forceFlag to the DB helper. If the DB helper doesn't accept it yet,
+         // it should be updated to support a third `force` parameter; otherwise this
+         // call will need to be aligned with the DB API.
+         const result = db.updateParticipantCondition(id, condition || null, forceFlag);
 
          if (result.changes === 0) {
             // No DB change (could be same value) — still return success but indicate no change

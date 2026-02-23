@@ -315,30 +315,33 @@ function updateParticipantPrescreen(token, prescreenData) {
 // Prevent changing condition if the participant has at least one past appointment
 // that already has a result_status (i.e., was rated). Returns changes and the
 // updated participant object on success. Throws an Error if the change is blocked.
-function updateParticipantCondition(id, condition) {
+// Added `force` parameter to allow bypassing the rated-appointment check when needed.
+function updateParticipantCondition(id, condition, force = false) {
    // First, ensure participant exists (keep behavior consistent with callers)
    const participant = getParticipantById(id);
    if (!participant) {
       throw new Error("Participant not found");
    }
 
-   // Check for past rated bookings: joined bookings + timeslots where timeslot is in the past
+   // If not forcing, check for past rated bookings: joined bookings + timeslots where timeslot is in the past
    // and booking has a non-empty result_status and is not cancelled.
-   const checkStmt = db.prepare(`
-      SELECT COUNT(*) as count
-      FROM bookings b
-      JOIN timeslots t ON b.timeslot_id = t.id
-      WHERE b.participant_id = ?
-        AND b.status != 'cancelled'
-        AND datetime(t.start_time) < datetime('now')
-        AND b.result_status IS NOT NULL
-        AND b.result_status != ''
-   `);
-   const row = checkStmt.get(id);
+   if (!force) {
+      const checkStmt = db.prepare(`
+         SELECT COUNT(*) as count
+         FROM bookings b
+         JOIN timeslots t ON b.timeslot_id = t.id
+         WHERE b.participant_id = ?
+           AND b.status != 'cancelled'
+           AND datetime(t.start_time) < datetime('now')
+           AND b.result_status IS NOT NULL
+           AND b.result_status != ''
+      `);
+      const row = checkStmt.get(id);
 
-   if (row && row.count > 0) {
-      // Block the change - participant already has at least one past rated appointment
-      throw new Error("Cannot change condition: participant has a past appointment that has been rated");
+      if (row && row.count > 0) {
+         // Block the change - participant already has at least one past rated appointment
+         throw new Error("Cannot change condition: participant has a past appointment that has been rated");
+      }
    }
 
    // Proceed with update
@@ -364,6 +367,7 @@ function updateParticipantCondition(id, condition) {
          requestedCondition: condition || null,
          storedCondition: updated ? updated.condition : null,
          changes: result.changes,
+         force: !!force,
       });
    } catch (err) {
       // Swallow logging errors to avoid interrupting normal flow
