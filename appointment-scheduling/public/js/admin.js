@@ -1351,10 +1351,21 @@ function updateStatistics() {
    const uniqueTimeslotIds = new Set(timeslotsForStats.map((t) => t.id));
    const totalSlots = uniqueTimeslotIds.size;
 
-   // Count unique timeslots that have bookings
-   const timeslotsWithBookings = new Set(timeslotsForStats.filter((t) => t.booking_id).map((t) => t.id));
-   const bookedSlots = timeslotsWithBookings.size;
-   const availableSlots = totalSlots - bookedSlots;
+   // Derive booked timeslots from the authoritative bookings list to avoid relying on
+   // any `booking_id` field that might be absent or cause duplication in timeslotsForStats.
+   // Consider only active/confirmed bookings as occupying a timeslot.
+   const bookedTimeslotIds = new Set(
+      (allData.bookings || [])
+         .filter((b) => b && (b.status === "confirmed" || b.status === "active"))
+         .map((b) => b.timeslot_id)
+         .filter((id) => id !== undefined && id !== null),
+   );
+
+   // Only count booked timeslots that actually exist in the current timeslots set
+   const bookedSlots = Array.from(bookedTimeslotIds).filter((id) => uniqueTimeslotIds.has(id)).length;
+
+   // Available = total defined timeslots minus distinct booked timeslots
+   const availableSlots = Math.max(0, totalSlots - bookedSlots);
 
    console.log("Timeslot stats:", {
       totalSlots,
