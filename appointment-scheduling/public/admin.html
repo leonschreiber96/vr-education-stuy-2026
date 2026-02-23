@@ -605,7 +605,7 @@
                   async function populateConditionLists() {
                      try {
                         const basePath = window.location.pathname.split("/").slice(0, -1).join("/") || "";
-                        const resp = await fetch(basePath + "/api/admin/participants");
+                        const resp = await fetch(basePath + "/api/admin/participants", { credentials: "same-origin" });
                         if (!resp.ok) throw new Error("Failed to load participants");
                         const participants = await resp.json();
 
@@ -846,8 +846,8 @@
                         const basePath = window.location.pathname.split("/").slice(0, -1).join("/") || "";
                         // Fetch participants and bookings
                         const [pResp, bResp] = await Promise.all([
-                           fetch(basePath + "/api/admin/participants"),
-                           fetch(basePath + "/api/admin/bookings"),
+                           fetch(basePath + "/api/admin/participants", { credentials: "same-origin" }),
+                           fetch(basePath + "/api/admin/bookings", { credentials: "same-origin" }),
                         ]);
                         if (!pResp.ok) throw new Error("Failed to load participants");
                         if (!bResp.ok) throw new Error("Failed to load bookings");
