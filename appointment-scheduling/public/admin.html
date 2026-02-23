@@ -511,6 +511,7 @@
                      wrapper.style.padding = "6px 8px";
                      wrapper.style.borderBottom = "1px solid rgba(0,0,0,0.04)";
                      wrapper.style.fontSize = "14px";
+                     wrapper.dataset.participantId = p.id;
 
                      const left = document.createElement("div");
                      left.textContent = p.name || p.email || "Unbekannt";
@@ -551,14 +552,12 @@
                      if (ms !== "" && ms !== null && !Number.isNaN(msNum)) {
                         let bg = "#6b7280"; // default gray
                         // Only apply the colored thresholds for the VR conditions per spec.
-                        // For VR bins, color only when motion sickness is 3 (orange) or >3 (red).
-                        // Values below 3 should remain neutral/gray like other bins.
                         if (conditionKey === "2D VR" || conditionKey === "Immersive VR") {
                            if (msNum > 3)
                               bg = "#ef4444"; // red for > 3
                            else if (msNum === 3)
                               bg = "#f59e0b"; // orange for == 3
-                           else bg = "#6b7280"; // keep neutral gray for < 3
+                           else bg = "#6b7280"; // keep gray for < 3
                         } else {
                            bg = "#6b7280";
                         }
@@ -567,6 +566,35 @@
                            color: "#fff",
                         });
                         right.appendChild(msBadge);
+                     }
+
+                     // If participant is locked (server-provided flag), gray them out and disable drag
+                     const isLocked = !!p.hasRatedPastBooking;
+                     if (isLocked) {
+                        wrapper.classList.add("locked");
+                        wrapper.style.opacity = "0.55";
+                        wrapper.style.filter = "grayscale(30%)";
+                        wrapper.title =
+                           "Kann nicht geändert werden: mindestens ein vergangener Termin wurde bereits bewertet";
+                        // keep pointer events for tooltip (but prevent drag)
+                        wrapper.style.pointerEvents = "auto";
+                     } else {
+                        // Make draggable
+                        wrapper.draggable = true;
+                        wrapper.classList.add("draggable");
+                        // dragstart: attach participant id and source condition
+                        wrapper.addEventListener("dragstart", function (ev) {
+                           try {
+                              ev.dataTransfer.setData("text/plain", JSON.stringify({ id: p.id, from: conditionKey }));
+                              // visual cue for dragging
+                              wrapper.classList.add("dragging");
+                           } catch (e) {
+                              console.debug("dragstart setData failed", e);
+                           }
+                        });
+                        wrapper.addEventListener("dragend", function () {
+                           wrapper.classList.remove("dragging");
+                        });
                      }
 
                      wrapper.appendChild(left);
@@ -601,9 +629,53 @@
                            },
                         };
 
-                        // Clear lists
+                        // Clear lists and attach drag/drop handlers to bins
                         Object.values(map).forEach(({ listEl }) => {
-                           if (listEl) listEl.innerHTML = "";
+                           if (listEl) {
+                              listEl.innerHTML = "";
+                              // make the bin a drop target
+                              // highlight on dragover/enter, remove on leave/drop
+                              listEl.addEventListener("dragover", (ev) => {
+                                 ev.preventDefault();
+                                 listEl.classList.add("drop-target--active");
+                              });
+                              listEl.addEventListener("dragenter", (ev) => {
+                                 ev.preventDefault();
+                                 listEl.classList.add("drop-target--active");
+                              });
+                              listEl.addEventListener("dragleave", (ev) => {
+                                 listEl.classList.remove("drop-target--active");
+                              });
+                              listEl.addEventListener("drop", async (ev) => {
+                                 ev.preventDefault();
+                                 listEl.classList.remove("drop-target--active");
+                                 const payload =
+                                    ev.dataTransfer && ev.dataTransfer.getData && ev.dataTransfer.getData("text/plain");
+                                 if (!payload) return;
+                                 try {
+                                    const obj = JSON.parse(payload);
+                                    const participantId = obj.id;
+                                    const from = obj.from;
+                                    // find target condition key
+                                    const targetKey = Object.keys(map).find((k) => map[k].listEl === listEl);
+                                    if (!participantId || !targetKey || targetKey === from) return;
+                                    // find participant object in the loaded participants array
+                                    const participantObj = participants.find((pp) => pp.id === participantId);
+                                    if (participantObj && participantObj.hasRatedPastBooking) {
+                                       showDashboardAlert(
+                                          "Teilnehmer kann nicht verschoben werden: mindestens ein vergangener Termin wurde bereits bewertet",
+                                          "warning",
+                                       );
+                                       return;
+                                    }
+                                    // Optimistically call the existing changeParticipantCondition
+                                    // This will reload participants after success and dispatch the conditionUpdated event
+                                    await changeParticipantCondition(participantId, targetKey);
+                                 } catch (err) {
+                                    console.debug("Error handling drop:", err);
+                                 }
+                              });
+                           }
                         });
 
                         // Helpers: normalize various string variants into canonical condition keys
