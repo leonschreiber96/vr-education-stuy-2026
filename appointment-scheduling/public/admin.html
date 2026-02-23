@@ -41,7 +41,7 @@
          <!-- Navigation Tabs -->
          <div class="tabs">
             <button class="tab active" onclick="switchTab('overview', this)">Übersicht</button>
-            <button class="tab" onclick="switchTab('conditions', this)">Bedingungen</button>
+            <button class="tab" onclick="switchTab('conditions', this)">Conditions</button>
             <button class="tab" onclick="switchTab('participants', this)">Teilnehmer</button>
             <button class="tab" onclick="switchTab('timeslots', this)">Zeitslots</button>
             <button class="tab" onclick="switchTab('bookings', this)">Buchungen</button>
@@ -89,6 +89,7 @@
                               left: 0;
                               top: 0;
                               z-index: 2;
+                              border-radius: 12px 0 0 12px;
                            "
                         ></div>
 
@@ -107,6 +108,7 @@
                               left: 0;
                               top: 0;
                               z-index: 3;
+                              border-radius: 0 12px 12px 0;
                            "
                         ></div>
 
@@ -347,7 +349,7 @@
             <!-- Conditions Tab -->
             <div id="conditionsTab" class="tab-content">
                <div class="card">
-                  <h2>Bedingungen - Überblick</h2>
+                  <h2>Conditions - Überblick</h2>
                   <p style="color: #666; margin-top: 6px; margin-bottom: 12px">
                      Anzahl der registrierten Teilnehmer, gruppiert nach experimenteller Bedingung. Unter jedem Bin ist
                      eine Liste der Teilnehmer mit Kurz-Informationen (Sehhilfe + Reisekrankheit) aufgeführt.
@@ -549,12 +551,14 @@
                      if (ms !== "" && ms !== null && !Number.isNaN(msNum)) {
                         let bg = "#6b7280"; // default gray
                         // Only apply the colored thresholds for the VR conditions per spec.
+                        // For VR bins, color only when motion sickness is 3 (orange) or >3 (red).
+                        // Values below 3 should remain neutral/gray like other bins.
                         if (conditionKey === "2D VR" || conditionKey === "Immersive VR") {
                            if (msNum > 3)
                               bg = "#ef4444"; // red for > 3
                            else if (msNum === 3)
                               bg = "#f59e0b"; // orange for == 3
-                           else bg = "#10b981"; // green-ish for lower values
+                           else bg = "#6b7280"; // keep neutral gray for < 3
                         } else {
                            bg = "#6b7280";
                         }
