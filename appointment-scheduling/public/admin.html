@@ -875,11 +875,18 @@
                            }
                         });
 
-                        // Eligible participants: those without any past booking
-                        let eligible = participants.filter((p) => !hasPastBooking[p.id]);
+                        // Eligible participants: include all draggable participants (those that can be moved).
+                        // We consider a participant draggable if the server did NOT mark them as locked
+                        // (server-provided flag `hasRatedPastBooking` indicates the grayed-out, locked rows).
+                        // This includes participants who already have a condition assigned (so already-assigned
+                        // but draggable participants will be considered for rebalancing).
+                        let eligible = participants.filter((p) => !p.hasRatedPastBooking);
 
-                        // Only consider participants without an assigned condition to avoid overwriting
-                        eligible = eligible.filter((p) => !p.condition || String(p.condition).trim() === "");
+                        // Optionally, if you still want to exclude participants with other server-side constraints,
+                        // you can add those checks here (e.g., exclude participants with `someOtherFlag`).
+                        //
+                        // Note: we intentionally DO NOT filter out participants who already have a condition,
+                        // because we want the Auto-Balance to be able to move already-assigned (draggable) people.
 
                         if (!eligible || eligible.length === 0) {
                            alert(
@@ -941,8 +948,19 @@
                            }
                            if (!assigned) assigned = "Presence";
 
-                           counts[assigned] = (counts[assigned] || 0) + 1;
-                           assignments.push({ id: p.id, condition: assigned, name: p.name || p.email });
+                           // Avoid creating no-op assignments:
+                           // - If the participant is already in the assigned condition, don't add an assignment.
+                           // - Do not increment the simulated target count in that case, because `counts`
+                           //   already includes current participant assignments.
+                           const currentCond = (p.condition || "").toString().trim();
+                           if (currentCond === assigned) {
+                              // already in this condition — no-op, skip adding an assignment
+                              // (counts already included this participant when we built initial counts)
+                           } else {
+                              // Participant will be moved to `assigned` — increment simulated count and record assignment
+                              counts[assigned] = (counts[assigned] || 0) + 1;
+                              assignments.push({ id: p.id, condition: assigned, name: p.name || p.email });
+                           }
                         }
 
                         if (assignments.length === 0) {
