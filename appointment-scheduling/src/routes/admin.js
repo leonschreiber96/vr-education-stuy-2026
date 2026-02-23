@@ -113,8 +113,113 @@ router.get(
    "/participants",
    requireAdmin,
    asyncHandler(async (req, res) => {
-      const participants = db.getAllParticipants();
+      // The underlying DB returns joined rows (participant repeated for each booking).
+      // Build a deduplicated list of participants (one entry per participant id) and
+      // add a boolean `hasRatedPastBooking` flag that indicates whether this participant
+      // has at least one past booking with a result_status (i.e., already rated).
+      const rows = db.getAllParticipants();
+
+      // Deduplicate by participant id, prefer the first occurrence of that participant row.
+      const participantsMap = new Map();
+      for (const r of rows) {
+         if (!participantsMap.has(r.id)) {
+            participantsMap.set(r.id, { ...r });
+         }
+      }
+
+      const participants = Array.from(participantsMap.values());
+
+      // Attach hasRatedPastBooking and hasPastBooking flags for each participant.
+      // If the DB helper is not available for any reason, default to false.
+      for (const p of participants) {
+         try {
+            if (typeof db.participantHasRatedPastBooking === "function") {
+               p.hasRatedPastBooking = !!db.participantHasRatedPastBooking(p.id);
+            } else {
+               p.hasRatedPastBooking = false;
+            }
+
+            // New: indicate whether the participant has any past (non-cancelled) booking.
+            if (typeof db.participantHasAnyPastBooking === "function") {
+               p.hasPastBooking = !!db.participantHasAnyPastBooking(p.id);
+            } else {
+               p.hasPastBooking = false;
+            }
+         } catch (err) {
+            // In case of unexpected DB error, don't fail the entire request.
+            p.hasRatedPastBooking = false;
+            p.hasPastBooking = false;
+         }
+      }
+
       res.json(participants);
+   }),
+);
+
+/**
+ * PATCH /participants/:id/condition
+ * Update a participant's study condition (admin only)
+ *
+ * Allowed values:
+ * - "Presence"
+ * - "2D Screen"
+ * - "2D VR"
+ * - "Immersive VR"
+ *
+ * This endpoint updates the `condition` column on the participants table
+ * and returns the updated value on success.
+ */
+router.patch(
+   "/participants/:id/condition",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { id } = req.params;
+      const { condition } = req.body;
+
+      // Allow null/empty to clear the condition
+      const allowed = ["Presence", "2D Screen", "2D VR", "Immersive VR", null, undefined];
+
+      if (!allowed.includes(condition)) {
+         throw new ValidationError("Invalid condition. Allowed values: Presence, 2D Screen, 2D VR, Immersive VR");
+      }
+
+      // Ensure participant exists
+      const participant = db.getParticipantById(id);
+      if (!participant) {
+         throw new NotFoundError("Participant not found");
+      }
+
+      // Attempt update and convert backend block into a 403 response with a clear message
+      try {
+         const result = db.updateParticipantCondition(id, condition || null);
+
+         if (result.changes === 0) {
+            // No DB change (could be same value) — still return success but indicate no change
+            res.json({ success: true, participantId: id, condition: condition || null, message: "No change" });
+            return;
+         }
+
+         Logger.info("Participant condition updated", {
+            participantId: id,
+            condition: condition || null,
+         });
+
+         res.json({ success: true, participantId: id, condition: condition || null });
+      } catch (err) {
+         // If the DB layer blocked the change because the participant has a past rated appointment,
+         // return 403 with a clear message. Otherwise rethrow to be handled by the global error handler.
+         const msg = err && err.message ? String(err.message) : "";
+
+         if (msg.includes("Cannot change condition")) {
+            return res.status(403).json({
+               error: "Unable to change condition: participant has at least one past appointment that has already been rated.",
+               code: "condition_change_blocked",
+            });
+         }
+
+         // Re-throw any other errors to be handled by the central error handler
+         throw err;
+      }
    }),
 );
 

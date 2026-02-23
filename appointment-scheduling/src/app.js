@@ -11,11 +11,7 @@ const config = require("../config");
 const { createSessionMiddleware } = require("./config/session");
 
 // Middleware
-const {
-   requestLogger,
-   performanceLogger,
-   errorLogger,
-} = require("./middleware/logging");
+const { requestLogger, performanceLogger, errorLogger } = require("./middleware/logging");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 // Routes
@@ -67,6 +63,17 @@ function createApp() {
    // Mount routes
    app.use(BASE_PATH || "", publicRoutes);
    app.use((BASE_PATH || "") + "/api/admin", adminRoutes);
+
+   // Suppress noisy browser/devtools probes to /.well-known/appspecific/*
+   // Some Chrome/DevTools variants probe this path when opening DevTools and that
+   // currently results in many 404s logged by our notFoundHandler. Mount a small
+   // handler that returns 204 No Content for that prefix so those probes are
+   // silently ignored and do not clutter logs.
+   const wellKnownPrefix = (config.BASE_PATH || "") + "/.well-known/appspecific";
+   app.use(wellKnownPrefix, (req, res) => {
+      // Respond with 204 No Content for any method under this prefix
+      res.status(204).send();
+   });
 
    // 404 handler (must be after all routes)
    app.use(notFoundHandler);

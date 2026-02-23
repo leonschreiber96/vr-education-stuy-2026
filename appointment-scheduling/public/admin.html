@@ -41,6 +41,7 @@
          <!-- Navigation Tabs -->
          <div class="tabs">
             <button class="tab active" onclick="switchTab('overview', this)">Übersicht</button>
+            <button class="tab" onclick="switchTab('conditions', this)">Bedingungen</button>
             <button class="tab" onclick="switchTab('participants', this)">Teilnehmer</button>
             <button class="tab" onclick="switchTab('timeslots', this)">Zeitslots</button>
             <button class="tab" onclick="switchTab('bookings', this)">Buchungen</button>
@@ -217,6 +218,629 @@
                   </div>
                </div>
             </div>
+
+            <!-- Conditions Tab -->
+            <div id="conditionsTab" class="tab-content">
+               <div class="card">
+                  <h2>Bedingungen - Überblick</h2>
+                  <p style="color: #666; margin-top: 6px; margin-bottom: 12px">
+                     Anzahl der registrierten Teilnehmer, gruppiert nach experimenteller Bedingung. Unter jedem Bin ist
+                     eine Liste der Teilnehmer mit Kurz-Informationen (Sehhilfe + Reisekrankheit) aufgeführt.
+                  </p>
+                  <div style="margin-bottom: 12px">
+                     <button id="balanceBinsBtn" class="btn btn-primary" onclick="balanceBins()">Auto-Balance</button>
+                     <span style="margin-left: 10px; color: #666; font-size: 13px"
+                        >Versuche die Bedingungen zu balancieren (respektiert Brillen & Reisekrankheit)</span
+                     >
+                  </div>
+
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: start">
+                     <!-- Presence -->
+                     <div
+                        class="condition-bin"
+                        id="cond-presence"
+                        style="
+                           flex: 1;
+                           min-width: 240px;
+                           padding: 12px;
+                           border-radius: 8px;
+                           background: #f8fafc;
+                           text-align: left;
+                           border: 1px solid #e6eef6;
+                           display: flex;
+                           flex-direction: column;
+                        "
+                     >
+                        <div style="display: flex; justify-content: space-between; align-items: center">
+                           <div style="font-size: 16px; font-weight: 600">Presence</div>
+                           <div style="font-size: 28px; font-weight: 700" id="count-presence">0</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px">Teilnehmer</div>
+
+                        <!-- Participant list -->
+                        <div
+                           id="list-presence"
+                           style="margin-top: 10px; max-height: 320px; overflow: auto; padding-top: 8px"
+                        ></div>
+                     </div>
+
+                     <!-- 2D Screen -->
+                     <div
+                        class="condition-bin"
+                        id="cond-2d-screen"
+                        style="
+                           flex: 1;
+                           min-width: 240px;
+                           padding: 12px;
+                           border-radius: 8px;
+                           background: #fff7ed;
+                           text-align: left;
+                           border: 1px solid #fbe7d0;
+                           display: flex;
+                           flex-direction: column;
+                        "
+                     >
+                        <div style="display: flex; justify-content: space-between; align-items: center">
+                           <div style="font-size: 16px; font-weight: 600">2D Screen</div>
+                           <div style="font-size: 28px; font-weight: 700" id="count-2d-screen">0</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px">Teilnehmer</div>
+
+                        <!-- Participant list -->
+                        <div
+                           id="list-2d-screen"
+                           style="margin-top: 10px; max-height: 320px; overflow: auto; padding-top: 8px"
+                        ></div>
+                     </div>
+
+                     <!-- 2D VR -->
+                     <div
+                        class="condition-bin"
+                        id="cond-2d-vr"
+                        style="
+                           flex: 1;
+                           min-width: 240px;
+                           padding: 12px;
+                           border-radius: 8px;
+                           background: #eef2ff;
+                           text-align: left;
+                           border: 1px solid #e2e9ff;
+                           display: flex;
+                           flex-direction: column;
+                        "
+                     >
+                        <div style="display: flex; justify-content: space-between; align-items: center">
+                           <div style="font-size: 16px; font-weight: 600">2D VR</div>
+                           <div style="font-size: 28px; font-weight: 700" id="count-2d-vr">0</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px">Teilnehmer</div>
+
+                        <!-- Participant list -->
+                        <div
+                           id="list-2d-vr"
+                           style="margin-top: 10px; max-height: 320px; overflow: auto; padding-top: 8px"
+                        ></div>
+                     </div>
+
+                     <!-- Immersive VR -->
+                     <div
+                        class="condition-bin"
+                        id="cond-immersive-vr"
+                        style="
+                           flex: 1;
+                           min-width: 240px;
+                           padding: 12px;
+                           border-radius: 8px;
+                           background: #f0fdf4;
+                           text-align: left;
+                           border: 1px solid #e6f7ea;
+                           display: flex;
+                           flex-direction: column;
+                        "
+                     >
+                        <div style="display: flex; justify-content: space-between; align-items: center">
+                           <div style="font-size: 16px; font-weight: 600">Immersive VR</div>
+                           <div style="font-size: 28px; font-weight: 700" id="count-immersive-vr">0</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px">Teilnehmer</div>
+
+                        <!-- Participant list -->
+                        <div
+                           id="list-immersive-vr"
+                           style="margin-top: 10px; max-height: 320px; overflow: auto; padding-top: 8px"
+                        ></div>
+                     </div>
+                  </div>
+
+                  <div style="margin-top: 12px; color: #666; font-size: 13px">
+                     Hinweis: Die Zahlen und Listen werden von der Admin-Seite mit Daten aus der Teilnehmer-API gefüllt.
+                  </div>
+               </div>
+            </div>
+
+            <!-- Inline script to populate participant lists and badges for the Conditions tab -->
+            <script>
+               (function () {
+                  // Create simple badge element
+                  function createBadge(text, opts = {}) {
+                     const span = document.createElement("span");
+                     span.textContent = text;
+                     span.style.display = "inline-block";
+                     span.style.padding = "2px 6px";
+                     span.style.borderRadius = "999px";
+                     span.style.fontSize = "11px";
+                     span.style.marginLeft = "6px";
+                     span.style.color = opts.color || "#fff";
+                     span.style.background = opts.background || "#6b7280"; // default gray
+                     return span;
+                  }
+
+                  // Create participant row with name and badges
+                  function makeParticipantRow(p, conditionKey) {
+                     const wrapper = document.createElement("div");
+                     wrapper.style.display = "flex";
+                     wrapper.style.alignItems = "center";
+                     wrapper.style.justifyContent = "space-between";
+                     wrapper.style.padding = "6px 8px";
+                     wrapper.style.borderBottom = "1px solid rgba(0,0,0,0.04)";
+                     wrapper.style.fontSize = "14px";
+
+                     const left = document.createElement("div");
+                     left.textContent = p.name || p.email || "Unbekannt";
+
+                     const right = document.createElement("div");
+                     right.style.display = "flex";
+                     right.style.alignItems = "center";
+
+                     // vision_correction badge: show text (e.g., Brille/Glasses)
+                     const vc = p.vision_correction || p.visionCorrection || "";
+                     const ms = p.motion_sickness || p.motionSickness || p.motionSickness || "";
+
+                     // Normalize common values
+                     const vcNormalized = String(vc || "").toLowerCase();
+                     const msNum = Number(ms) || null;
+
+                     // Default badge for vision correction
+                     if (vc) {
+                        // If 'glasses' or 'brille' word present, mark as glasses
+                        const isGlasses =
+                           vcNormalized.includes("glasses") ||
+                           vcNormalized.includes("brille") ||
+                           vcNormalized.includes("glass");
+                        // Only show red for glasses when in VR conditions (2D VR or Immersive VR).
+                        // Otherwise keep neutral color.
+                        let vcBg = "#6b7280"; // neutral gray
+                        if (isGlasses && (conditionKey === "2D VR" || conditionKey === "Immersive VR")) {
+                           vcBg = "#ef4444"; // red for glasses in VR conditions
+                        }
+                        const vcBadge = createBadge(String(vc), {
+                           background: vcBg,
+                           color: "#fff",
+                        });
+                        right.appendChild(vcBadge);
+                     }
+
+                     // Motion sickness badge
+                     if (ms !== "" && ms !== null && !Number.isNaN(msNum)) {
+                        let bg = "#6b7280"; // default gray
+                        // Only apply the colored thresholds for the VR conditions per spec.
+                        if (conditionKey === "2D VR" || conditionKey === "Immersive VR") {
+                           if (msNum > 3)
+                              bg = "#ef4444"; // red for > 3
+                           else if (msNum === 3)
+                              bg = "#f59e0b"; // orange for == 3
+                           else bg = "#10b981"; // green-ish for lower values
+                        } else {
+                           bg = "#6b7280";
+                        }
+                        const msBadge = createBadge(String(ms), {
+                           background: bg,
+                           color: "#fff",
+                        });
+                        right.appendChild(msBadge);
+                     }
+
+                     wrapper.appendChild(left);
+                     wrapper.appendChild(right);
+                     return wrapper;
+                  }
+
+                  async function populateConditionLists() {
+                     try {
+                        const basePath = window.location.pathname.split("/").slice(0, -1).join("/") || "";
+                        const resp = await fetch(basePath + "/api/admin/participants");
+                        if (!resp.ok) throw new Error("Failed to load participants");
+                        const participants = await resp.json();
+
+                        // Prepare containers
+                        const map = {
+                           Presence: {
+                              listEl: document.getElementById("list-presence"),
+                              countEl: document.getElementById("count-presence"),
+                           },
+                           "2D Screen": {
+                              listEl: document.getElementById("list-2d-screen"),
+                              countEl: document.getElementById("count-2d-screen"),
+                           },
+                           "2D VR": {
+                              listEl: document.getElementById("list-2d-vr"),
+                              countEl: document.getElementById("count-2d-vr"),
+                           },
+                           "Immersive VR": {
+                              listEl: document.getElementById("list-immersive-vr"),
+                              countEl: document.getElementById("count-immersive-vr"),
+                           },
+                        };
+
+                        // Clear lists
+                        Object.values(map).forEach(({ listEl }) => {
+                           if (listEl) listEl.innerHTML = "";
+                        });
+
+                        // Helpers: normalize various string variants into canonical condition keys
+                        function normalizeCondition(raw) {
+                           if (raw === null || raw === undefined) return "";
+                           let s = String(raw).trim().toLowerCase();
+                           // unify separators
+                           s = s.replace(/[_-]/g, " ").replace(/\s+/g, " ").trim();
+
+                           // handle common variants
+                           if (s === "" || s === "none" || s === "-") return "";
+                           if (s.includes("presence")) return "Presence";
+                           // 2d screen variants: "2d screen", "2d-screen", "2d_screen", "2dscreen"
+                           if (
+                              s.replace(/\s+/g, "").startsWith("2dscreen") ||
+                              s.includes("2d screen") ||
+                              s.includes("2d screen")
+                           )
+                              return "2D Screen";
+                           if (
+                              s === "2d screen" ||
+                              s === "2d-screen" ||
+                              s === "2d_screen" ||
+                              s === "2dscreen" ||
+                              s === "2dscreen"
+                           )
+                              return "2D Screen";
+                           // 2d vr variants
+                           if (
+                              s.replace(/\s+/g, "").startsWith("2dvr") ||
+                              s.includes("2d vr") ||
+                              s.includes("2d-vr") ||
+                              s.includes("2d_vr")
+                           )
+                              return "2D VR";
+                           if (s === "2d vr" || s === "2d-vr" || s === "2d_vr" || s === "2dvr") return "2D VR";
+                           // immersive vr variants
+                           if (s.includes("immersive") && s.includes("vr")) return "Immersive VR";
+                           if (
+                              s === "immersive vr" ||
+                              s === "immersive-vr" ||
+                              s === "immersive_vr" ||
+                              s === "immersivevr"
+                           )
+                              return "Immersive VR";
+
+                           // If the raw closely matches one of our canonical English strings, prefer that
+                           if (s === "presence") return "Presence";
+                           if (s === "2d screen" || s === "2dscreen") return "2D Screen";
+                           if (s === "2d vr" || s === "2dvr") return "2D VR";
+                           if (s === "immersive vr" || s === "immersivevr") return "Immersive VR";
+
+                           // fall back: try to map exact canonical capitalization
+                           const upper = (raw || "").toString();
+                           if (
+                              upper === "Presence" ||
+                              upper === "2D Screen" ||
+                              upper === "2D VR" ||
+                              upper === "Immersive VR"
+                           )
+                              return upper;
+
+                           return "";
+                        }
+
+                        // Group participants by canonical condition
+                        const groups = {
+                           Presence: [],
+                           "2D Screen": [],
+                           "2D VR": [],
+                           "Immersive VR": [],
+                        };
+
+                        participants.forEach((p) => {
+                           const canonical = normalizeCondition(p.condition || p.condition || "");
+                           if (canonical && groups.hasOwnProperty(canonical)) {
+                              groups[canonical].push(p);
+                           }
+                        });
+
+                        // Populate UI
+                        Object.keys(groups).forEach((condKey) => {
+                           const listEl = map[condKey].listEl;
+                           const countEl = map[condKey].countEl;
+                           const list = groups[condKey];
+
+                           if (countEl) countEl.textContent = String(list.length || 0);
+                           if (listEl) {
+                              if (list.length === 0) {
+                                 listEl.innerHTML =
+                                    '<div style="color:#666; font-size:13px; padding:6px">– keine Einträge –</div>';
+                              } else {
+                                 list.forEach((p) => {
+                                    // Ensure participant fields expected by makeParticipantRow are present/normalized
+                                    // e.g., motion_sickness may come as motionSickness or motion_sickness
+                                    if (p.motion_sickness === undefined && p.motionSickness !== undefined)
+                                       p.motion_sickness = p.motionSickness;
+                                    if (p.vision_correction === undefined && p.visionCorrection !== undefined)
+                                       p.vision_correction = p.visionCorrection;
+                                    const row = makeParticipantRow(p, condKey);
+                                    listEl.appendChild(row);
+                                 });
+                              }
+                           }
+                        });
+                     } catch (err) {
+                        console.error("Error populating condition lists", err);
+                     }
+                  }
+
+                  // Populate initially and whenever the Conditions tab becomes active
+                  document.addEventListener("DOMContentLoaded", () => {
+                     // Try immediate population (in case admin.js already loaded)
+                     populateConditionLists().catch(() => {});
+
+                     // Observe the conditionsTab for activation via class change
+                     const tab = document.getElementById("conditionsTab");
+                     if (tab) {
+                        const observer = new MutationObserver((mutations) => {
+                           for (const m of mutations) {
+                              if (m.type === "attributes" && tab.classList.contains("active")) {
+                                 populateConditionLists().catch(() => {});
+                                 break;
+                              }
+                           }
+                        });
+                        observer.observe(tab, { attributes: true, attributeFilter: ["class"] });
+                     }
+
+                     // Also refresh after a successful condition update by listening to a custom event
+                     // (admin.js may dispatch or we can trigger this manually after PATCH success)
+                     document.addEventListener("conditionUpdated", () => {
+                        populateConditionLists().catch(() => {});
+                     });
+                  });
+
+                  // Auto-balance function exposed to global scope so the button can call it.
+                  // Strategy:
+                  //  - Fetch participants and bookings
+                  //  - Determine participants without any past bookings (eligible)
+                  //  - Compute current counts per condition
+                  //  - Greedily assign eligible participants to underfilled bins respecting rules:
+                  //      * do not put glasses into the VR bins (2D VR / Immersive VR)
+                  //      * do not put participants with motion_sickness > 3 into the VR bins
+                  //  - PATCH assignments sequentially and refresh lists at the end
+                  window.balanceBins = async function () {
+                     try {
+                        const basePath = window.location.pathname.split("/").slice(0, -1).join("/") || "";
+                        // Fetch participants and bookings
+                        const [pResp, bResp] = await Promise.all([
+                           fetch(basePath + "/api/admin/participants"),
+                           fetch(basePath + "/api/admin/bookings"),
+                        ]);
+                        if (!pResp.ok) throw new Error("Failed to load participants");
+                        if (!bResp.ok) throw new Error("Failed to load bookings");
+                        const participants = await pResp.json();
+                        const bookings = await bResp.json();
+
+                        const now = new Date();
+
+                        // Determine which participants have at least one past booking
+                        const hasPastBooking = {};
+                        bookings.forEach((b) => {
+                           try {
+                              if (b && b.participant_id && b.start_time && new Date(b.start_time) < now) {
+                                 hasPastBooking[b.participant_id] = true;
+                              }
+                           } catch (e) {
+                              // ignore parse errors
+                           }
+                        });
+
+                        // Eligible participants: those without any past booking
+                        let eligible = participants.filter((p) => !hasPastBooking[p.id]);
+
+                        // Only consider participants without an assigned condition to avoid overwriting
+                        eligible = eligible.filter((p) => !p.condition || String(p.condition).trim() === "");
+
+                        if (!eligible || eligible.length === 0) {
+                           alert(
+                              "Keine berechtigten Teilnehmer zum Zuweisen (keine Teilnehmer ohne vergangene Termine oder bereits zugewiesen).",
+                           );
+                           return;
+                        }
+
+                        // Compute current counts per canonical condition
+                        const counts = {
+                           Presence: 0,
+                           "2D Screen": 0,
+                           "2D VR": 0,
+                           "Immersive VR": 0,
+                        };
+
+                        participants.forEach((p) => {
+                           const c = (p.condition || "").toString().trim();
+                           if (counts.hasOwnProperty(c)) counts[c]++;
+                        });
+
+                        // Determine target per bin: attempt to equalize across all participants (current + eligible)
+                        const totalParticipants = participants.length;
+                        const target = Math.ceil(totalParticipants / 4);
+
+                        // Helper to determine if participant can be placed in a VR bin
+                        function canBePlacedInVR(p) {
+                           const vc = (p.vision_correction || p.visionCorrection || "").toString().toLowerCase();
+                           const msRaw =
+                              p.motion_sickness !== undefined
+                                 ? p.motion_sickness
+                                 : p.motionSickness !== undefined
+                                   ? p.motionSickness
+                                   : null;
+                           const ms = msRaw === null || msRaw === "" ? null : Number(msRaw);
+                           const hasGlasses = vc.includes("glasses") || vc.includes("brille") || vc.includes("glass");
+                           if (hasGlasses) return false;
+                           if (!Number.isNaN(ms) && ms > 3) return false;
+                           return true;
+                        }
+
+                        // Greedy assignment: for each eligible participant, choose the underfilled bin with smallest count that satisfies constraints
+                        const assignments = [];
+                        for (const p of eligible) {
+                           const candidates = Object.keys(counts).sort((a, b) => counts[a] - counts[b]);
+                           let assigned = null;
+                           for (const c of candidates) {
+                              if (counts[c] >= target) continue;
+                              if ((c === "2D VR" || c === "Immersive VR") && !canBePlacedInVR(p)) continue;
+                              assigned = c;
+                              break;
+                           }
+                           if (!assigned) {
+                              for (const c of candidates) {
+                                 if ((c === "2D VR" || c === "Immersive VR") && !canBePlacedInVR(p)) continue;
+                                 assigned = c;
+                                 break;
+                              }
+                           }
+                           if (!assigned) assigned = "Presence";
+
+                           counts[assigned] = (counts[assigned] || 0) + 1;
+                           assignments.push({ id: p.id, condition: assigned, name: p.name || p.email });
+                        }
+
+                        if (assignments.length === 0) {
+                           alert("Keine Zuweisungen erforderlich.");
+                           return;
+                        }
+
+                        // Build preview modal
+                        const modal = document.createElement("div");
+                        modal.style.position = "fixed";
+                        modal.style.left = "0";
+                        modal.style.top = "0";
+                        modal.style.right = "0";
+                        modal.style.bottom = "0";
+                        modal.style.background = "rgba(0,0,0,0.4)";
+                        modal.style.display = "flex";
+                        modal.style.justifyContent = "center";
+                        modal.style.alignItems = "center";
+                        modal.style.zIndex = "9999";
+
+                        const dialog = document.createElement("div");
+                        dialog.style.width = "720px";
+                        dialog.style.maxHeight = "80vh";
+                        dialog.style.overflow = "auto";
+                        dialog.style.background = "#fff";
+                        dialog.style.borderRadius = "8px";
+                        dialog.style.padding = "16px";
+                        dialog.style.boxShadow = "0 10px 30px rgba(0,0,0,0.2)";
+                        modal.appendChild(dialog);
+
+                        const title = document.createElement("h3");
+                        title.textContent = `Preview: ${assignments.length} Zuweisungen`;
+                        title.style.marginTop = "0";
+                        dialog.appendChild(title);
+
+                        const info = document.createElement("div");
+                        info.style.color = "#555";
+                        info.style.marginBottom = "10px";
+                        info.textContent =
+                           "Überprüfen Sie die vorgeschlagenen Zuweisungen. Klicken Sie auf 'Anwenden', um die Änderungen durchzuführen.";
+                        dialog.appendChild(info);
+
+                        // Create a table-like list grouped by target condition
+                        const grouped = {};
+                        for (const a of assignments) {
+                           grouped[a.condition] = grouped[a.condition] || [];
+                           grouped[a.condition].push(a);
+                        }
+
+                        Object.keys(grouped).forEach((cond) => {
+                           const header = document.createElement("div");
+                           header.style.fontWeight = "600";
+                           header.style.marginTop = "10px";
+                           header.textContent = `${cond} (${grouped[cond].length})`;
+                           dialog.appendChild(header);
+
+                           const ul = document.createElement("div");
+                           ul.style.marginTop = "6px";
+                           ul.style.marginBottom = "6px";
+                           dialog.appendChild(ul);
+
+                           grouped[cond].forEach((a) => {
+                              const row = document.createElement("div");
+                              row.style.display = "flex";
+                              row.style.justifyContent = "space-between";
+                              row.style.padding = "6px 8px";
+                              row.style.borderBottom = "1px solid rgba(0,0,0,0.05)";
+                              row.textContent = a.name || String(a.id);
+                              ul.appendChild(row);
+                           });
+                        });
+
+                        const buttonsRow = document.createElement("div");
+                        buttonsRow.style.display = "flex";
+                        buttonsRow.style.justifyContent = "flex-end";
+                        buttonsRow.style.gap = "10px";
+                        buttonsRow.style.marginTop = "12px";
+
+                        const cancelBtn = document.createElement("button");
+                        cancelBtn.className = "btn btn-secondary";
+                        cancelBtn.textContent = "Abbrechen";
+                        cancelBtn.onclick = () => {
+                           document.body.removeChild(modal);
+                        };
+                        buttonsRow.appendChild(cancelBtn);
+
+                        const applyBtn = document.createElement("button");
+                        applyBtn.className = "btn btn-primary";
+                        applyBtn.textContent = "Anwenden";
+                        applyBtn.onclick = async () => {
+                           applyBtn.disabled = true;
+                           cancelBtn.disabled = true;
+                           applyBtn.textContent = "Wird angewendet...";
+                           let success = 0;
+                           let failed = 0;
+                           for (const a of assignments) {
+                              try {
+                                 const resp = await fetch(basePath + `/api/admin/participants/${a.id}/condition`, {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ condition: a.condition }),
+                                 });
+                                 if (resp.ok) success++;
+                                 else failed++;
+                              } catch (e) {
+                                 failed++;
+                              }
+                           }
+                           document.body.removeChild(modal);
+                           await populateConditionLists();
+                           alert(`Auto-Balance abgeschlossen. Erfolgreich: ${success}, Fehlgeschlagen: ${failed}`);
+                        };
+                        buttonsRow.appendChild(applyBtn);
+
+                        dialog.appendChild(buttonsRow);
+                        document.body.appendChild(modal);
+                     } catch (err) {
+                        console.error("Error in balanceBins:", err);
+                        alert(
+                           "Fehler beim Ausführen der Auto-Balance: " +
+                              (err && err.message ? err.message : String(err)),
+                        );
+                     }
+                  };
+               })();
+            </script>
 
             <!-- Participants Tab -->
             <div id="participantsTab" class="tab-content">

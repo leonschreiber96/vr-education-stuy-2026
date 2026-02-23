@@ -31,6 +31,7 @@ function initialize() {
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       confirmation_token TEXT UNIQUE NOT NULL,
+      condition TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -139,6 +140,11 @@ function initialize() {
          definition: "TEXT",
       },
       {
+         table: "participants",
+         column: "condition",
+         definition: "TEXT",
+      },
+      {
          table: "bookings",
          column: "reminder_7day_sent",
          definition: "INTEGER DEFAULT 0",
@@ -200,6 +206,7 @@ function initialize() {
     CREATE INDEX IF NOT EXISTS idx_timeslots_type ON timeslots(appointment_type);
     CREATE INDEX IF NOT EXISTS idx_timeslots_parent ON timeslots(parent_appointment_id);
     CREATE INDEX IF NOT EXISTS idx_participants_token ON participants(confirmation_token);
+    CREATE INDEX IF NOT EXISTS idx_participants_condition ON participants(condition);
   `);
 
    console.log("Database initialized successfully");
@@ -223,12 +230,13 @@ function getAdminByUsername(username) {
 function createParticipant(name, email, questionnaireData = {}) {
    const token = crypto.randomBytes(32).toString("hex");
    const stmt = db.prepare(
-      "INSERT INTO participants (name, email, confirmation_token, vision_correction, study_subject, vr_experience, motion_sickness, tu_berlin_employee) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO participants (name, email, confirmation_token, condition, vision_correction, study_subject, vr_experience, motion_sickness, tu_berlin_employee) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
    );
    const result = stmt.run(
       name,
       email,
       token,
+      questionnaireData.condition || null,
       questionnaireData.visionCorrection || null,
       questionnaireData.studySubject || null,
       questionnaireData.vrExperience || null,
@@ -240,6 +248,7 @@ function createParticipant(name, email, questionnaireData = {}) {
       name,
       email,
       confirmationToken: token,
+      condition: questionnaireData.condition || null,
       visionCorrection: questionnaireData.visionCorrection || null,
       studySubject: questionnaireData.studySubject || null,
       vrExperience: questionnaireData.vrExperience || null,
@@ -259,6 +268,7 @@ function getAllParticipants() {
       p.*,
       b.id as booking_id,
       b.status as booking_status,
+      b.result_status as booking_result_status,
       t.start_time,
       t.end_time,
       t.location
@@ -278,7 +288,8 @@ function updateParticipantPrescreen(token, prescreenData) {
 
    const stmt = db.prepare(`
       UPDATE participants
-      SET vision_correction = ?,
+      SET condition = ?,
+          vision_correction = ?,
           study_subject = ?,
           vr_experience = ?,
           motion_sickness = ?,
@@ -286,7 +297,9 @@ function updateParticipantPrescreen(token, prescreenData) {
       WHERE id = ?
    `);
 
+   // Note: ensure the values are passed in the same order as the SET clause above
    stmt.run(
+      prescreenData.condition || null,
       prescreenData.visionCorrection || null,
       prescreenData.studySubject || null,
       prescreenData.vrExperience || null,
@@ -296,6 +309,105 @@ function updateParticipantPrescreen(token, prescreenData) {
    );
 
    return { success: true };
+}
+
+// Update participant condition by id (admin)
+// Prevent changing condition if the participant has at least one past appointment
+// that already has a result_status (i.e., was rated). Returns changes and the
+// updated participant object on success. Throws an Error if the change is blocked.
+function updateParticipantCondition(id, condition) {
+   // First, ensure participant exists (keep behavior consistent with callers)
+   const participant = getParticipantById(id);
+   if (!participant) {
+      throw new Error("Participant not found");
+   }
+
+   // Check for past rated bookings: joined bookings + timeslots where timeslot is in the past
+   // and booking has a non-empty result_status and is not cancelled.
+   const checkStmt = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM bookings b
+      JOIN timeslots t ON b.timeslot_id = t.id
+      WHERE b.participant_id = ?
+        AND b.status != 'cancelled'
+        AND datetime(t.start_time) < datetime('now')
+        AND b.result_status IS NOT NULL
+        AND b.result_status != ''
+   `);
+   const row = checkStmt.get(id);
+
+   if (row && row.count > 0) {
+      // Block the change - participant already has at least one past rated appointment
+      throw new Error("Cannot change condition: participant has a past appointment that has been rated");
+   }
+
+   // Proceed with update
+   const stmt = db.prepare("UPDATE participants SET condition = ? WHERE id = ?");
+   const result = stmt.run(condition || null, id);
+
+   // Fetch the updated participant for verification/debugging
+   let updated = null;
+   try {
+      updated = getParticipantById(id);
+   } catch (err) {
+      // If something goes wrong fetching the participant, still return change count
+      console.error("updateParticipantCondition: failed to fetch updated participant", {
+         id,
+         error: err && err.message,
+      });
+   }
+
+   // Log the update for debug purposes (visible in server logs)
+   try {
+      console.log("updateParticipantCondition - participant updated", {
+         participantId: id,
+         requestedCondition: condition || null,
+         storedCondition: updated ? updated.condition : null,
+         changes: result.changes,
+      });
+   } catch (err) {
+      // Swallow logging errors to avoid interrupting normal flow
+   }
+
+   return { changes: result.changes, participant: updated };
+}
+
+/**
+ * Helper: Check whether a participant has any past booking (regardless of result_status).
+ * Returns true if the participant has at least one non-cancelled booking whose timeslot
+ * start_time is strictly in the past (datetime < now).
+ */
+function participantHasAnyPastBooking(participantId) {
+   const stmt = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM bookings b
+      JOIN timeslots t ON b.timeslot_id = t.id
+      WHERE b.participant_id = ?
+        AND b.status != 'cancelled'
+        AND datetime(t.start_time) < datetime('now')
+   `);
+   const row = stmt.get(participantId);
+   return !!(row && row.count > 0);
+}
+
+/**
+ * Helper: Check whether a participant has at least one past booking that already has a result_status.
+ * Returns true if the participant has at least one non-cancelled booking whose timeslot is in the past
+ * and the booking's result_status is non-empty.
+ */
+function participantHasRatedPastBooking(participantId) {
+   const stmt = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM bookings b
+      JOIN timeslots t ON b.timeslot_id = t.id
+      WHERE b.participant_id = ?
+        AND b.status != 'cancelled'
+        AND datetime(t.start_time) < datetime('now')
+        AND b.result_status IS NOT NULL
+        AND b.result_status != ''
+   `);
+   const row = stmt.get(participantId);
+   return !!(row && row.count > 0);
 }
 
 function deleteParticipant(id) {
@@ -1340,6 +1452,9 @@ module.exports = {
    getParticipantById,
    getAllParticipants,
    updateParticipantPrescreen,
+   updateParticipantCondition,
+   participantHasAnyPastBooking,
+   participantHasRatedPastBooking,
    deleteParticipant,
    createTimeslot,
    getTimeslotById,

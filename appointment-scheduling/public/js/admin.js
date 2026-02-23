@@ -325,6 +325,9 @@ function switchTab(tabName, buttonElement) {
       loadBookings().then(() => loadTimeslots());
    } else if (tabName === "bookings") {
       loadBookings();
+   } else if (tabName === "conditions") {
+      // New: conditions overview tab
+      loadConditionOverview();
    } else if (tabName === "logs") {
       loadLogs();
    } else if (tabName === "calendar") {
@@ -426,8 +429,25 @@ function displayParticipants() {
             vr_experience: p.vr_experience,
             motion_sickness: p.motion_sickness,
             tu_berlin_employee: p.tu_berlin_employee,
+            condition: p.condition || null,
+            // Flags coming from the API to indicate locking state in the UI
+            hasPastBooking: !!p.hasPastBooking,
+            hasRatedPastBooking: !!p.hasRatedPastBooking,
             bookings: [],
          });
+      } else {
+         // Merge any missing/updated participant fields coming from additional joined rows.
+         // Preserve the first-seen primary values, but accept a non-null condition if later row has it.
+         const existing = participantsMap.get(p.id);
+         if ((!existing.condition || existing.condition === null) && p.condition) {
+            existing.condition = p.condition;
+         }
+         // Merge lock flags: once true keep true
+         existing.hasPastBooking = !!existing.hasPastBooking || !!p.hasPastBooking;
+         existing.hasRatedPastBooking = !!existing.hasRatedPastBooking || !!p.hasRatedPastBooking;
+         // If name/email are missing for any reason, fill them from later rows
+         if ((!existing.name || existing.name === "") && p.name) existing.name = p.name;
+         if ((!existing.email || existing.email === "") && p.email) existing.email = p.email;
       }
       // Add booking info if it exists
       if (p.booking_id) {
@@ -437,6 +457,7 @@ function displayParticipants() {
             end_time: p.end_time,
             location: p.location,
             booking_status: p.booking_status,
+            booking_result_status: p.booking_result_status || p.result_status || p.resultStatus || null,
          });
       }
    });
@@ -463,6 +484,7 @@ function displayParticipants() {
                    <tr>
                        <th>Name</th>
                        <th>E-Mail</th>
+                       <th>Bedingung</th>
                        <th>Termin(e)</th>
                        <th>Status</th>
                        <th>Fragebogen</th>
@@ -541,6 +563,12 @@ function displayParticipants() {
                                <strong>TU Berlin Mitarbeiter:</strong> ${tuEmployee}`
                             : "Keine Fragebogendaten verfügbar";
 
+                         // Render condition select (admin can change)
+                         const conditionValue = p.condition || "";
+                         // Compute locked state: rely solely on the server-provided flag.
+                         // The frontend will trust `hasRatedPastBooking` from the API and not attempt
+                         // any client-side scanning/fallback. The server is authoritative for this rule.
+                         const locked = !!p.hasRatedPastBooking;
                          return `
                            <tr${isTUEmployee ? ' style="background-color: #fff8e1; border-left: 4px solid #ffc107;"' : ""}>
                                <td>
@@ -548,6 +576,19 @@ function displayParticipants() {
                                    ${p.name}
                                </td>
                                <td>${p.email}</td>
+                               <td>
+                                   ${
+                                      locked
+                                         ? `<span style="padding:6px;border-radius:6px;border:1px solid #ddd; display:inline-block; color:#666;">${conditionValue || "-"}</span>`
+                                         : `<select onchange="changeParticipantCondition(${p.id}, this.value)" style="padding:6px;border-radius:6px;border:1px solid #ddd;">
+                                      <option value="">-</option>
+                                      <option value="Presence"${conditionValue === "Presence" ? " selected" : ""}>Presence</option>
+                                      <option value="2D Screen"${conditionValue === "2D Screen" ? " selected" : ""}>2D Screen</option>
+                                      <option value="2D VR"${conditionValue === "2D VR" ? " selected" : ""}>2D VR</option>
+                                      <option value="Immersive VR"${conditionValue === "Immersive VR" ? " selected" : ""}>Immersive VR</option>
+                                   </select>`
+                                   }
+                               </td>
                                <td>${appointmentTimeDisplay}</td>
                                <td>
                                    ${
@@ -582,6 +623,94 @@ function displayParticipants() {
            </table>
        </div>
    `;
+}
+
+// Load condition overview (counts per condition)
+async function loadConditionOverview() {
+   try {
+      const response = await fetch(BASE_PATH + "/api/admin/participants");
+      if (!response.ok) throw new Error("Failed to load participants for condition overview");
+      const participants = await response.json();
+
+      // Count participants per allowed condition
+      const counts = {
+         Presence: 0,
+         "2D Screen": 0,
+         "2D VR": 0,
+         "Immersive VR": 0,
+         "": 0, // unspecified
+      };
+
+      participants.forEach((p) => {
+         const c = p.condition || "";
+         if (c === "Presence") counts["Presence"]++;
+         else if (c === "2D Screen") counts["2D Screen"]++;
+         else if (c === "2D VR") counts["2D VR"]++;
+         else if (c === "Immersive VR") counts["Immersive VR"]++;
+         else counts[""]++;
+      });
+
+      // Update UI counters (ensure elements exist)
+      const setText = (id, value) => {
+         const el = document.getElementById(id);
+         if (el) el.textContent = String(value);
+      };
+
+      setText("count-presence", counts["Presence"] || 0);
+      setText("count-2d-screen", counts["2D Screen"] || 0);
+      setText("count-2d-vr", counts["2D VR"] || 0);
+      setText("count-immersive-vr", counts["Immersive VR"] || 0);
+   } catch (err) {
+      console.error("Error loading condition overview:", err);
+      const container = document.getElementById("conditionOverviewContainer");
+      if (container) container.innerHTML = '<div class="error">Fehler beim Laden der Übersicht</div>';
+   }
+}
+
+// Change participant condition (admin)
+async function changeParticipantCondition(id, condition) {
+   try {
+      // Client-side guard: only prevent PATCH when the server indicates the participant has a rated past booking.
+      // Do not attempt any client-side fallback scanning here; rely on the API-provided flag.
+      let participant = null;
+      if (Array.isArray(allData.participants)) participant = allData.participants.find((p) => p.id === id);
+
+      const locked = participant ? !!participant.hasRatedPastBooking : false;
+
+      if (locked) {
+         // Avoid sending a PATCH that will be rejected by the server; inform the admin and refresh UI.
+         showDashboardAlert(
+            "Bedingung kann nicht geändert werden: Teilnehmer hat mindestens einen vergangenen Termin, der bereits bewertet wurde",
+            "warning",
+         );
+         await loadParticipants();
+         return;
+      }
+
+      // Normalize empty string -> null for clearing
+      const payload = { condition: condition === "" ? null : condition };
+
+      const response = await fetch(BASE_PATH + `/api/admin/participants/${id}/condition`, {
+         method: "PATCH",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+         throw new Error(data.error || "Failed to update condition");
+      }
+
+      showDashboardAlert("Bedingung aktualisiert", "success");
+      // Reload participants to reflect any server-side normalization
+      await loadParticipants();
+   } catch (error) {
+      console.error("Error updating participant condition:", error);
+      showDashboardAlert("Fehler beim Aktualisieren der Bedingung", "error");
+      // Reload to revert UI to authoritative value
+      await loadParticipants();
+   }
 }
 
 // Filter participants by TU Berlin employee status
@@ -1552,10 +1681,32 @@ function setupStatusTooltips(bothFinishedList, waitingForSecondList, noShowSecon
 // Display upcoming appointments
 function displayUpcomingAppointments() {
    const container = document.getElementById("upcomingAppointments");
-   const upcoming = allData.bookings
-      .filter((b) => b.status === "active" && new Date(b.start_time) > new Date())
-      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-      .slice(0, 5);
+
+   const now = new Date();
+   // Start of today (00:00 local) and start of the day after tomorrow (00:00 local, two days ahead)
+   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+   const startOfDayAfterTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 0, 0, 0, 0);
+
+   // Find bookings scheduled for today or tomorrow (by date range)
+   const todayTomorrow = allData.bookings
+      .filter(
+         (b) =>
+            b.status === "active" &&
+            new Date(b.start_time) >= startOfToday &&
+            new Date(b.start_time) < startOfDayAfterTomorrow,
+      )
+      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+   // If none scheduled for today/tomorrow, fall back to the next up to 5 upcoming after now
+   let upcoming = [];
+   if (todayTomorrow.length > 0) {
+      upcoming = todayTomorrow;
+   } else {
+      upcoming = allData.bookings
+         .filter((b) => b.status === "active" && new Date(b.start_time) > now)
+         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+         .slice(0, 5);
+   }
 
    if (upcoming.length === 0) {
       container.innerHTML = '<p style="text-align: center; color: #666;">Keine bevorstehenden Termine.</p>';
@@ -2800,6 +2951,9 @@ function closeDayDetailsModal() {
 async function loadUnreviewedAppointments() {
    try {
       console.log("Loading unreviewed appointments...");
+      // Ensure we have the latest bookings so we can also display reviewed ones grouped by participant
+      await loadBookings();
+
       const response = await fetch(BASE_PATH + "/api/admin/bookings/unreviewed");
       console.log("Response status:", response.status);
 
@@ -2813,6 +2967,8 @@ async function loadUnreviewedAppointments() {
       console.log("Loaded appointments:", appointments.length, appointments);
       allData.unreviewedAppointments = appointments;
       displayUnreviewedAppointments();
+      // Also render reviewed appointments (grouped by participant)
+      displayReviewedAppointments();
       updateReviewTabBadge();
    } catch (error) {
       console.error("Error loading unreviewed appointments:", error);
@@ -2827,88 +2983,219 @@ async function loadUnreviewedAppointments() {
    }
 }
 
-// Display unreviewed appointments
+// Display unreviewed appointments and then append reviewed (grouped) below
 function displayUnreviewedAppointments() {
    const container = document.getElementById("unreviewedContainer");
-   console.log("Displaying unreviewed appointments, count:", allData.unreviewedAppointments.length);
+   const unreviewed = Array.isArray(allData.unreviewedAppointments) ? allData.unreviewedAppointments : [];
+   console.log("Displaying unreviewed appointments, count:", unreviewed.length);
 
-   if (!allData.unreviewedAppointments || allData.unreviewedAppointments.length === 0) {
-      container.innerHTML = `
-         <div style="text-align: center; padding: 40px; color: #666;">
-            <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-            <h3>Alle Termine bewertet!</h3>
-            <p>Es gibt keine vergangenen Termine, die noch bewertet werden müssen.</p>
+   let html = "";
+
+   if (!unreviewed || unreviewed.length === 0) {
+      html += `
+         <div style="text-align: center; padding: 20px; color: #666; margin-bottom: 12px;">
+            <div style="font-size: 36px; margin-bottom: 8px;">✅</div>
+            <h3 style="margin:0">Keine unbewerteten Termine</h3>
+            <p style="margin-top:6px">Alle vergangenen Termine wurden bereits bewertet.</p>
+         </div>
+      `;
+   } else {
+      html += `
+         <div style="margin-bottom: 15px; color: #666;">
+            <strong>${unreviewed.length}</strong> Termine warten auf Bewertung
+         </div>
+      `;
+
+      unreviewed.forEach((appointment) => {
+         const startTime = new Date(appointment.start_time);
+         const endTime = new Date(appointment.end_time);
+         const dateStr = startTime.toLocaleDateString("de-DE", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+         });
+         const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+
+         const typeLabel =
+            appointment.appointment_type === "primary"
+               ? "Haupttermin"
+               : appointment.appointment_type === "followup"
+                 ? "Folgetermin"
+                 : "Dual";
+         const typeClass =
+            appointment.appointment_type === "primary"
+               ? "type-primary"
+               : appointment.appointment_type === "followup"
+                 ? "type-followup"
+                 : "type-dual";
+
+         html += `
+            <div class="appointment-card" id="appointment-${appointment.id}">
+               <div class="appointment-header">
+                  <div>
+                     <div class="appointment-time">${timeStr}</div>
+                     <div style="color: #666; font-size: 14px; margin-top: 4px;">${dateStr}</div>
+                  </div>
+                  <span class="appointment-type-badge ${typeClass}">${typeLabel}</span>
+               </div>
+               <div style="margin-bottom: 12px;">
+                  <div style="font-weight: 600; margin-bottom: 4px;">${appointment.name}</div>
+                  <div style="color: #666; font-size: 14px;">${appointment.email}</div>
+                  <div style="color: #666; font-size: 14px;">${appointment.location || "Kein Ort"}</div>
+               </div>
+               <div style="border-top: 1px solid #e0e0e0; padding-top: 12px;">
+                  <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #555;">Wie ist der Termin verlaufen?</div>
+                  <div class="result-status-buttons">
+                     <button class="result-btn result-btn-success" onclick="markAppointmentResult(${appointment.id}, 'successful')">
+                        ✅ Erfolgreich
+                     </button>
+                     <button class="result-btn result-btn-issues" onclick="markAppointmentResult(${appointment.id}, 'issues_arised')">
+                        ⚠️ Probleme aufgetreten
+                     </button>
+                     <button class="result-btn result-btn-unusable" onclick="markAppointmentResult(${appointment.id}, 'unusable_data')">
+                        ❌ Daten unbrauchbar
+                     </button>
+                     <button class="result-btn result-btn-noshow" onclick="markAppointmentResult(${appointment.id}, 'no_show')">
+                        👻 Nicht erschienen
+                     </button>
+                  </div>
+               </div>
+            </div>
+         `;
+      });
+   }
+
+   // Set base content for unreviewed section (reviewed appointments will be appended)
+   container.innerHTML = html;
+
+   // Append reviewed appointments grouped by participant
+   displayReviewedAppointments();
+}
+
+// Display previously reviewed appointments grouped per participant
+function displayReviewedAppointments() {
+   const container = document.getElementById("unreviewedContainer");
+   if (!container) return;
+
+   // Consider a booking "reviewed" when it has a non-null result_status
+   const reviewed = Array.isArray(allData.bookings)
+      ? allData.bookings.filter((b) => b.result_status && b.result_status.trim() !== "")
+      : [];
+
+   if (!reviewed || reviewed.length === 0) {
+      // Append a small note if there are no reviewed appointments
+      container.innerHTML += `
+         <div style="margin-top: 18px; padding: 12px; border-radius: 6px; background: #f8f9fa; color: #555;">
+            <strong>Bewertete Termine:</strong> Es wurden noch keine Termine bewertet.
          </div>
       `;
       return;
    }
 
+   // Group by participant_id (fallback to email if participant_id missing)
+   const groups = {};
+   reviewed.forEach((b) => {
+      const key = b.participant_id ? `id_${b.participant_id}` : `email_${(b.email || "").toLowerCase()}`;
+      if (!groups[key]) {
+         groups[key] = {
+            participant_id: b.participant_id,
+            name: b.name || "Unbekannt",
+            email: b.email || "Keine Email",
+            bookings: [],
+         };
+      }
+      groups[key].bookings.push(b);
+   });
+
+   // Build HTML grouped by participant
    let html = `
-      <div style="margin-bottom: 15px; color: #666;">
-         <strong>${allData.unreviewedAppointments.length}</strong> Termine warten auf Bewertung
-      </div>
+      <h3 style="margin-top: 18px; margin-bottom: 8px; color: #333;">Bewertete Termine</h3>
    `;
 
-   allData.unreviewedAppointments.forEach((appointment) => {
-      const startTime = new Date(appointment.start_time);
-      const endTime = new Date(appointment.end_time);
-      const dateStr = startTime.toLocaleDateString("de-DE", {
-         weekday: "long",
-         year: "numeric",
-         month: "long",
-         day: "numeric",
-      });
-      const timeStr = `${startTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+   // Sort groups by most recent reviewed booking
+   const groupList = Object.values(groups).sort((a, b) => {
+      const aLatest = new Date(Math.max(...a.bookings.map((x) => new Date(x.start_time).getTime())));
+      const bLatest = new Date(Math.max(...b.bookings.map((x) => new Date(x.start_time).getTime())));
+      return bLatest - aLatest;
+   });
 
-      const typeLabel =
-         appointment.appointment_type === "primary"
-            ? "Haupttermin"
-            : appointment.appointment_type === "followup"
-              ? "Folgetermin"
-              : "Dual";
-      const typeClass =
-         appointment.appointment_type === "primary"
-            ? "type-primary"
-            : appointment.appointment_type === "followup"
-              ? "type-followup"
-              : "type-dual";
+   groupList.forEach((g) => {
+      html += `
+         <div style="border: 1px solid #e6eef6; padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #ffffff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+               <div>
+                  <div style="font-weight:700; font-size:15px; color:#111827;">${g.name}</div>
+                  <div style="color:#6b7280; font-size:13px;">${g.email}</div>
+               </div>
+               <div style="font-size:13px; color:#6b7280;">${g.bookings.length} bewertete Termin(e)</div>
+            </div>
+            <div style="margin-top:10px;">
+      `;
+
+      // Sort each participant's bookings newest first
+      g.bookings
+         .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
+         .forEach((bkg) => {
+            const dt = new Date(bkg.start_time);
+            const dtStr = dt.toLocaleString("de-DE", {
+               day: "2-digit",
+               month: "2-digit",
+               year: "numeric",
+               hour: "2-digit",
+               minute: "2-digit",
+            });
+
+            // Friendly label for appointment type
+            const typeLabel =
+               bkg.appointment_type === "primary"
+                  ? "Haupttermin"
+                  : bkg.appointment_type === "followup"
+                    ? "Folgetermin"
+                    : "Dual";
+
+            // Result badge
+            let resultBadge = "";
+            switch (bkg.result_status) {
+               case "successful":
+                  resultBadge =
+                     '<span style="background:#d1fae5;color:#065f46;padding:6px 8px;border-radius:6px;font-weight:600;font-size:12px;">Erfolgreich</span>';
+                  break;
+               case "issues_arised":
+                  resultBadge =
+                     '<span style="background:#fff1f2;color:#991b1b;padding:6px 8px;border-radius:6px;font-weight:600;font-size:12px;">Probleme</span>';
+                  break;
+               case "unusable_data":
+                  resultBadge =
+                     '<span style="background:#fff7ed;color:#92400e;padding:6px 8px;border-radius:6px;font-weight:600;font-size:12px;">Unbrauchbar</span>';
+                  break;
+               case "no_show":
+                  resultBadge =
+                     '<span style="background:#fff1f0;color:#7f1d1d;padding:6px 8px;border-radius:6px;font-weight:600;font-size:12px;">Nicht erschienen</span>';
+                  break;
+               default:
+                  resultBadge = `<span style="background:#eef2ff;color:#3730a3;padding:6px 8px;border-radius:6px;font-weight:600;font-size:12px;">${bkg.result_status || "Unbekannt"}</span>`;
+            }
+
+            html += `
+               <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; border-top:1px dashed #f1f5f9;">
+                  <div>
+                     <div style="font-weight:600;">${dtStr} — ${typeLabel}</div>
+                     <div style="color:#6b7280; font-size:13px;">${bkg.location || "-"}</div>
+                  </div>
+                  <div>${resultBadge}</div>
+               </div>
+            `;
+         });
 
       html += `
-         <div class="appointment-card" id="appointment-${appointment.id}">
-            <div class="appointment-header">
-               <div>
-                  <div class="appointment-time">${timeStr}</div>
-                  <div style="color: #666; font-size: 14px; margin-top: 4px;">${dateStr}</div>
-               </div>
-               <span class="appointment-type-badge ${typeClass}">${typeLabel}</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-               <div style="font-weight: 600; margin-bottom: 4px;">${appointment.name}</div>
-               <div style="color: #666; font-size: 14px;">${appointment.email}</div>
-               <div style="color: #666; font-size: 14px;">${appointment.location || "Kein Ort"}</div>
-            </div>
-            <div style="border-top: 1px solid #e0e0e0; padding-top: 12px;">
-               <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #555;">Wie ist der Termin verlaufen?</div>
-               <div class="result-status-buttons">
-                  <button class="result-btn result-btn-success" onclick="markAppointmentResult(${appointment.id}, 'successful')">
-                     ✅ Erfolgreich
-                  </button>
-                  <button class="result-btn result-btn-issues" onclick="markAppointmentResult(${appointment.id}, 'issues_arised')">
-                     ⚠️ Probleme aufgetreten
-                  </button>
-                  <button class="result-btn result-btn-unusable" onclick="markAppointmentResult(${appointment.id}, 'unusable_data')">
-                     ❌ Daten unbrauchbar
-                  </button>
-                  <button class="result-btn result-btn-noshow" onclick="markAppointmentResult(${appointment.id}, 'no_show')">
-                     👻 Nicht erschienen
-                  </button>
-               </div>
             </div>
          </div>
       `;
    });
 
-   container.innerHTML = html;
+   // Append reviewed groups to container
+   container.innerHTML += html;
 }
 
 // Mark appointment result
