@@ -501,9 +501,6 @@ function displayParticipants() {
               <input type="checkbox" id="forceAssignCheckbox" />
               <span>Force (override rated bookings)</span>
            </label>
-           <div>
-              <button id="bulkPastToPresenceBtn" class="btn btn-primary">Set past → Presence</button>
-           </div>
        </div>
 
        <div class="table-container">
@@ -593,7 +590,7 @@ function displayParticipants() {
 
                          // Render condition select (admin can change)
                          const conditionValue = p.condition || "";
-                         // Compute locked state: rely solely on the server-provided flag.
+                         // Compute locked state from server-provided flag.
                          const locked = !!p.hasRatedPastBooking;
                          // The select will be disabled when locked AND the global force toggle is not enabled.
                          // When the admin enables the Force checkbox the disabled selects become editable.
@@ -661,37 +658,8 @@ function displayParticipants() {
       });
    }
 
-   const bulkBtn = document.getElementById("bulkPastToPresenceBtn");
-   if (bulkBtn) {
-      bulkBtn.addEventListener("click", async () => {
-         const confirmMsg =
-            "Set condition = 'Presence' for all participants who have at least one past booking.\\n\\nIf 'Force' is checked, participants with past rated bookings will also be overwritten. Continue?";
-         if (!confirm(confirmMsg)) return;
-
-         bulkBtn.disabled = true;
-         try {
-            const resp = await fetch(BASE_PATH + "/api/admin/participants/bulk/past-to-presence", {
-               method: "POST",
-               headers: { "Content-Type": "application/json" },
-               body: JSON.stringify({ force: !!window.participantsForceMode }),
-            });
-            const data = await resp.json();
-            if (!resp.ok) {
-               throw new Error(data && data.error ? data.error : "Bulk update failed");
-            }
-
-            showDashboardAlert(`Auto-update complete. Updated: ${data.updated || 0}`, "success");
-            // Reload participant list and condition overview
-            await loadParticipants();
-            await loadConditionOverview();
-         } catch (err) {
-            console.error("Bulk update failed:", err);
-            showDashboardAlert("Bulk update failed: " + (err && err.message ? err.message : ""), "error");
-         } finally {
-            bulkBtn.disabled = false;
-         }
-      });
-   }
+   // The dedicated bulk "Set past → Presence" button has been removed per preference.
+   // Use the Force checkbox to enable per-row overrides and the bulk API if/when needed via server tooling.
 }
 
 // Load condition overview (counts per condition)
@@ -745,8 +713,9 @@ async function changeParticipantCondition(id, condition) {
       if (Array.isArray(allData.participants)) participant = allData.participants.find((p) => p.id === id);
 
       const locked = participant ? !!participant.hasRatedPastBooking : false;
+      const forceFlag = !!window.participantsForceMode;
 
-      if (locked) {
+      if (locked && !forceFlag) {
          // Avoid sending a PATCH that will be rejected by the server; inform the admin and refresh UI.
          showDashboardAlert(
             "Bedingung kann nicht geändert werden: Teilnehmer hat mindestens einen vergangenen Termin, der bereits bewertet wurde",
@@ -756,8 +725,9 @@ async function changeParticipantCondition(id, condition) {
          return;
       }
 
-      // Normalize empty string -> null for clearing
-      const payload = { condition: condition === "" ? null : condition };
+      // Normalize empty string -> null for clearing; include force flag when enabled
+      const forceFlag = !!window.participantsForceMode;
+      const payload = { condition: condition === "" ? null : condition, force: forceFlag };
 
       const response = await fetch(BASE_PATH + `/api/admin/participants/${id}/condition`, {
          method: "PATCH",
