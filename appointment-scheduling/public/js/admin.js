@@ -1347,33 +1347,46 @@ function updateStatistics() {
    // Safeguard: ensure timeslotsForStats exists and is an array
    const timeslotsForStats = Array.isArray(allData.timeslotsForStats) ? allData.timeslotsForStats : [];
 
-   // Count unique timeslots (may have duplicates if multiple bookings per slot)
-   const uniqueTimeslotIds = new Set(timeslotsForStats.map((t) => t.id));
+   // Count unique future timeslots only (exclude past timeslots from the totals)
+   const now = new Date();
+   const timeslotsForStats = Array.isArray(allData.timeslotsForStats) ? allData.timeslotsForStats : [];
+   const futureTimeslots = timeslotsForStats.filter((t) => {
+      // Some legacy rows may have start_time missing or null; treat those as non-future
+      try {
+         return t && t.start_time && new Date(t.start_time) > now;
+      } catch (e) {
+         return false;
+      }
+   });
+
+   // Count unique future timeslot ids
+   const uniqueTimeslotIds = new Set(futureTimeslots.map((t) => t.id));
    const totalSlots = uniqueTimeslotIds.size;
 
-   // Derive booked timeslots from the authoritative bookings list to avoid relying on
-   // any `booking_id` field that might be absent or cause duplication in timeslotsForStats.
-   // Consider only active/confirmed bookings as occupying a timeslot.
+   // Derive booked timeslots from the authoritative bookings list, but only consider bookings
+   // that are attached to the future timeslots we are counting.
    const bookedTimeslotIds = new Set(
       (allData.bookings || [])
          .filter((b) => b && (b.status === "confirmed" || b.status === "active"))
          .map((b) => b.timeslot_id)
-         .filter((id) => id !== undefined && id !== null),
+         .filter((id) => id !== undefined && id !== null && uniqueTimeslotIds.has(id)),
    );
 
-   // Only count booked timeslots that actually exist in the current timeslots set
-   const bookedSlots = Array.from(bookedTimeslotIds).filter((id) => uniqueTimeslotIds.has(id)).length;
+   // Number of distinct booked future slots
+   const bookedSlots = Array.from(bookedTimeslotIds).length;
 
-   // Available = total defined timeslots minus distinct booked timeslots
+   // Available future slots = future total - booked distinct future slots
    const availableSlots = Math.max(0, totalSlots - bookedSlots);
 
-   console.log("Timeslot stats:", {
+   console.log("Timeslot stats (future-only):", {
       totalSlots,
       bookedSlots,
       availableSlots,
       timeslotsCount: timeslotsForStats.length,
+      futureTimeslotsCount: futureTimeslots.length,
    });
 
+   // Show booked / total (future) and available future slots
    document.getElementById("slotsInfo").textContent = `${bookedSlots} / ${totalSlots}`;
    document.getElementById("availableInfo").textContent = availableSlots;
 
