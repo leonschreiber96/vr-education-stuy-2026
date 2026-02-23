@@ -1367,7 +1367,6 @@ function updateStatistics() {
 
    // Count unique future timeslots only (exclude past timeslots from the totals)
    const now = new Date();
-   const timeslotsForStats = Array.isArray(allData.timeslotsForStats) ? allData.timeslotsForStats : [];
    const futureTimeslots = timeslotsForStats.filter((t) => {
       // Some legacy rows may have start_time missing or null; treat those as non-future
       try {
@@ -1410,7 +1409,7 @@ function updateStatistics() {
 
    // Calculate participant statistics with result status
    const participantBookings = {};
-   const now = new Date();
+   const now2 = new Date();
 
    allData.bookings.forEach((booking) => {
       if (booking.status === "confirmed" || booking.status === "active") {
