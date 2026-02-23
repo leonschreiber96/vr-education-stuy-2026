@@ -713,8 +713,10 @@ async function changeParticipantCondition(id, condition) {
       if (Array.isArray(allData.participants)) participant = allData.participants.find((p) => p.id === id);
 
       const locked = participant ? !!participant.hasRatedPastBooking : false;
-      const forceFlag = !!window.participantsForceMode;
+      // Determine whether force mode is active (check both window/global and local variable)
+      const forceFlag = !!(window.participantsForceMode || participantsForceMode);
 
+      // If participant is locked and the admin did not enable force, block the change.
       if (locked && !forceFlag) {
          // Avoid sending a PATCH that will be rejected by the server; inform the admin and refresh UI.
          showDashboardAlert(
@@ -726,7 +728,6 @@ async function changeParticipantCondition(id, condition) {
       }
 
       // Normalize empty string -> null for clearing; include force flag when enabled
-      const forceFlag = !!window.participantsForceMode;
       const payload = { condition: condition === "" ? null : condition, force: forceFlag };
 
       const response = await fetch(BASE_PATH + `/api/admin/participants/${id}/condition`, {
