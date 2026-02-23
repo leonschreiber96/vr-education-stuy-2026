@@ -69,17 +69,129 @@
                         <span id="progressPercentage" style="font-weight: 600; font-size: 14px; color: #555">0%</span>
                      </div>
                      <div
-                        style="background: #e0e0e0; height: 24px; border-radius: 12px; overflow: hidden; display: flex"
+                        style="
+                           background: #e0e0e0;
+                           height: 24px;
+                           border-radius: 12px;
+                           overflow: hidden;
+                           position: relative;
+                        "
                      >
+                        <!-- lighter waiting bar: shows participants who finished primary and are waiting for second -->
+                        <div
+                           id="progressBarFillWaiting"
+                           style="
+                              background: rgba(72, 187, 120, 0.35);
+                              transition: width 0.3s;
+                              width: 0%;
+                              height: 100%;
+                              position: absolute;
+                              left: 0;
+                              top: 0;
+                              z-index: 3;
+                           "
+                        ></div>
+
+                        <!-- completed (both appointments) bar; positioned after waiting via JS -->
                         <div
                            id="progressBarFillSuccess"
-                           style="background: #48bb78; transition: width 0.3s; width: 0%"
+                           style="
+                              background: #48bb78;
+                              transition: all 0.3s;
+                              width: 0%;
+                              height: 100%;
+                              position: absolute;
+                              left: 0;
+                              top: 0;
+                              z-index: 2;
+                           "
                         ></div>
+
+                        <!-- issues bar (keeps highest z so it sits on top-right if used) -->
                         <div
                            id="progressBarFillIssues"
-                           style="background: #ed8936; transition: width 0.3s; width: 0%"
+                           style="
+                              background: #ed8936;
+                              transition: width 0.3s;
+                              width: 0%;
+                              height: 100%;
+                              position: absolute;
+                              right: 0;
+                              top: 0;
+                              z-index: 4;
+                           "
                         ></div>
                      </div>
+
+                     <!-- Inline helper: position and width the waiting + success segments so they form one continuous bar.
+                          - waiting: portion (waitingForSecond / participantGoal)
+                          - success: portion (bothFinished / participantGoal), drawn immediately to the right of waiting
+                          The existing admin.js still updates counts; this observer recalculates and applies the composite visual.
+                     -->
+                     <script>
+                        (function () {
+                           function parseIntSafe(elId) {
+                              const el = document.getElementById(elId);
+                              if (!el) return 0;
+                              const n = parseInt(el.textContent || el.value || "0", 10);
+                              return Number.isFinite(n) ? n : 0;
+                           }
+
+                           function updateCombinedProgress() {
+                              const goal = parseIntSafe("participantGoal") || 0;
+                              const both = parseIntSafe("bothFinished") || 0;
+                              const waiting = parseIntSafe("waitingForSecond") || 0;
+
+                              const waitingEl = document.getElementById("progressBarFillWaiting");
+                              const successEl = document.getElementById("progressBarFillSuccess");
+
+                              if (!waitingEl || !successEl) return;
+
+                              if (goal <= 0) {
+                                 waitingEl.style.width = "0%";
+                                 successEl.style.left = "0%";
+                                 successEl.style.width = "0%";
+                                 return;
+                              }
+
+                              // Calculate percentages (capped at 100)
+                              const waitingPct = Math.max(0, Math.min(100, Math.round((waiting / goal) * 100)));
+                              const successPct = Math.max(0, Math.min(100, Math.round((both / goal) * 100)));
+
+                              // Apply widths and position so the two bars appear contiguous:
+                              // - waiting bar is left-aligned with width waitingPct%
+                              // - success bar is positioned left: waitingPct% and has width successPct%
+                              waitingEl.style.width = waitingPct + "%";
+                              successEl.style.left = waitingPct + "%";
+                              successEl.style.width = successPct + "%";
+                           }
+
+                           // Observe changes to the numeric elements so we recalc whenever admin.js updates them
+                           const watchIds = ["bothFinished", "waitingForSecond", "participantGoal"];
+                           const observer = new MutationObserver(function () {
+                              updateCombinedProgress();
+                           });
+
+                           watchIds.forEach((id) => {
+                              const el = document.getElementById(id);
+                              if (el) {
+                                 observer.observe(el, { childList: true, characterData: true, subtree: true });
+                              }
+                           });
+
+                           // Also attempt an update after load and periodically for the first second to catch initial writes
+                           window.addEventListener("load", () => {
+                              updateCombinedProgress();
+                              // a few delayed tries to ensure it takes effect if admin.js writes after load
+                              setTimeout(updateCombinedProgress, 50);
+                              setTimeout(updateCombinedProgress, 200);
+                              setTimeout(updateCombinedProgress, 500);
+                           });
+
+                           // Expose for debugging if needed
+                           window.__updateCombinedProgress = updateCombinedProgress;
+                        })();
+                     </script>
                   </div>
 
                   <!-- Timeslot Overview -->
