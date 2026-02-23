@@ -201,7 +201,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 // Check if user is authenticated
 async function checkAuth() {
    try {
-      const response = await fetch(BASE_PATH + "/api/admin/check");
+      // Include credentials so the session cookie set by the server is sent with this request.
+      const response = await fetch(BASE_PATH + "/api/admin/check", { credentials: "same-origin" });
       const data = await response.json();
 
       if (data.authenticated) {
@@ -229,7 +230,11 @@ function showDashboard() {
    document.getElementById("dashboardContainer").classList.add("active");
 }
 
-// Handle login form submission
+/*
+   Handle login form submission
+   Ensure fetch sends credentials so the session cookie set by the server is stored by the browser.
+   Add lightweight debug logging to help diagnose session issues.
+*/
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
    e.preventDefault();
 
@@ -237,21 +242,34 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
    const password = document.getElementById("password").value;
 
    try {
+      console.debug("Admin login attempt for user:", username);
+
       const response = await fetch(BASE_PATH + "/api/admin/login", {
          method: "POST",
+         // Important: include credentials so the session cookie from the server is honored by the browser
+         credentials: "same-origin",
          headers: {
             "Content-Type": "application/json",
          },
          body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      console.debug("Login response status:", response.status);
+
+      let data = {};
+      try {
+         data = await response.json();
+      } catch (jsonErr) {
+         console.debug("Login response did not contain JSON:", jsonErr);
+      }
 
       if (response.ok) {
+         console.debug("Login succeeded for user:", username);
          isAuthenticated = true;
          showDashboard();
          await loadDashboardData();
       } else {
+         console.warn("Login failed for user:", username, "status:", response.status, "error:", data && data.error);
          showLoginAlert(data.error || "Login fehlgeschlagen", "error");
       }
    } catch (error) {
