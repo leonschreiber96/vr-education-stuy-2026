@@ -840,14 +840,7 @@
                   });
 
                   // Auto-balance function exposed to global scope so the button can call it.
-                  // Strategy:
-                  //  - Fetch participants and bookings
-                  //  - Determine participants without any past bookings (eligible)
-                  //  - Compute current counts per condition
-                  //  - Greedily assign eligible participants to underfilled bins respecting rules:
-                  //      * do not put glasses into the VR bins (2D VR / Immersive VR)
-                  //      * do not put participants with motion_sickness > 3 into the VR bins
-                  //  - PATCH assignments sequentially and refresh lists at the end
+                  // Rewritten to remove duplicate/malformed code and ensure a single coherent implementation.
                   window.balanceBins = async function () {
                      try {
                         const basePath = window.location.pathname.split("/").slice(0, -1).join("/") || "";
@@ -861,32 +854,9 @@
                         const participants = await pResp.json();
                         const bookings = await bResp.json();
 
-                        const now = new Date();
-
-                        // Determine which participants have at least one past booking
-                        const hasPastBooking = {};
-                        bookings.forEach((b) => {
-                           try {
-                              if (b && b.participant_id && b.start_time && new Date(b.start_time) < now) {
-                                 hasPastBooking[b.participant_id] = true;
-                              }
-                           } catch (e) {
-                              // ignore parse errors
-                           }
-                        });
-
-                        // Eligible participants: include all draggable participants (those that can be moved).
-                        // We consider a participant draggable if the server did NOT mark them as locked
-                        // (server-provided flag `hasRatedPastBooking` indicates the grayed-out, locked rows).
-                        // This includes participants who already have a condition assigned (so already-assigned
-                        // but draggable participants will be considered for rebalancing).
+                        // We use server-provided flag `hasRatedPastBooking` to determine locked participants.
+                        // Eligible participants are those that are not locked (draggable).
                         let eligible = participants.filter((p) => !p.hasRatedPastBooking);
-
-                        // Optionally, if you still want to exclude participants with other server-side constraints,
-                        // you can add those checks here (e.g., exclude participants with `someOtherFlag`).
-                        //
-                        // Note: we intentionally DO NOT filter out participants who already have a condition,
-                        // because we want the Auto-Balance to be able to move already-assigned (draggable) people.
 
                         if (!eligible || eligible.length === 0) {
                            alert(
@@ -895,26 +865,49 @@
                            return;
                         }
 
-                        // Compute current counts per canonical condition
-                        const counts = {
-                           Presence: 0,
-                           "2D Screen": 0,
-                           "2D VR": 0,
-                           "Immersive VR": 0,
+                        const KEYS = ["Presence", "2D Screen", "2D VR", "Immersive VR"];
+
+                        // Build current buckets of draggable participants (skip locked ones)
+                        const currentBins = {
+                           Presence: [],
+                           "2D Screen": [],
+                           "2D VR": [],
+                           "Immersive VR": [],
                         };
+                        const unassigned = [];
+                        for (const p of eligible) {
+                           const cur = (p.condition || "").toString().trim();
+                           if (KEYS.includes(cur)) {
+                              currentBins[cur].push(p);
+                           } else {
+                              unassigned.push(p);
+                           }
+                        }
 
-                        participants.forEach((p) => {
-                           const c = (p.condition || "").toString().trim();
-                           if (counts.hasOwnProperty(c)) counts[c]++;
-                        });
+                        // Total draggable participants (those we may move)
+                        const totalDraggable =
+                           Object.keys(currentBins).reduce((s, k) => s + currentBins[k].length, 0) + unassigned.length;
 
-                        // Determine target per bin: attempt to equalize across draggable participants only
-                        // We base the target on the number of draggable participants (those that are not locked)
-                        // so Auto-Balance won't try to move grayed-out/locked participants.
-                        const draggableCount = participants.filter((p) => !p.hasRatedPastBooking).length;
-                        const target = Math.ceil(draggableCount / 4);
+                        // Desired distribution: base + distribute remainder deterministically to bins with smallest current count
+                        const base = Math.floor(totalDraggable / KEYS.length);
+                        let remainder = totalDraggable % KEYS.length;
+                        const desired = {};
+                        // Start with base
+                        KEYS.forEach((k) => (desired[k] = base));
 
-                        // Helper to determine if participant can be placed in a VR bin
+                        if (remainder > 0) {
+                           // Determine order to distribute remainder: bins with smallest current count first, tie-break by KEYS order
+                           const order = KEYS.slice().sort((a, b) => {
+                              if (currentBins[a].length !== currentBins[b].length)
+                                 return currentBins[a].length - currentBins[b].length;
+                              return KEYS.indexOf(a) - KEYS.indexOf(b);
+                           });
+                           for (let i = 0; i < remainder; i++) {
+                              desired[order[i]]++;
+                           }
+                        }
+
+                        // Helper: can participant be placed in VR bin?
                         function canBePlacedInVR(p) {
                            const vc = (p.vision_correction || p.visionCorrection || "").toString().toLowerCase();
                            const msRaw =
@@ -930,42 +923,82 @@
                            return true;
                         }
 
-                        // Greedy assignment: for each eligible participant, choose the underfilled bin with smallest count that satisfies constraints
-                        const assignments = [];
-                        for (const p of eligible) {
-                           const candidates = Object.keys(counts).sort((a, b) => counts[a] - counts[b]);
-                           let assigned = null;
-                           for (const c of candidates) {
-                              if (counts[c] >= target) continue;
-                              if ((c === "2D VR" || c === "Immersive VR") && !canBePlacedInVR(p)) continue;
-                              assigned = c;
-                              break;
-                           }
-                           if (!assigned) {
-                              for (const c of candidates) {
-                                 if ((c === "2D VR" || c === "Immersive VR") && !canBePlacedInVR(p)) continue;
-                                 assigned = c;
-                                 break;
-                              }
-                           }
-                           if (!assigned) assigned = "Presence";
+                        function canBePlacedInTargetBin(p, targetKey) {
+                           if (targetKey !== "2D VR" && targetKey !== "Immersive VR") return true;
+                           return canBePlacedInVR(p);
+                        }
 
-                           // Avoid creating no-op assignments:
-                           // - If the participant is already in the assigned condition, don't add an assignment.
-                           // - Do not increment the simulated target count in that case, because `counts`
-                           //   already includes current participant assignments.
-                           const currentCond = (p.condition || "").toString().trim();
-                           if (currentCond === assigned) {
-                              // already in this condition — no-op, skip adding an assignment
-                              // (counts already included this participant when we built initial counts)
-                           } else {
-                              // Participant will be moved to `assigned` — increment simulated count and record assignment
-                              counts[assigned] = (counts[assigned] || 0) + 1;
-                              assignments.push({ id: p.id, condition: assigned, name: p.name || p.email });
+                        // Helper to pop a candidate from a donor bin that fits target
+                        function popFromDonor(donorBin, targetBin) {
+                           const arr = currentBins[donorBin];
+                           for (let i = 0; i < arr.length; i++) {
+                              if (canBePlacedInTargetBin(arr[i], targetBin)) return arr.splice(i, 1)[0];
+                           }
+                           return null;
+                        }
+
+                        // Deterministic balancing: move from overfull to underfull while respecting constraints
+                        const assignments = [];
+                        let madeProgress = true;
+                        while (madeProgress) {
+                           madeProgress = false;
+
+                           const surplus = KEYS.map((k) => ({ k, surplus: currentBins[k].length - desired[k] }))
+                              .filter((x) => x.surplus > 0)
+                              .sort((a, b) => b.surplus - a.surplus || KEYS.indexOf(a.k) - KEYS.indexOf(b.k));
+
+                           const deficit = KEYS.map((k) => ({ k, deficit: desired[k] - currentBins[k].length }))
+                              .filter((x) => x.deficit > 0)
+                              .sort((a, b) => b.deficit - a.deficit || KEYS.indexOf(a.k) - KEYS.indexOf(b.k));
+
+                           if (surplus.length === 0 && unassigned.length === 0) break;
+                           if (deficit.length === 0) break;
+
+                           for (const d of deficit) {
+                              if (currentBins[d.k].length >= desired[d.k]) continue;
+                              // try donors first
+                              for (const s of surplus) {
+                                 if (s.surplus <= 0) continue;
+                                 if (s.k === d.k) continue;
+                                 const candidate = popFromDonor(s.k, d.k);
+                                 if (candidate) {
+                                    assignments.push({
+                                       id: candidate.id,
+                                       condition: d.k,
+                                       name: candidate.name || candidate.email,
+                                    });
+                                    currentBins[d.k].push(candidate);
+                                    s.surplus--;
+                                    madeProgress = true;
+                                    break;
+                                 }
+                              }
+                              // then try unassigned pool
+                              while (currentBins[d.k].length < desired[d.k] && unassigned.length > 0) {
+                                 let idx = -1;
+                                 for (let i = 0; i < unassigned.length; i++) {
+                                    if (canBePlacedInTargetBin(unassigned[i], d.k)) {
+                                       idx = i;
+                                       break;
+                                    }
+                                 }
+                                 if (idx === -1) break;
+                                 const p = unassigned.splice(idx, 1)[0];
+                                 assignments.push({ id: p.id, condition: d.k, name: p.name || p.email });
+                                 currentBins[d.k].push(p);
+                                 madeProgress = true;
+                              }
                            }
                         }
 
-                        if (assignments.length === 0) {
+                        // Filter out no-ops (already in that condition)
+                        const finalAssignments = assignments.filter((a) => {
+                           const p = participants.find((pp) => pp.id === a.id);
+                           const cur = p && p.condition ? p.condition.toString().trim() : "";
+                           return cur !== a.condition;
+                        });
+
+                        if (finalAssignments.length === 0) {
                            alert("Keine Zuweisungen erforderlich.");
                            return;
                         }
@@ -994,7 +1027,7 @@
                         modal.appendChild(dialog);
 
                         const title = document.createElement("h3");
-                        title.textContent = `Preview: ${assignments.length} Zuweisungen`;
+                        title.textContent = `Preview: ${finalAssignments.length} Zuweisungen`;
                         title.style.marginTop = "0";
                         dialog.appendChild(title);
 
@@ -1007,7 +1040,7 @@
 
                         // Create a table-like list grouped by target condition
                         const grouped = {};
-                        for (const a of assignments) {
+                        for (const a of finalAssignments) {
                            grouped[a.condition] = grouped[a.condition] || [];
                            grouped[a.condition].push(a);
                         }
@@ -1058,7 +1091,7 @@
                            applyBtn.textContent = "Wird angewendet...";
                            let success = 0;
                            let failed = 0;
-                           for (const a of assignments) {
+                           for (const a of finalAssignments) {
                               try {
                                  const resp = await fetch(basePath + `/api/admin/participants/${a.id}/condition`, {
                                     method: "PATCH",
