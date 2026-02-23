@@ -908,9 +908,11 @@
                            if (counts.hasOwnProperty(c)) counts[c]++;
                         });
 
-                        // Determine target per bin: attempt to equalize across all participants (current + eligible)
-                        const totalParticipants = participants.length;
-                        const target = Math.ceil(totalParticipants / 4);
+                        // Determine target per bin: attempt to equalize across draggable participants only
+                        // We base the target on the number of draggable participants (those that are not locked)
+                        // so Auto-Balance won't try to move grayed-out/locked participants.
+                        const draggableCount = participants.filter((p) => !p.hasRatedPastBooking).length;
+                        const target = Math.ceil(draggableCount / 4);
 
                         // Helper to determine if participant can be placed in a VR bin
                         function canBePlacedInVR(p) {
