@@ -259,6 +259,52 @@ router.delete(
    }),
 );
 
+/**
+ * POST /participants/bulk/past-to-presence
+ * Bulk-set condition = "Presence" for participants with at least one past booking.
+ * Body: { force: boolean } - optional. If force === true, overwrite regardless of past rated bookings.
+ *
+ * This endpoint is admin-only and runs the DB helper which performs the update inside a transaction.
+ */
+router.post(
+   "/participants/bulk/past-to-presence",
+   requireAdmin,
+   asyncHandler(async (req, res) => {
+      const { force = false } = req.body || {};
+      const forceFlag = !!force;
+
+      // Verify DB helper exists
+      if (typeof db.bulkSetConditionForParticipantsWithPastBooking !== "function") {
+         return res.status(500).json({
+            success: false,
+            error: "Server does not support bulk update helper",
+         });
+      }
+
+      try {
+         const result = db.bulkSetConditionForParticipantsWithPastBooking("Presence", forceFlag);
+
+         // result is expected to be an object with a `changes` field indicating updated rows.
+         const updatedCount = result && typeof result.changes === "number" ? result.changes : 0;
+
+         Logger.info("Bulk set participants to Presence", {
+            adminId: req.session && req.session.adminId ? req.session.adminId : null,
+            force: forceFlag,
+            updated: updatedCount,
+         });
+
+         res.json({
+            success: true,
+            updated: updatedCount,
+            force: forceFlag,
+         });
+      } catch (err) {
+         Logger.error("Error performing bulk set to Presence", { error: err && err.message });
+         throw err;
+      }
+   }),
+);
+
 // ============================================================================
 // Timeslot Routes
 // ============================================================================

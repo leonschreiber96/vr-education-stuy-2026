@@ -496,6 +496,16 @@ function displayParticipants() {
    }
 
    container.innerHTML = `
+       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px;">
+           <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#333;">
+              <input type="checkbox" id="forceAssignCheckbox" />
+              <span>Force (override rated bookings)</span>
+           </label>
+           <div>
+              <button id="bulkPastToPresenceBtn" class="btn btn-primary">Set past → Presence</button>
+           </div>
+       </div>
+
        <div class="table-container">
            <table>
                <thead>
@@ -584,9 +594,9 @@ function displayParticipants() {
                          // Render condition select (admin can change)
                          const conditionValue = p.condition || "";
                          // Compute locked state: rely solely on the server-provided flag.
-                         // The frontend will trust `hasRatedPastBooking` from the API and not attempt
-                         // any client-side scanning/fallback. The server is authoritative for this rule.
                          const locked = !!p.hasRatedPastBooking;
+                         // The select will be disabled when locked AND the global force toggle is not enabled.
+                         // When the admin enables the Force checkbox the disabled selects become editable.
                          return `
                            <tr${isTUEmployee ? ' style="background-color: #fff8e1; border-left: 4px solid #ffc107;"' : ""}>
                                <td>
@@ -595,17 +605,13 @@ function displayParticipants() {
                                </td>
                                <td>${p.email}</td>
                                <td>
-                                   ${
-                                      locked
-                                         ? `<span style="padding:6px;border-radius:6px;border:1px solid #ddd; display:inline-block; color:#666;">${conditionValue || "-"}</span>`
-                                         : `<select onchange="changeParticipantCondition(${p.id}, this.value)" style="padding:6px;border-radius:6px;border:1px solid #ddd;">
+                                   <select ${locked && !window.participantsForceMode ? "disabled" : ""} onchange="changeParticipantCondition(${p.id}, this.value)" style="padding:6px;border-radius:6px;border:1px solid #ddd;">
                                       <option value="">-</option>
                                       <option value="Presence"${conditionValue === "Presence" ? " selected" : ""}>Presence</option>
                                       <option value="2D Screen"${conditionValue === "2D Screen" ? " selected" : ""}>2D Screen</option>
                                       <option value="2D VR"${conditionValue === "2D VR" ? " selected" : ""}>2D VR</option>
                                       <option value="Immersive VR"${conditionValue === "Immersive VR" ? " selected" : ""}>Immersive VR</option>
-                                   </select>`
-                                   }
+                                   </select>
                                </td>
                                <td>${appointmentTimeDisplay}</td>
                                <td>
@@ -641,6 +647,51 @@ function displayParticipants() {
            </table>
        </div>
    `;
+
+   // Initialize/restore the global force toggle state and wire UI handlers for the checkbox + bulk button
+   window.participantsForceMode = !!window.participantsForceMode;
+
+   const forceCheckboxEl = document.getElementById("forceAssignCheckbox");
+   if (forceCheckboxEl) {
+      forceCheckboxEl.checked = window.participantsForceMode;
+      forceCheckboxEl.addEventListener("change", (e) => {
+         window.participantsForceMode = !!e.target.checked;
+         // Re-render the participants table so select disabled states update
+         displayParticipants();
+      });
+   }
+
+   const bulkBtn = document.getElementById("bulkPastToPresenceBtn");
+   if (bulkBtn) {
+      bulkBtn.addEventListener("click", async () => {
+         const confirmMsg =
+            "Set condition = 'Presence' for all participants who have at least one past booking.\\n\\nIf 'Force' is checked, participants with past rated bookings will also be overwritten. Continue?";
+         if (!confirm(confirmMsg)) return;
+
+         bulkBtn.disabled = true;
+         try {
+            const resp = await fetch(BASE_PATH + "/api/admin/participants/bulk/past-to-presence", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ force: !!window.participantsForceMode }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+               throw new Error(data && data.error ? data.error : "Bulk update failed");
+            }
+
+            showDashboardAlert(`Auto-update complete. Updated: ${data.updated || 0}`, "success");
+            // Reload participant list and condition overview
+            await loadParticipants();
+            await loadConditionOverview();
+         } catch (err) {
+            console.error("Bulk update failed:", err);
+            showDashboardAlert("Bulk update failed: " + (err && err.message ? err.message : ""), "error");
+         } finally {
+            bulkBtn.disabled = false;
+         }
+      });
+   }
 }
 
 // Load condition overview (counts per condition)

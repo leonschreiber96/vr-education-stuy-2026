@@ -410,6 +410,68 @@ function participantHasRatedPastBooking(participantId) {
    return !!(row && row.count > 0);
 }
 
+/**
+ * Bulk helper: set a given condition for all participants who have at least one past (non-cancelled) booking.
+ * - `condition` (string|null): the condition to set (e.g. 'Presence' or null to clear)
+ * - `force` (boolean, default false): when true, overwrite regardless of whether the participant has a past rated booking;
+ *      when false, skip participants who have any past booking with a non-empty `result_status` (keeps existing protection).
+ *
+ * Returns an object { changes: <n> } with the number of rows updated.
+ *
+ * Note: This helper runs inside a transaction.
+ */
+function bulkSetConditionForParticipantsWithPastBooking(condition, force = false) {
+   const transaction = db.transaction(() => {
+      if (force) {
+         // Force mode: set condition for any participant with at least one past non-cancelled booking
+         const updateStmt = db.prepare(`
+            UPDATE participants
+            SET condition = ?
+            WHERE EXISTS (
+               SELECT 1 FROM bookings b
+               JOIN timeslots t ON b.timeslot_id = t.id
+               WHERE b.participant_id = participants.id
+                 AND b.status != 'cancelled'
+                 AND datetime(t.start_time) < datetime('now')
+            )
+         `);
+         const result = updateStmt.run(condition || null);
+         return { changes: result.changes };
+      } else {
+         // Safe mode: only update participants who have past bookings AND do NOT have any past rated booking
+         const updateStmt = db.prepare(`
+            UPDATE participants
+            SET condition = ?
+            WHERE EXISTS (
+               SELECT 1 FROM bookings b
+               JOIN timeslots t ON b.timeslot_id = t.id
+               WHERE b.participant_id = participants.id
+                 AND b.status != 'cancelled'
+                 AND datetime(t.start_time) < datetime('now')
+            )
+            AND NOT EXISTS (
+               SELECT 1 FROM bookings b2
+               JOIN timeslots t2 ON b2.timeslot_id = t2.id
+               WHERE b2.participant_id = participants.id
+                 AND b2.status != 'cancelled'
+                 AND datetime(t2.start_time) < datetime('now')
+                 AND b2.result_status IS NOT NULL
+                 AND b2.result_status != ''
+            )
+         `);
+         const result = updateStmt.run(condition || null);
+         return { changes: result.changes };
+      }
+   });
+
+   return transaction();
+}
+
+// Export the helper as a named property so callers (routes/services) can use it without changing the existing
+// module.exports block further down in the file.
+module.exports = module.exports || {};
+module.exports.bulkSetConditionForParticipantsWithPastBooking = bulkSetConditionForParticipantsWithPastBooking;
+
 function deleteParticipant(id) {
    const transaction = db.transaction(() => {
       // First delete all bookings for this participant
