@@ -77,22 +77,7 @@
                            position: relative;
                         "
                      >
-                        <!-- lighter waiting bar: shows participants who finished primary and are waiting for second -->
-                        <div
-                           id="progressBarFillWaiting"
-                           style="
-                              background: rgba(72, 187, 120, 0.35);
-                              transition: width 0.3s;
-                              width: 0%;
-                              height: 100%;
-                              position: absolute;
-                              left: 0;
-                              top: 0;
-                              z-index: 3;
-                           "
-                        ></div>
-
-                        <!-- completed (both appointments) bar; positioned after waiting via JS -->
+                        <!-- completed (both appointments) bar - sits on the left -->
                         <div
                            id="progressBarFillSuccess"
                            style="
@@ -104,6 +89,24 @@
                               left: 0;
                               top: 0;
                               z-index: 2;
+                           "
+                        ></div>
+
+                        <!-- waiting bar: extends the success bar to the right, representing additional people who had first appointment but not yet both.
+                             This will be positioned immediately to the right of the success bar. -->
+                        <div
+                           id="progressBarFillWaiting"
+                           style="
+                              background: rgba(72, 187, 120, 0.35);
+                              transition:
+                                 width 0.3s,
+                                 left 0.3s;
+                              width: 0%;
+                              height: 100%;
+                              position: absolute;
+                              left: 0;
+                              top: 0;
+                              z-index: 3;
                            "
                         ></div>
 
@@ -123,10 +126,11 @@
                         ></div>
                      </div>
 
-                     <!-- Inline helper: position and width the waiting + success segments so they form one continuous bar.
-                          - waiting: portion (waitingForSecond / participantGoal)
-                          - success: portion (bothFinished / participantGoal), drawn immediately to the right of waiting
-                          The existing admin.js still updates counts; this observer recalculates and applies the composite visual.
+                     <!-- Inline helper: position and width the success + waiting segments so they form one continuous bar.
+                          Now the success bar is left-most (represents x = bothFinished).
+                          The waiting bar is placed immediately to the right of the success bar and represents (y - x),
+                          where y = people who have had the first appointment (bothFinished + waitingForSecond).
+                          Together they visually represent y (capped to participantGoal).
                      -->
                      <script>
                         (function () {
@@ -139,31 +143,40 @@
 
                            function updateCombinedProgress() {
                               const goal = parseIntSafe("participantGoal") || 0;
-                              const both = parseIntSafe("bothFinished") || 0;
-                              const waiting = parseIntSafe("waitingForSecond") || 0;
+                              const both = parseIntSafe("bothFinished") || 0; // x
+                              const waitingCount = parseIntSafe("waitingForSecond") || 0; // additional after primary
+                              // y = people who have had their first appointment = both + waitingCount
+                              const hadFirst = both + waitingCount;
 
-                              const waitingEl = document.getElementById("progressBarFillWaiting");
                               const successEl = document.getElementById("progressBarFillSuccess");
+                              const waitingEl = document.getElementById("progressBarFillWaiting");
 
                               if (!waitingEl || !successEl) return;
 
                               if (goal <= 0) {
-                                 waitingEl.style.width = "0%";
-                                 successEl.style.left = "0%";
                                  successEl.style.width = "0%";
+                                 successEl.style.left = "0%";
+                                 waitingEl.style.width = "0%";
+                                 waitingEl.style.left = "0%";
                                  return;
                               }
 
-                              // Calculate percentages (capped at 100)
-                              const waitingPct = Math.max(0, Math.min(100, Math.round((waiting / goal) * 100)));
-                              const successPct = Math.max(0, Math.min(100, Math.round((both / goal) * 100)));
+                              // Percentages relative to goal
+                              const successPct = Math.max(0, Math.min(100, (both / goal) * 100));
+                              const combinedPct = Math.max(0, Math.min(100, (hadFirst / goal) * 100));
+                              // waiting segment is the difference between combined (y) and success (x)
+                              let waitingPct = combinedPct - successPct;
+                              // guard against rounding glitches
+                              if (waitingPct < 0) waitingPct = 0;
 
-                              // Apply widths and position so the two bars appear contiguous:
-                              // - waiting bar is left-aligned with width waitingPct%
-                              // - success bar is positioned left: waitingPct% and has width successPct%
-                              waitingEl.style.width = waitingPct + "%";
-                              successEl.style.left = waitingPct + "%";
+                              // Apply sizes and positions:
+                              // - success: left 0, width successPct%
+                              // - waiting: left = successPct%, width = waitingPct%
+                              successEl.style.left = "0%";
                               successEl.style.width = successPct + "%";
+
+                              waitingEl.style.left = successPct + "%";
+                              waitingEl.style.width = waitingPct + "%";
                            }
 
                            // Observe changes to the numeric elements so we recalc whenever admin.js updates them
