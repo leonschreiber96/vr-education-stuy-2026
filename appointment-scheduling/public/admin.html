@@ -815,8 +815,11 @@
 
                   // Populate initially and whenever the Conditions tab becomes active
                   document.addEventListener("DOMContentLoaded", () => {
-                     // Try immediate population (in case admin.js already loaded)
-                     populateConditionLists().catch(() => {});
+                     // Try immediate population only if the admin auth state is already known and true.
+                     // `isAuthenticated` is defined in `js/admin.js` which may be loaded later; when undefined we skip.
+                     if (typeof isAuthenticated !== "undefined" && isAuthenticated) {
+                        populateConditionLists().catch(() => {});
+                     }
 
                      // Observe the conditionsTab for activation via class change
                      const tab = document.getElementById("conditionsTab");
@@ -824,7 +827,10 @@
                         const observer = new MutationObserver((mutations) => {
                            for (const m of mutations) {
                               if (m.type === "attributes" && tab.classList.contains("active")) {
-                                 populateConditionLists().catch(() => {});
+                                 // Only populate when we know the user is authenticated
+                                 if (typeof isAuthenticated !== "undefined" && isAuthenticated) {
+                                    populateConditionLists().catch(() => {});
+                                 }
                                  break;
                               }
                            }
@@ -835,7 +841,9 @@
                      // Also refresh after a successful condition update by listening to a custom event
                      // (admin.js may dispatch or we can trigger this manually after PATCH success)
                      document.addEventListener("conditionUpdated", () => {
-                        populateConditionLists().catch(() => {});
+                        if (typeof isAuthenticated !== "undefined" && isAuthenticated) {
+                           populateConditionLists().catch(() => {});
+                        }
                      });
                   });
 
