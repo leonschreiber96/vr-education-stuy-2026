@@ -1340,9 +1340,8 @@ function updateStatistics() {
    document.getElementById("participantGoal").textContent = participantGoal;
 
    // Update participant count (count unique participants)
-   // Use a different variable name here to avoid redeclaration later in this function
-   const uniqueParticipantIds = new Set(allData.participants.map((p) => p.id));
-   document.getElementById("participantCount").textContent = uniqueParticipantIds.size;
+   const uniqueParticipants = new Set(allData.participants.map((p) => p.id));
+   document.getElementById("participantCount").textContent = uniqueParticipants.size;
 
    // Calculate timeslot statistics using all timeslots (not paginated)
    // Safeguard: ensure timeslotsForStats exists and is an array
@@ -1408,69 +1407,33 @@ function updateStatistics() {
    const noShowSecondList = [];
    const dataIssuesList = [];
 
-   // Deduplicate participants coming from joined queries (same participant may appear multiple times)
-   const uniqueParticipants = Array.from(new Map(allData.participants.map((p) => [p.id, p])).values());
-
-   uniqueParticipants.forEach((participant) => {
+   allData.participants.forEach((participant) => {
       const bookings = participantBookings[participant.id];
       if (bookings) {
          const hasPrimary = bookings.primary !== null;
          const hasFollowup = bookings.followup !== null;
 
-         const primaryPast = hasPrimary ? bookings.primary.isPast : false;
-         const followupPast = hasFollowup ? bookings.followup.isPast : false;
-         const primaryResult = hasPrimary ? bookings.primary.resultStatus : null;
-         const followupResult = hasFollowup ? bookings.followup.resultStatus : null;
-
-         // If participant had any no-show (primary or follow-up), count once and annotate which appointment
-         let noShowReason = null;
-         if (primaryResult === "no_show" && followupResult === "no_show") {
-            noShowReason = "Primär & 2.";
-         } else if (primaryResult === "no_show") {
-            noShowReason = "Primär";
-         } else if (followupResult === "no_show") {
-            noShowReason = "2.";
-         }
-
-         if (noShowReason) {
-            noShowSecond++;
-            noShowSecondList.push({
-               name: participant.name,
-               reason: noShowReason,
-            });
-
-            // Still collect data issues if present
-            if (
-               primaryResult === "unusable_data" ||
-               followupResult === "unusable_data" ||
-               primaryResult === "issues_arised" ||
-               followupResult === "issues_arised"
-            ) {
-               dataIssues++;
-               dataIssuesList.push({
-                  name: participant.name,
-                  primaryStatus: primaryResult,
-                  followupStatus: followupResult,
-                  primaryPast: primaryPast,
-                  followupPast: followupPast,
-               });
-            }
-
-            // Don't also count this participant as waiting / finished
-            return;
-         }
-
-         // Both appointments present
          if (hasPrimary && hasFollowup) {
-            // Both finished (and not no-shows, since those were handled above)
-            if (primaryPast && followupPast && primaryResult && followupResult) {
-               bothFinished++;
-               bothFinishedList.push({
-                  name: participant.name,
-                  email: participant.email,
-               });
+            const primaryPast = bookings.primary.isPast;
+            const followupPast = bookings.followup.isPast;
+            const primaryResult = bookings.primary.resultStatus;
+            const followupResult = bookings.followup.resultStatus;
 
-               // Check for data issues
+            // Both appointments finished
+            if (primaryPast && followupPast && primaryResult && followupResult) {
+               // Check for no-shows
+               if (primaryResult === "no_show" || followupResult === "no_show") {
+                  // Exclude no-shows from "both finished"
+               } else {
+                  // Both finished (not no-shows)
+                  bothFinished++;
+                  bothFinishedList.push({
+                     name: participant.name,
+                     email: participant.email,
+                  });
+               }
+
+               // Check for data issues in either appointment
                if (
                   primaryResult === "unusable_data" ||
                   followupResult === "unusable_data" ||
@@ -1496,6 +1459,15 @@ function updateStatistics() {
                      nextAppointment: bookings.followup.startTime,
                   });
                }
+               // If followup is past but not reviewed, we don't count it yet
+
+               // Check if followup was a no-show
+               if (followupResult === "no_show") {
+                  noShowSecond++;
+                  noShowSecondList.push({
+                     name: participant.name,
+                  });
+               }
 
                // Check for data issues in primary
                if (primaryResult === "unusable_data" || primaryResult === "issues_arised") {
@@ -1510,6 +1482,10 @@ function updateStatistics() {
                }
             }
          } else if (hasPrimary && !hasFollowup) {
+            // Only primary appointment, no followup scheduled
+            const primaryPast = bookings.primary.isPast;
+            const primaryResult = bookings.primary.resultStatus;
+
             if (primaryPast && primaryResult && primaryResult !== "no_show") {
                // Primary finished, waiting for second to be scheduled
                waitingForSecond++;
@@ -1542,20 +1518,6 @@ function updateStatistics() {
    document.getElementById("waitingForSecond").textContent = waitingForSecond;
    document.getElementById("noShowSecond").textContent = noShowSecond;
    document.getElementById("dataIssues").textContent = dataIssues;
-
-   // Make clear the no-show card includes primary and follow-up no-shows
-   const noShowCard = document.getElementById("noShowSecondCard");
-   if (noShowCard) {
-      noShowCard.setAttribute("title", "Enthält No-Shows (Primär oder 2.)");
-      // Also update the visible label text inside the card so it's clear in the UI
-      try {
-         const labelEl = noShowCard.querySelector("div > div:nth-child(2)");
-         if (labelEl) labelEl.textContent = "No-Show (Primär oder 2.)";
-      } catch (e) {
-         // If DOM shape differs, fail silently — the title still provides clarification
-         console.debug("Failed to update no-show card label:", e);
-      }
-   }
 
    // Setup tooltips for status cards
    setupStatusTooltips(bothFinishedList, waitingForSecondList, noShowSecondList, dataIssuesList);
@@ -1686,17 +1648,10 @@ function setupStatusTooltips(bothFinishedList, waitingForSecondList, noShowSecon
       createTooltip("waitingForSecondCard", content);
    }
 
-   // No-show tooltip - deduplicate by name and show which appointment was missed
+   // No-show tooltip - deduplicate by name
    if (noShowSecondList.length) {
-      const seen = new Set();
-      const rows = [];
-      noShowSecondList.forEach((p) => {
-         if (seen.has(p.name)) return;
-         seen.add(p.name);
-         const reason = p.reason ? `No-Show (${p.reason})` : "No-Show (2.)";
-         rows.push(`${p.name} — ${reason}`);
-      });
-      const content = rows.join("\n");
+      const uniqueNames = [...new Set(noShowSecondList.map((p) => p.name))];
+      const content = uniqueNames.join("\n");
       createTooltip("noShowSecondCard", content);
    }
 
