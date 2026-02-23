@@ -852,7 +852,7 @@
                   window.balanceBins = async function () {
                      try {
                         const basePath = window.location.pathname.split("/").slice(0, -1).join("/") || "";
-                        // Fetch participants and bookings
+
                         const [pResp, bResp] = await Promise.all([
                            fetch(basePath + "/api/admin/participants", { credentials: "same-origin" }),
                            fetch(basePath + "/api/admin/bookings", { credentials: "same-origin" }),
@@ -862,176 +862,106 @@
                         const participants = await pResp.json();
                         const bookings = await bResp.json();
 
-                        // We use server-provided flag `hasRatedPastBooking` to determine locked participants.
-                        // Eligible participants are those that are not locked (draggable).
-                        let eligible = participants.filter((p) => !p.hasRatedPastBooking);
-
-                        if (!eligible || eligible.length === 0) {
-                           alert(
-                              "Keine berechtigten Teilnehmer zum Zuweisen (keine Teilnehmer ohne vergangene Termine oder bereits zugewiesen).",
-                           );
-                           return;
-                        }
-
                         const KEYS = ["Presence", "2D Screen", "2D VR", "Immersive VR"];
+                        const VR_BINS = new Set(["2D VR", "Immersive VR"]);
+                        const NON_VR_BINS = KEYS.filter((k) => !VR_BINS.has(k)); // ["Presence", "2D Screen"]
 
-                        // Build current buckets of draggable participants (skip locked ones)
-                        const currentBins = {
-                           Presence: [],
-                           "2D Screen": [],
-                           "2D VR": [],
-                           "Immersive VR": [],
-                        };
-                        const unassigned = [];
-                        for (const p of eligible) {
-                           const cur = (p.condition || "").toString().trim();
-                           if (KEYS.includes(cur)) {
-                              currentBins[cur].push(p);
-                           } else {
-                              unassigned.push(p);
-                           }
-                        }
-
-                        // Total draggable participants (those we may move)
-                        const totalDraggable =
-                           Object.keys(currentBins).reduce((s, k) => s + currentBins[k].length, 0) + unassigned.length;
-
-                        // Desired distribution: base + distribute remainder deterministically to bins with smallest current count
-                        const base = Math.floor(totalDraggable / KEYS.length);
-                        let remainder = totalDraggable % KEYS.length;
-                        const desired = {};
-                        // Start with base
-                        KEYS.forEach((k) => (desired[k] = base));
-
-                        if (remainder > 0) {
-                           // Determine order to distribute remainder: bins with smallest current count first, tie-break by KEYS order
-                           const order = KEYS.slice().sort((a, b) => {
-                              if (currentBins[a].length !== currentBins[b].length)
-                                 return currentBins[a].length - currentBins[b].length;
-                              return KEYS.indexOf(a) - KEYS.indexOf(b);
-                           });
-                           for (let i = 0; i < remainder; i++) {
-                              desired[order[i]]++;
-                           }
-                        }
-
-                        // Helper: can participant be placed in VR bin?
-                        function canBePlacedInVR(p) {
-                           const vc = (p.vision_correction || p.visionCorrection || "").toString().toLowerCase();
-                           const msRaw =
-                              p.motion_sickness !== undefined
-                                 ? p.motion_sickness
-                                 : p.motionSickness !== undefined
-                                   ? p.motionSickness
-                                   : null;
+                        // ── Constraint check ────────────────────────────────────────────────
+                        function canPlaceInVR(p) {
+                           const vc = (p.vision_correction ?? p.visionCorrection ?? "").toString().toLowerCase();
+                           const msRaw = p.motion_sickness ?? p.motionSickness ?? null;
                            const ms = msRaw === null || msRaw === "" ? null : Number(msRaw);
-                           const hasGlasses = vc.includes("glasses") || vc.includes("brille") || vc.includes("glass");
-                           if (hasGlasses) return false;
-                           if (!Number.isNaN(ms) && ms > 3) return false;
+                           if (vc.includes("glasses") || vc.includes("brille") || vc.includes("glass")) return false;
+                           if (ms !== null && !Number.isNaN(ms) && ms > 3) return false;
                            return true;
                         }
 
-                        function canBePlacedInTargetBin(p, targetKey) {
-                           if (targetKey !== "2D VR" && targetKey !== "Immersive VR") return true;
-                           return canBePlacedInVR(p);
+                        // ── Locked vs eligible ───────────────────────────────────────────────
+                        const locked = participants.filter((p) => p.hasRatedPastBooking);
+                        const eligible = participants.filter((p) => !p.hasRatedPastBooking);
+
+                        if (eligible.length === 0) {
+                           alert("Keine berechtigten Teilnehmer zum Zuweisen.");
+                           return;
                         }
 
-                        // Helper to pop a candidate from a donor bin that fits target
-                        function popFromDonor(donorBin, targetBin) {
-                           const arr = currentBins[donorBin];
-                           for (let i = 0; i < arr.length; i++) {
-                              if (canBePlacedInTargetBin(arr[i], targetBin)) return arr.splice(i, 1)[0];
-                           }
-                           return null;
+                        // Count locked participants that are already occupying each bin
+                        const lockedCounts = Object.fromEntries(KEYS.map((k) => [k, 0]));
+                        for (const p of locked) {
+                           const cond = (p.condition ?? "").toString().trim();
+                           if (KEYS.includes(cond)) lockedCounts[cond]++;
                         }
 
-                        // Deterministic balancing: move from overfull to underfull while respecting constraints
-                        const assignments = [];
-                        let madeProgress = true;
-                        while (madeProgress) {
-                           madeProgress = false;
+                        // ── Target bin sizes (based on ALL participants) ─────────────────────
+                        const total = participants.length;
+                        const base = Math.floor(total / 4);
+                        const rem = total % 4;
+                        // First `rem` bins (by KEYS order) get one extra slot
+                        const targetSizes = Object.fromEntries(KEYS.map((k, i) => [k, base + (i < rem ? 1 : 0)]));
 
-                           const surplus = KEYS.map((k) => ({ k, surplus: currentBins[k].length - desired[k] }))
-                              .filter((x) => x.surplus > 0)
-                              .sort((a, b) => b.surplus - a.surplus || KEYS.indexOf(a.k) - KEYS.indexOf(b.k));
+                        // ── Split eligible by VR eligibility ────────────────────────────────
+                        // Process VR-incompatible first — they have fewer placement options
+                        const noVR = eligible.filter((p) => !canPlaceInVR(p));
+                        const vrOK = eligible.filter((p) => canPlaceInVR(p));
 
-                           const deficit = KEYS.map((k) => ({ k, deficit: desired[k] - currentBins[k].length }))
-                              .filter((x) => x.deficit > 0)
-                              .sort((a, b) => b.deficit - a.deficit || KEYS.indexOf(a.k) - KEYS.indexOf(b.k));
+                        const assignedCounts = Object.fromEntries(KEYS.map((k) => [k, 0]));
+                        const newConditions = {}; // participant id → assigned condition
 
-                           if (surplus.length === 0 && unassigned.length === 0) break;
-                           if (deficit.length === 0) break;
-
-                           for (const d of deficit) {
-                              if (currentBins[d.k].length >= desired[d.k]) continue;
-                              // try donors first
-                              for (const s of surplus) {
-                                 if (s.surplus <= 0) continue;
-                                 if (s.k === d.k) continue;
-                                 const candidate = popFromDonor(s.k, d.k);
-                                 if (candidate) {
-                                    assignments.push({
-                                       id: candidate.id,
-                                       condition: d.k,
-                                       name: candidate.name || candidate.email,
-                                    });
-                                    currentBins[d.k].push(candidate);
-                                    s.surplus--;
-                                    madeProgress = true;
-                                    break;
-                                 }
-                              }
-                              // then try unassigned pool
-                              while (currentBins[d.k].length < desired[d.k] && unassigned.length > 0) {
-                                 let idx = -1;
-                                 for (let i = 0; i < unassigned.length; i++) {
-                                    if (canBePlacedInTargetBin(unassigned[i], d.k)) {
-                                       idx = i;
-                                       break;
-                                    }
-                                 }
-                                 if (idx === -1) break;
-                                 const p = unassigned.splice(idx, 1)[0];
-                                 assignments.push({ id: p.id, condition: d.k, name: p.name || p.email });
-                                 currentBins[d.k].push(p);
-                                 madeProgress = true;
+                        // Always picks a bin — even if all are over target, picks the least overfull
+                        function pickBestBin(candidateBins) {
+                           let best = candidateBins[0];
+                           let bestRoom = targetSizes[best] - lockedCounts[best] - assignedCounts[best];
+                           for (let i = 1; i < candidateBins.length; i++) {
+                              const k = candidateBins[i];
+                              const room = targetSizes[k] - lockedCounts[k] - assignedCounts[k];
+                              if (room > bestRoom) {
+                                 bestRoom = room;
+                                 best = k;
                               }
                            }
+                           return best;
                         }
 
-                        // Filter out no-ops (already in that condition)
-                        const finalAssignments = assignments.filter((a) => {
-                           const p = participants.find((pp) => pp.id === a.id);
-                           const cur = p && p.condition ? p.condition.toString().trim() : "";
-                           return cur !== a.condition;
-                        });
+                        // Pass 1: VR-incompatible → non-VR bins only
+                        for (const p of noVR) {
+                           const bin = pickBestBin(NON_VR_BINS);
+                           newConditions[p.id] = bin;
+                           assignedCounts[bin]++;
+                        }
+
+                        // Pass 2: VR-compatible → any bin
+                        for (const p of vrOK) {
+                           const bin = pickBestBin(KEYS);
+                           newConditions[p.id] = bin;
+                           assignedCounts[bin]++;
+                        }
+
+                        // ── Build final list, skip no-ops ────────────────────────────────────
+                        const finalAssignments = eligible
+                           .filter((p) => {
+                              const newCond = newConditions[p.id];
+                              const oldCond = (p.condition ?? "").toString().trim();
+                              return newCond && newCond !== oldCond;
+                           })
+                           .map((p) => ({
+                              id: p.id,
+                              condition: newConditions[p.id],
+                              name: p.name || p.email,
+                           }));
 
                         if (finalAssignments.length === 0) {
                            alert("Keine Zuweisungen erforderlich.");
                            return;
                         }
 
-                        // Build preview modal
+                        // ── Preview modal ────────────────────────────────────────────────────
                         const modal = document.createElement("div");
-                        modal.style.position = "fixed";
-                        modal.style.left = "0";
-                        modal.style.top = "0";
-                        modal.style.right = "0";
-                        modal.style.bottom = "0";
-                        modal.style.background = "rgba(0,0,0,0.4)";
-                        modal.style.display = "flex";
-                        modal.style.justifyContent = "center";
-                        modal.style.alignItems = "center";
-                        modal.style.zIndex = "9999";
+                        modal.style.cssText =
+                           "position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;justify-content:center;align-items:center;z-index:9999";
 
                         const dialog = document.createElement("div");
-                        dialog.style.width = "720px";
-                        dialog.style.maxHeight = "80vh";
-                        dialog.style.overflow = "auto";
-                        dialog.style.background = "#fff";
-                        dialog.style.borderRadius = "8px";
-                        dialog.style.padding = "16px";
-                        dialog.style.boxShadow = "0 10px 30px rgba(0,0,0,0.2)";
+                        dialog.style.cssText =
+                           "width:720px;max-height:80vh;overflow:auto;background:#fff;border-radius:8px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.2)";
                         modal.appendChild(dialog);
 
                         const title = document.createElement("h3");
@@ -1040,54 +970,53 @@
                         dialog.appendChild(title);
 
                         const info = document.createElement("div");
-                        info.style.color = "#555";
-                        info.style.marginBottom = "10px";
+                        info.style.cssText = "color:#555;margin-bottom:10px";
                         info.textContent =
                            "Überprüfen Sie die vorgeschlagenen Zuweisungen. Klicken Sie auf 'Anwenden', um die Änderungen durchzuführen.";
                         dialog.appendChild(info);
 
-                        // Create a table-like list grouped by target condition
+                        // Show final bin sizes (locked + newly assigned)
+                        const summary = document.createElement("div");
+                        summary.style.cssText =
+                           "font-size:0.85em;color:#444;margin-bottom:10px;padding:6px 8px;background:#f5f5f5;border-radius:4px";
+                        summary.textContent =
+                           "Zielgrößen: " +
+                           KEYS.map((k) => {
+                              const total = lockedCounts[k] + assignedCounts[k];
+                              return `${k}: ${total}`;
+                           }).join(" | ");
+                        dialog.appendChild(summary);
+
                         const grouped = {};
                         for (const a of finalAssignments) {
-                           grouped[a.condition] = grouped[a.condition] || [];
-                           grouped[a.condition].push(a);
+                           (grouped[a.condition] ??= []).push(a);
                         }
-
                         Object.keys(grouped).forEach((cond) => {
                            const header = document.createElement("div");
-                           header.style.fontWeight = "600";
-                           header.style.marginTop = "10px";
+                           header.style.cssText = "font-weight:600;margin-top:10px";
                            header.textContent = `${cond} (${grouped[cond].length})`;
                            dialog.appendChild(header);
 
                            const ul = document.createElement("div");
-                           ul.style.marginTop = "6px";
-                           ul.style.marginBottom = "6px";
+                           ul.style.cssText = "margin-top:6px;margin-bottom:6px";
                            dialog.appendChild(ul);
 
                            grouped[cond].forEach((a) => {
                               const row = document.createElement("div");
-                              row.style.display = "flex";
-                              row.style.justifyContent = "space-between";
-                              row.style.padding = "6px 8px";
-                              row.style.borderBottom = "1px solid rgba(0,0,0,0.05)";
+                              row.style.cssText =
+                                 "display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px solid rgba(0,0,0,0.05)";
                               row.textContent = a.name || String(a.id);
                               ul.appendChild(row);
                            });
                         });
 
                         const buttonsRow = document.createElement("div");
-                        buttonsRow.style.display = "flex";
-                        buttonsRow.style.justifyContent = "flex-end";
-                        buttonsRow.style.gap = "10px";
-                        buttonsRow.style.marginTop = "12px";
+                        buttonsRow.style.cssText = "display:flex;justify-content:flex-end;gap:10px;margin-top:12px";
 
                         const cancelBtn = document.createElement("button");
                         cancelBtn.className = "btn btn-secondary";
                         cancelBtn.textContent = "Abbrechen";
-                        cancelBtn.onclick = () => {
-                           document.body.removeChild(modal);
-                        };
+                        cancelBtn.onclick = () => document.body.removeChild(modal);
                         buttonsRow.appendChild(cancelBtn);
 
                         const applyBtn = document.createElement("button");
@@ -1097,8 +1026,8 @@
                            applyBtn.disabled = true;
                            cancelBtn.disabled = true;
                            applyBtn.textContent = "Wird angewendet...";
-                           let success = 0;
-                           let failed = 0;
+                           let success = 0,
+                              failed = 0;
                            for (const a of finalAssignments) {
                               try {
                                  const resp = await fetch(basePath + `/api/admin/participants/${a.id}/condition`, {
@@ -1108,7 +1037,7 @@
                                  });
                                  if (resp.ok) success++;
                                  else failed++;
-                              } catch (e) {
+                              } catch {
                                  failed++;
                               }
                            }
@@ -1117,15 +1046,11 @@
                            alert(`Auto-Balance abgeschlossen. Erfolgreich: ${success}, Fehlgeschlagen: ${failed}`);
                         };
                         buttonsRow.appendChild(applyBtn);
-
                         dialog.appendChild(buttonsRow);
                         document.body.appendChild(modal);
                      } catch (err) {
                         console.error("Error in balanceBins:", err);
-                        alert(
-                           "Fehler beim Ausführen der Auto-Balance: " +
-                              (err && err.message ? err.message : String(err)),
-                        );
+                        alert("Fehler beim Ausführen der Auto-Balance: " + (err?.message ?? String(err)));
                      }
                   };
                })();
