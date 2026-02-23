@@ -1224,6 +1224,7 @@ function getAllBookings() {
       b.*,
       p.name,
       p.email,
+      p.condition,
       p.vision_correction,
       p.study_subject,
       p.vr_experience,

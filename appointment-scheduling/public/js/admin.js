@@ -1784,6 +1784,7 @@ function displayUpcomingAppointments() {
                        <th>Termin</th>
                        <th>Teilnehmer</th>
                        <th>E-Mail</th>
+                       <th>Bedingung</th>
                        <th>Ort</th>
                    </tr>
                </thead>
@@ -1803,6 +1804,7 @@ function displayUpcomingAppointments() {
                                <td>${dateTimeStr}</td>
                                <td>${booking.name}</td>
                                <td>${booking.email}</td>
+                               <td>${booking.condition ? booking.condition : "-"}</td>
                                <td>${booking.location || "-"}</td>
                            </tr>
                        `;
