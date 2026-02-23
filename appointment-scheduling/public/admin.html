@@ -668,9 +668,36 @@
                                        );
                                        return;
                                     }
-                                    // Optimistically call the existing changeParticipantCondition
-                                    // This will reload participants after success and dispatch the conditionUpdated event
-                                    await changeParticipantCondition(participantId, targetKey);
+
+                                    // Optimistic UI: move the DOM node immediately so the drop feels responsive.
+                                    // We keep a reference to the original parent so we can revert if the server update fails.
+                                    let srcEl = document.querySelector(`[data-participant-id="${participantId}"]`);
+                                    const originalParent = srcEl ? srcEl.parentElement : null;
+                                    try {
+                                       if (srcEl && listEl && srcEl !== listEl) {
+                                          listEl.appendChild(srcEl);
+                                       }
+                                    } catch (domErr) {
+                                       console.debug("Optimistic move failed:", domErr);
+                                    }
+
+                                    // Call server to persist the change. If it fails, revert the DOM move.
+                                    try {
+                                       await changeParticipantCondition(participantId, targetKey);
+                                       // changeParticipantCondition will reload participants and dispatch conditionUpdated,
+                                       // which will refresh the lists. Show success feedback here as well.
+                                       showDashboardAlert("Teilnehmer verschoben", "success");
+                                    } catch (serverErr) {
+                                       // Revert optimistic DOM move on failure
+                                       try {
+                                          if (originalParent && srcEl) originalParent.appendChild(srcEl);
+                                       } catch (revertErr) {
+                                          console.debug("Failed to revert optimistic move:", revertErr);
+                                       }
+                                       // Refresh authoritative lists to ensure consistent state
+                                       await populateConditionLists();
+                                       showDashboardAlert("Verschieben fehlgeschlagen", "error");
+                                    }
                                  } catch (err) {
                                     console.debug("Error handling drop:", err);
                                  }
