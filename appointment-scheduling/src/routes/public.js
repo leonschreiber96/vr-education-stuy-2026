@@ -82,13 +82,13 @@ router.post(
       // Set to midnight to compare dates only
       primaryDate.setHours(0, 0, 0, 0);
       followupDate.setHours(0, 0, 0, 0);
-      const daysDiff = Math.floor((followupDate - primaryDate) / (1000 * 60 * 60 * 24));
+      // const daysDiff = Math.floor((followupDate - primaryDate) / (1000 * 60 * 60 * 24));
 
-      if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
-         throw new ValidationError(
-            `Follow-up appointment must be ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} days after primary appointment`,
-         );
-      }
+      // if (daysDiff < FOLLOWUP_MIN_DAYS || daysDiff > FOLLOWUP_MAX_DAYS) {
+      //    throw new ValidationError(
+      //       `Follow-up appointment must be ${FOLLOWUP_MIN_DAYS}-${FOLLOWUP_MAX_DAYS} days after primary appointment`,
+      //    );
+      // }
 
       // Check capacity
       if (!db.hasCapacity(primaryTimeslotId)) {
